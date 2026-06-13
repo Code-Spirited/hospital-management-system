@@ -1,7 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 
-// Placeholder pages — we'll build real ones later
+// Auth pages — imported from their files
+import Login from "../pages/auth/Login";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+
+// Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
     <div className="text-center">
@@ -14,10 +18,17 @@ const PlaceholderPage = ({ title }) => (
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Redirect root to dashboard */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      {/* Redirect root URL to login page */}
+      {/* A real app shows login first, not dashboard */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* Main layout wraps all pages */}
+      {/* ── Auth routes — NO sidebar/header ── */}
+      {/* These are standalone, outside MainLayout */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+
+      {/* ── Protected routes — WITH sidebar/header ── */}
+      {/* Everything nested here renders inside MainLayout's <Outlet /> */}
       <Route element={<MainLayout />}>
         <Route
           path="/dashboard"
@@ -27,7 +38,7 @@ const AppRoutes = () => {
         <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />
         <Route
           path="/pharmacy"
-          element={<PlaceholderPage title="Pharmacy Module" />}
+          element={<PlaceholderPage title="Pharmacy" />}
         />
         <Route
           path="/users"
@@ -39,7 +50,7 @@ const AppRoutes = () => {
         />
       </Route>
 
-      {/* 404 page */}
+      {/* Any unknown URL → 404 */}
       <Route
         path="*"
         element={<PlaceholderPage title="404 - Page Not Found" />}

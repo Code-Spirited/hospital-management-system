@@ -1,16 +1,16 @@
 import { useState } from "react";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
+import { useNavigate } from "react-router-dom";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
-import { useNavigate } from "react-router-dom";
+import SearchIcon from "@mui/icons-material/Search";
 
-const Header = ({ toggleSidebar, sidebarOpen }) => {
+const Header = ({ sidebarOpen, toggleSidebar }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
   const navigate = useNavigate();
 
   const notifications = [
@@ -33,9 +33,14 @@ const Header = ({ toggleSidebar, sidebarOpen }) => {
 
   return (
     <header
-      className={`fixed top-0 right-0 h-16 bg-white border-b border-gray-200 z-30 flex items-center px-4 gap-4 transition-all duration-300 ${sidebarOpen ? "left-64" : "left-16"}`}
+      className={`
+      fixed top-0 right-0 h-16 bg-white border-b border-gray-200
+      z-30 flex items-center px-4 gap-4
+      transition-all duration-300
+      ${sidebarOpen ? "left-64" : "left-16"}
+    `}
     >
-      {/* Search Bar */}
+      {/* ── Search bar ── */}
       <div className="flex-1 max-w-md">
         <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
           <SearchIcon fontSize="small" className="text-gray-400" />
@@ -48,7 +53,7 @@ const Header = ({ toggleSidebar, sidebarOpen }) => {
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
-        {/* Notifications */}
+        {/* ── Notifications bell ── */}
         <div className="relative">
           <button
             onClick={() => {
@@ -65,7 +70,7 @@ const Header = ({ toggleSidebar, sidebarOpen }) => {
             )}
           </button>
 
-          {/* Notifications Dropdown */}
+          {/* Notification dropdown */}
           {showNotifications && (
             <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-lg border border-gray-100 z-50">
               <div className="px-4 py-3 border-b border-gray-100">
@@ -88,7 +93,7 @@ const Header = ({ toggleSidebar, sidebarOpen }) => {
           )}
         </div>
 
-        {/* Profile Menu */}
+        {/* ── Profile menu ── */}
         <div className="relative">
           <button
             onClick={() => {
@@ -107,7 +112,6 @@ const Header = ({ toggleSidebar, sidebarOpen }) => {
             <KeyboardArrowDownIcon fontSize="small" className="text-gray-400" />
           </button>
 
-          {/* Profile Dropdown */}
           {showProfileMenu && (
             <div className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-1">
               <button
