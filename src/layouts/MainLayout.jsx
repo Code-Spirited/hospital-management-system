@@ -6,30 +6,49 @@ import Footer from "./Footer";
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div
-      className="min-h-screen bg-gray-50"
-      style={{ fontFamily: "'Inter', sans-serif" }}
+      data-sidebar={sidebarOpen ? "open" : "closed"}
+      style={{
+        minHeight: "100vh",
+        background: "var(--hms-surface)",
+        fontFamily: "var(--font-body)",
+      }}
     >
-      {/* Sidebar — fixed left, always visible */}
-      <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+      {/* Responsive content padding */}
+      <style>{`
+        .hms-page-content { padding: 1.5rem; }
+        @media (max-width: 767px) {
+          .hms-page-content { padding: 0.875rem; }
+        }
+        @media (max-width: 479px) {
+          .hms-page-content { padding: 0.625rem; }
+        }
+      `}</style>
 
-      {/* Header — fixed top, shifts left based on sidebar width */}
-      <Header sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen((s) => !s)}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
 
-      {/* Main content wrapper */}
+      <Header onMobileMenuClick={() => setMobileMenuOpen(true)} />
+
       <div
-        className={`transition-all duration-300 pt-16 flex flex-col min-h-screen ${sidebarOpen ? "ml-64" : "ml-16"}`}
+        className="hms-main"
+        style={{
+          paddingTop: 64,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <main className="flex-1 p-6">
-          {/* Outlet renders the current route's page component here */}
+        <main className="hms-page-content" style={{ flex: 1 }}>
           <Outlet />
         </main>
-
-        {/* Footer — always at the bottom */}
         <Footer />
       </div>
     </div>

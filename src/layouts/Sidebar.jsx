@@ -1,105 +1,478 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import PeopleIcon from "@mui/icons-material/People";
-import BedroomParentIcon from "@mui/icons-material/BedroomParent";
-import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import LocalPharmacyIcon from "@mui/icons-material/LocalPharmacy";
-import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+// ─────────────────────────────────────────────────────────────────────────────
+// Sidebar.jsx
+//
+// THREE KEY CLASSES used by CSS in index.css:
+//
+//   .hms-desktop-sidebar
+//     → Visible on desktop (≥1024px)
+//     → display: none !important on mobile (index.css)
+//
+//   .hms-mobile-sidebar
+//     → Visible on mobile/tablet (<1024px)
+//     → display: none !important on desktop (index.css)
+//     → Uses transform for slide-in animation
+//
+//   .hms-mobile-backdrop
+//     → Dark overlay, mobile/tablet only
+//     → display: none !important on desktop (index.css)
+//
+// COLOR DESIGN:
+//   Background: #0b1526 (deep navy)
+//   Inactive text: #a8c4e0 (medium blue-tinted white — clearly visible)
+//   Active text: #ffffff (full white)
+//   Active bg: #1d4ed8 (vivid blue with glow)
+//   Hover bg: rgba(168,196,224,0.08)
+// ─────────────────────────────────────────────────────────────────────────────
 
-const menuItems = [
-  {
-    label: "Dashboard",
-    icon: <DashboardIcon fontSize="small" />,
-    path: "/dashboard",
-  },
-  { label: "OPD", icon: <PeopleIcon fontSize="small" />, path: "/opd" },
-  { label: "IPD", icon: <BedroomParentIcon fontSize="small" />, path: "/ipd" },
-  {
-    label: "Pharmacy",
-    icon: <LocalPharmacyIcon fontSize="small" />,
-    path: "/pharmacy",
-  },
-  {
-    label: "Users",
-    icon: <ManageAccountsIcon fontSize="small" />,
-    path: "/users",
-  },
-  {
-    label: "Reports",
-    icon: <AssessmentIcon fontSize="small" />,
-    path: "/reports",
-  },
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  BedDouble,
+  Pill,
+  UserCog,
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Activity,
+} from "lucide-react";
+
+// ── Static menu data ──────────────────────────────────────────────────────────
+const MENU = [
+  { label: "Dashboard", Icon: LayoutDashboard, path: "/dashboard" },
+  { label: "OPD", Icon: Users, path: "/opd" },
+  { label: "IPD", Icon: BedDouble, path: "/ipd" },
+  { label: "Pharmacy", Icon: Pill, path: "/pharmacy" },
+  { label: "Users", Icon: UserCog, path: "/users" },
+  { label: "Reports", Icon: BarChart3, path: "/reports" },
 ];
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const location = useLocation();
+// ── Brand logo block ──────────────────────────────────────────────────────────
+const Brand = ({ showLabel }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 11,
+        flexShrink: 0,
+        background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 4px 14px rgba(37,99,235,0.5)",
+      }}
+    >
+      <Activity size={19} color="#fff" strokeWidth={2.5} />
+    </div>
+    {showLabel && (
+      <div>
+        <p
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-display)",
+            fontWeight: 800,
+            fontSize: "0.95rem",
+            color: "#ffffff",
+            lineHeight: 1.15,
+          }}
+        >
+          Auctech
+        </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.58rem",
+            fontWeight: 700,
+            color: "#4a7a9b",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+          }}
+        >
+          HMS Platform
+        </p>
+      </div>
+    )}
+  </div>
+);
+
+// ── Navigation list ───────────────────────────────────────────────────────────
+// Defined OUTSIDE to avoid "cannot create components during render" error
+const NavList = ({ currentPath, onNavigate, showLabels, onItemClick }) => (
+  <nav style={{ flex: 1, padding: "0.875rem 0.625rem", overflowY: "auto" }}>
+    {showLabels && (
+      <p
+        style={{
+          fontSize: "0.6rem",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--sidebar-label)",
+          padding: "0 0.75rem",
+          marginBottom: "0.375rem",
+        }}
+      >
+        Main Menu
+      </p>
+    )}
+
+    <ul
+      style={{
+        listStyle: "none",
+        margin: 0,
+        padding: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
+      {MENU.map(({ label, Icon, path }) => {
+        const active =
+          currentPath === path || currentPath.startsWith(path + "/");
+        return (
+          <li key={path}>
+            <button
+              onClick={() => {
+                onNavigate(path);
+                if (onItemClick) onItemClick();
+              }}
+              title={!showLabels ? label : undefined}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                padding: showLabels ? "0.65rem 0.875rem" : "0.75rem",
+                justifyContent: showLabels ? "flex-start" : "center",
+                borderRadius: 11,
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.875rem",
+                fontWeight: active ? 700 : 500,
+                letterSpacing: active ? "0.005em" : "0.01em",
+                transition: "all 0.18s ease",
+                background: active
+                  ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+                  : "transparent",
+                color: active
+                  ? "var(--sidebar-text-active)" /* #ffffff */
+                  : "var(--sidebar-text)" /* #a8c4e0 — clearly visible */,
+                boxShadow: active
+                  ? "0 4px 14px var(--sidebar-active-glow)"
+                  : "none",
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = "var(--sidebar-hover-bg)";
+                  e.currentTarget.style.color = "var(--sidebar-text-hover)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "var(--sidebar-text)";
+                }
+              }}
+            >
+              <Icon
+                size={18}
+                strokeWidth={active ? 2.3 : 1.8}
+                style={{
+                  flexShrink: 0,
+                  color: active ? "#ffffff" : "var(--sidebar-icon)",
+                }}
+              />
+              {showLabels && (
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </span>
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  </nav>
+);
+
+// ── Status footer ─────────────────────────────────────────────────────────────
+const SidebarFooter = ({ showLabel }) => (
+  <div
+    style={{
+      padding: showLabel ? "0.75rem 1.25rem" : "0.75rem",
+      borderTop: "1px solid var(--sidebar-border)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: showLabel ? "space-between" : "center",
+      gap: 8,
+    }}
+  >
+    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+      <span
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          background: "#22c55e",
+          display: "inline-block",
+          boxShadow: "0 0 8px rgba(34,197,94,0.7)",
+          animation: "sb-pulse 2s ease infinite",
+        }}
+      />
+      {showLabel && (
+        <span style={{ fontSize: "0.7rem", color: "#3d6b8f", fontWeight: 600 }}>
+          All systems live
+        </span>
+      )}
+    </div>
+    {showLabel && (
+      <span
+        style={{
+          fontSize: "0.62rem",
+          color: "#2d4f6b",
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+        }}
+      >
+        v1.0.0
+      </span>
+    )}
+  </div>
+);
+
+// ── Shared sidebar panel background style ─────────────────────────────────────
+// display is NOT included here so CSS classes can control it freely
+const PANEL = {
+  background: "linear-gradient(180deg, #0b1526 0%, #0d1c32 50%, #0b1526 100%)",
+  borderRight: "1px solid rgba(255,255,255,0.06)",
+  flexDirection: "column",
+  height: "100vh",
+  position: "fixed",
+  top: 0,
+  left: 0,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
 
   return (
-    <aside
-      className={`
-      fixed top-0 left-0 h-full bg-gray-900 text-white z-40
-      flex flex-col transition-all duration-300
-      ${isOpen ? "w-64" : "w-16"}
-    `}
-    >
-      {/* ── Logo / Brand area ── */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-700 min-h-[64px]">
-        {isOpen && (
-          <div className="flex items-center gap-2">
-            <LocalHospitalIcon className="text-blue-400" />
-            <span className="font-bold text-sm text-white leading-tight">
-              Auctech <br />
-              <span className="text-blue-400 font-normal text-xs">HMS</span>
-            </span>
+    <>
+      <style>{`
+        @keyframes sb-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes sb-pulse {
+          0%, 100% { opacity: 1;   }
+          50%       { opacity: 0.3; }
+        }
+      `}</style>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          DESKTOP SIDEBAR
+          Class .hms-desktop-sidebar → index.css hides on mobile (<1024px)
+          display: flex here is the default for desktop.
+          The CSS !important on mobile overrides it.
+      ════════════════════════════════════════════════════════════════════ */}
+      <aside
+        className="hms-desktop-sidebar"
+        style={{
+          ...PANEL,
+          display: "flex" /* CSS hides this on mobile via !important */,
+          width: isOpen ? 256 : 64,
+          zIndex: 40,
+          transition: "width 0.3s cubic-bezier(.4,0,.2,1)",
+        }}
+      >
+        {/* Header row — layout changes based on open/collapsed state */}
+        {isOpen ? (
+          // OPEN: Brand + label on left, arrow button on right — horizontal
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.875rem 0.875rem 0.875rem 1.125rem",
+              borderBottom: "1px solid var(--sidebar-border)",
+              minHeight: 64,
+              gap: 8,
+            }}
+          >
+            <Brand showLabel={true} />
+            <button
+              onClick={onToggle}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                flexShrink: 0,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 8,
+                cursor: "pointer",
+                color: "#4a7a9b",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.color = "#4a7a9b";
+              }}
+            >
+              <ChevronLeft size={15} />
+            </button>
+          </div>
+        ) : (
+          // COLLAPSED: Icon on top, arrow directly below it — vertical stack, centered
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "0.75rem 0",
+              gap: 6,
+              borderBottom: "1px solid var(--sidebar-border)",
+              minHeight: 64,
+            }}
+          >
+            {/* Brand icon only — no label */}
+            <Brand showLabel={false} />
+
+            {/* Expand arrow — sits directly below the icon */}
+            <button
+              onClick={onToggle}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 24,
+                height: 24,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 7,
+                cursor: "pointer",
+                color: "#4a7a9b",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.color = "#4a7a9b";
+              }}
+            >
+              <ChevronRight size={13} />
+            </button>
           </div>
         )}
 
-        <button
-          onClick={toggleSidebar}
-          className="p-1 rounded-lg hover:bg-gray-700 transition-colors ml-auto"
+        <NavList
+          currentPath={pathname}
+          onNavigate={navigate}
+          showLabels={isOpen}
+        />
+
+        <SidebarFooter showLabel={isOpen} />
+      </aside>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          MOBILE BACKDROP
+          Class .hms-mobile-backdrop → index.css hides on desktop (≥1024px)
+          Only rendered when mobileOpen is true (performance optimization)
+      ════════════════════════════════════════════════════════════════════ */}
+      {mobileOpen && (
+        <div
+          className="hms-mobile-backdrop"
+          onClick={onMobileClose}
+          style={{
+            display: "block" /* CSS hides on desktop via !important */,
+            position: "fixed",
+            inset: 0,
+            background: "rgba(11,21,38,0.7)",
+            backdropFilter: "blur(4px)",
+            zIndex: 45,
+            animation: "sb-fade 0.2s ease both",
+          }}
+        />
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          MOBILE DRAWER
+          Class .hms-mobile-sidebar → index.css hides on desktop (≥1024px)
+          Always in the DOM; transform slides it in/out.
+          display: flex here → CSS overrides to none on desktop.
+      ════════════════════════════════════════════════════════════════════ */}
+      <aside
+        className="hms-mobile-sidebar"
+        style={{
+          ...PANEL,
+          display: "flex" /* CSS hides this on desktop via !important */,
+          width: 272,
+          zIndex: 50,
+          transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.3s cubic-bezier(.4,0,.2,1)",
+        }}
+      >
+        {/* Mobile header with close button */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0.875rem 0.875rem 0.875rem 1.125rem",
+            borderBottom: "1px solid var(--sidebar-border)",
+            minHeight: 64,
+          }}
         >
-          {isOpen ? (
-            <ChevronLeftIcon fontSize="small" />
-          ) : (
-            <ChevronRightIcon fontSize="small" />
-          )}
-        </button>
-      </div>
+          <Brand showLabel={true} />
+          <button
+            onClick={onMobileClose}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 30,
+              height: 30,
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: "#a8c4e0",
+              flexShrink: 0,
+              transition: "all 0.15s",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-      {/* ── Navigation links ── */}
-      <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="flex flex-col gap-1 px-2">
-          {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
+        <NavList
+          currentPath={pathname}
+          onNavigate={navigate}
+          showLabels={true}
+          onItemClick={onMobileClose}
+        />
 
-            return (
-              <li key={item.path}>
-                <button
-                  onClick={() => navigate(item.path)}
-                  className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                    transition-all duration-200 text-sm font-medium
-                    ${
-                      isActive
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                    }
-                  `}
-                >
-                  <span className="flex-shrink-0">{item.icon}</span>
-
-                  {isOpen && <span className="truncate">{item.label}</span>}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </aside>
+        <SidebarFooter showLabel={true} />
+      </aside>
+    </>
   );
 };
 

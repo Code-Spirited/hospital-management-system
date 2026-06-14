@@ -1,58 +1,44 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Dashboard.jsx
-//
-// PURPOSE:
-//   The main overview screen of the HMS admin panel.
-//   Gives hospital staff a bird's-eye view of all key metrics at a glance.
-//
-// SECTIONS:
-//   1. Page header (title + date)
-//   2. KPI cards (4 key metrics)
-//   3. Quick stats bar
-//   4. Revenue Line Chart + Appointment Doughnut Chart
-//   5. Recent Patients Table
-//
-// DATA:
-//   All numbers come from dashboardData.js (mock data).
-//   In Week 8, each dataset will be replaced with an Axios API call.
-//
-// CHARTS:
-//   Uses Chart.js via react-chartjs-2.
-//   Each chart type must be registered before use — see registerCharts below.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useState } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
-
-// Chart.js requires you to register every component you use.
-// This is tree-shaking — only the pieces you register get bundled.
 import {
   Chart as ChartJS,
-  CategoryScale, // X-axis for category labels (Jan, Feb...)
-  LinearScale, // Y-axis for numbers
-  PointElement, // The dots on line charts
-  LineElement, // The lines connecting dots
-  ArcElement, // The slices of doughnut/pie charts
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
   Title,
-  Tooltip, // The popup that shows on hover
-  Legend, // The color key below charts
-  Filler, // The filled area under a line chart
+  Tooltip,
+  Legend,
+  Filler,
 } from "chart.js";
 
+// Lucide icons for general UI
 import {
-  Users,
-  Calendar,
-  IndianRupee,
-  BedDouble,
   TrendingUp,
   TrendingDown,
   Activity,
-  Stethoscope,
-  FlaskConical,
-  ShoppingBag,
-  ArrowRight,
+  ArrowUpRight,
   Clock,
+  Sparkles,
 } from "lucide-react";
+
+// React Icons — Font Awesome — for medical/domain-specific card icons
+// FaUserInjured = patient (person with injury sling — clearly medical)
+// FaCalendarCheck = confirmed appointment
+// FaRupeeSign = Indian rupee currency
+// FaBed = hospital bed / bed occupancy
+// FaStethoscope = doctor on duty
+// FaPills = pharmacy orders
+// FaFlask = lab tests
+// FaProcedures = surgeries (patient on gurney with IV)
+import {
+  FaUserInjured,
+  FaCalendarCheck,
+  FaRupeeSign,
+  FaBed,
+} from "react-icons/fa";
+import { FaStethoscope, FaPills, FaFlask, FaProcedures } from "react-icons/fa";
 
 import {
   kpiData,
@@ -62,8 +48,6 @@ import {
   quickStats,
 } from "./dashboardData";
 
-// Register all Chart.js components we're using
-// Must be done ONCE before any chart renders
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -76,33 +60,33 @@ ChartJS.register(
   Filler,
 );
 
-// ── Icon map for KPI cards ─────────────────────────────────────────────────────
-// We store icon names as strings in data, then map to components here.
-// This way data files don't need to import React components.
 const kpiIcons = {
-  patients: <Users size={22} />,
-  appointments: <Calendar size={22} />,
-  revenue: <IndianRupee size={22} />,
-  beds: <BedDouble size={22} />,
+  patients: FaUserInjured, // injured person = patient, clearly medical
+  appointments: FaCalendarCheck, // calendar with checkmark = confirmed appointment
+  revenue: FaRupeeSign, // rupee symbol = Indian revenue
+  beds: FaBed, // bed icon = hospital bed occupancy
 };
 
-// ── Status badge component ────────────────────────────────────────────────────
-// Displays a colored pill badge for patient status
-// Defined outside Dashboard so it doesn't re-create on every render
 const StatusBadge = ({ status }) => {
-  const styles = {
-    Completed: { bg: "#f0fdf4", color: "#16a34a", dot: "#22c55e" },
+  const map = {
+    Completed: {
+      bg: "var(--hms-success-bg)",
+      color: "var(--hms-success)",
+      dot: "#22c55e",
+    },
     Admitted: { bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
-    Waiting: { bg: "#fffbeb", color: "#d97706", dot: "#f59e0b" },
-    Critical: { bg: "#fef2f2", color: "#dc2626", dot: "#ef4444" },
+    Waiting: {
+      bg: "var(--hms-warning-bg)",
+      color: "var(--hms-warning)",
+      dot: "#f59e0b",
+    },
+    Critical: {
+      bg: "var(--hms-danger-bg)",
+      color: "var(--hms-danger)",
+      dot: "#ef4444",
+    },
   };
-
-  const s = styles[status] || {
-    bg: "#f8fafc",
-    color: "#64748b",
-    dot: "#94a3b8",
-  };
-
+  const s = map[status] || { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" };
   return (
     <span
       style={{
@@ -118,29 +102,21 @@ const StatusBadge = ({ status }) => {
       }}
     >
       <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: s.dot,
-          display: "inline-block",
-        }}
+        style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot }}
       />
       {status}
     </span>
   );
 };
 
-// ── Type badge ────────────────────────────────────────────────────────────────
 const TypeBadge = ({ type }) => {
-  const colors = {
-    OPD: { bg: "#f0f9ff", color: "#0369a1" },
-    IPD: { bg: "#f5f3ff", color: "#6d28d9" },
-    Emergency: { bg: "#fef2f2", color: "#b91c1c" },
-    "Follow-up": { bg: "#f0fdf4", color: "#15803d" },
+  const map = {
+    OPD: { bg: "var(--hms-sky)", color: "#1d6fa4" },
+    IPD: { bg: "var(--hms-purple-bg)", color: "#7c3aed" },
+    Emergency: { bg: "var(--hms-danger-bg)", color: "#b91c1c" },
+    "Follow-up": { bg: "var(--hms-success-bg)", color: "#15803d" },
   };
-  const c = colors[type] || { bg: "#f8fafc", color: "#475569" };
-
+  const c = map[type] || { bg: "#f8fafc", color: "#475569" };
   return (
     <span
       style={{
@@ -157,23 +133,11 @@ const TypeBadge = ({ type }) => {
   );
 };
 
-// ── Quick stat icon map ───────────────────────────────────────────────────────
-const quickIcons = [
-  <Stethoscope size={16} />,
-  <Activity size={16} />,
-  <ShoppingBag size={16} />,
-  <FlaskConical size={16} />,
-];
+const quickIcons = [FaProcedures, FaStethoscope, FaPills, FaFlask];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
 const Dashboard = () => {
-  // Controls which time period is selected on the revenue chart
-  // "6m" = last 6 months, "1y" = full year
   const [revenuePeriod, setRevenuePeriod] = useState("1y");
 
-  // Today's date formatted nicely for the page header
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     year: "numeric",
@@ -181,62 +145,59 @@ const Dashboard = () => {
     day: "numeric",
   });
 
-  // ── Chart options ───────────────────────────────────────────────────────────
-  // options control appearance and behavior of charts
+  const cardStyle = {
+    background: "#fff",
+    borderRadius: 16,
+    border: "1px solid var(--hms-border)",
+    boxShadow: "var(--shadow-xs)",
+    transition: "box-shadow 0.2s, transform 0.2s",
+  };
 
   const lineOptions = {
     responsive: true,
-    maintainAspectRatio: false, // lets us control height via CSS
-    interaction: {
-      mode: "index", // tooltip shows ALL datasets at that X point
-      intersect: false,
-    },
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
     plugins: {
       legend: {
         position: "top",
         align: "end",
         labels: {
-          boxWidth: 10,
-          boxHeight: 10,
-          borderRadius: 5,
+          boxWidth: 8,
+          boxHeight: 8,
+          borderRadius: 4,
           usePointStyle: true,
           pointStyle: "circle",
-          font: { family: "'Inter', sans-serif", size: 11 },
+          font: { family: "var(--font-body)", size: 11 },
           color: "#64748b",
           padding: 16,
         },
       },
       tooltip: {
-        backgroundColor: "#0f172a",
-        titleFont: { family: "'Inter', sans-serif", size: 12 },
-        bodyFont: { family: "'Inter', sans-serif", size: 11 },
+        backgroundColor: "var(--hms-navy)",
+        titleFont: { family: "var(--font-body)", size: 12, weight: "600" },
+        bodyFont: { family: "var(--font-body)", size: 11 },
         padding: 12,
         cornerRadius: 10,
         callbacks: {
-          // Format tooltip values as Indian Rupees
           label: (ctx) => ` ₹${ctx.parsed.y.toLocaleString("en-IN")}`,
         },
       },
     },
     scales: {
       x: {
-        grid: { display: false }, // hide vertical grid lines
+        grid: { display: false },
         ticks: {
-          font: { family: "'Inter', sans-serif", size: 11 },
+          font: { family: "var(--font-body)", size: 11 },
           color: "#94a3b8",
         },
         border: { display: false },
       },
       y: {
-        grid: {
-          color: "#f1f5f9", // very subtle horizontal lines
-          drawBorder: false,
-        },
+        grid: { color: "#f1f5f9", drawBorder: false },
         ticks: {
-          font: { family: "'Inter', sans-serif", size: 11 },
+          font: { family: "var(--font-body)", size: 11 },
           color: "#94a3b8",
-          // Format Y-axis labels as ₹ lakhs
-          callback: (val) => `₹${(val / 100000).toFixed(1)}L`,
+          callback: (v) => `₹${(v / 100000).toFixed(0)}L`,
         },
         border: { display: false },
       },
@@ -246,35 +207,32 @@ const Dashboard = () => {
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: "72%", // controls the hole size — higher = thinner ring
+    cutout: "75%",
     plugins: {
       legend: {
         position: "bottom",
         labels: {
-          boxWidth: 10,
-          boxHeight: 10,
+          boxWidth: 8,
+          boxHeight: 8,
           usePointStyle: true,
           pointStyle: "circle",
-          font: { family: "'Inter', sans-serif", size: 11 },
+          font: { family: "var(--font-body)", size: 11 },
           color: "#64748b",
           padding: 12,
         },
       },
       tooltip: {
-        backgroundColor: "#0f172a",
-        titleFont: { family: "'Inter', sans-serif", size: 12 },
-        bodyFont: { family: "'Inter', sans-serif", size: 11 },
+        backgroundColor: "var(--hms-navy)",
+        titleFont: { family: "var(--font-body)", size: 12 },
+        bodyFont: { family: "var(--font-body)", size: 11 },
         padding: 12,
         cornerRadius: 10,
-        callbacks: {
-          label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%`,
-        },
+        callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%` },
       },
     },
   };
 
-  // Filter revenue data based on selected period
-  const filteredRevenueData =
+  const filteredRevenue =
     revenuePeriod === "6m"
       ? {
           ...revenueChartData,
@@ -286,388 +244,530 @@ const Dashboard = () => {
         }
       : revenueChartData;
 
-  // ── JSX ─────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Inject Inter font if not already loaded */}
+    <div style={{ fontFamily: "var(--font-body)", maxWidth: 1400 }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0);    }
         }
-        .db-au  { animation: fadeUp 0.5s cubic-bezier(.22,.68,0,1.15) both; }
-        .db-d1  { animation-delay: .05s; }
-        .db-d2  { animation-delay: .10s; }
-        .db-d3  { animation-delay: .15s; }
-        .db-d4  { animation-delay: .20s; }
-        .db-d5  { animation-delay: .25s; }
-        .db-d6  { animation-delay: .30s; }
+        .db-card { animation: fadeUp 0.45s cubic-bezier(.22,.68,0,1.15) both; }
+        .db-d1   { animation-delay: .04s; }
+        .db-d2   { animation-delay: .08s; }
+        .db-d3   { animation-delay: .12s; }
+        .db-d4   { animation-delay: .16s; }
+        .db-d5   { animation-delay: .20s; }
+        .db-d6   { animation-delay: .24s; }
+        .db-d7   { animation-delay: .28s; }
 
-        .kpi-card {
-          background: #fff;
-          border-radius: 16px;
-          padding: 1.25rem 1.5rem;
-          border: 1px solid #f1f5f9;
-          transition: transform .2s, box-shadow .2s;
-          cursor: default;
-        }
-        .kpi-card:hover {
+        .kpi-hover:hover {
+          box-shadow: var(--shadow-md) !important;
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.07);
         }
-
-        .chart-card {
-          background: #fff;
-          border-radius: 16px;
-          padding: 1.5rem;
-          border: 1px solid #f1f5f9;
-        }
-
-        .period-btn {
-          padding: 4px 12px;
-          border-radius: 8px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          border: none;
-          cursor: pointer;
-          font-family: 'Inter', sans-serif;
-          transition: background .15s, color .15s;
-        }
-        .period-btn.active {
-          background: #0f172a;
-          color: #fff;
-        }
-        .period-btn.inactive {
-          background: #f1f5f9;
-          color: #64748b;
-        }
-        .period-btn.inactive:hover {
-          background: #e2e8f0;
-        }
+        .patient-row:hover { background: var(--hms-sky) !important; }
+        /* ── Mobile responsive fixes ── */
+@media (max-width: 767px) {
+  .charts-row {
+    grid-template-columns: 1fr !important;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 479px) {
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
       `}</style>
 
-      {/* ── 1. PAGE HEADER ── */}
-      <div className="db-au flex items-start justify-between mb-6">
+      {/* ── Page Header ── */}
+      <div
+        className="db-card"
+        style={{
+          marginBottom: "1.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "0.75rem",
+        }}
+      >
         <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              marginBottom: "0.2rem",
+            }}
+          >
+            <Sparkles size={16} style={{ color: "var(--hms-blue)" }} />
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "var(--hms-blue)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Overview
+            </span>
+          </div>
           <h1
             style={{
-              fontSize: "1.5rem",
+              fontFamily: "var(--font-display)",
+              fontSize: "1.65rem",
               fontWeight: 800,
-              color: "#0f172a",
+              color: "var(--hms-navy)",
               margin: 0,
-              letterSpacing: "-.02em",
+              letterSpacing: "-0.025em",
             }}
           >
             Dashboard
           </h1>
           <p
             style={{
-              fontSize: "0.82rem",
-              color: "#94a3b8",
-              marginTop: "0.25rem",
+              fontSize: "0.8rem",
+              color: "#64748b",
+              margin: "0.2rem 0 0",
               display: "flex",
               alignItems: "center",
               gap: 5,
+              fontWeight: 500,
             }}
           >
-            <Clock size={13} />
+            <Clock size={13} style={{ color: "#94a3b8" }} />
             {today}
           </p>
         </div>
 
-        {/* Live indicator */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            padding: "6px 14px",
-            background: "#f0fdf4",
-            border: "1px solid #bbf7d0",
-            borderRadius: 20,
-          }}
-        >
-          <span
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
             style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "#22c55e",
-              display: "inline-block",
-              animation: "pulse 2s infinite",
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "6px 14px",
+              background: "var(--hms-success-bg)",
+              border: "1px solid rgba(13,158,110,0.2)",
+              borderRadius: 20,
             }}
-          />
-          <span
-            style={{ fontSize: "0.72rem", fontWeight: 600, color: "#16a34a" }}
           >
-            Live
-          </span>
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "var(--hms-success)",
+                display: "inline-block",
+                animation: "ripple 2s infinite",
+              }}
+            />
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "var(--hms-success)",
+              }}
+            >
+              Live
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── 2. KPI CARDS ── */}
-      {/* grid with 4 equal columns — responsive: 1 col on mobile, 2 on tablet, 4 on desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
-        {kpiData.map((kpi, i) => (
-          <div key={kpi.id} className={`kpi-card db-au db-d${i + 1}`}>
-            {/* Top row: title + icon */}
+      {/* ── KPI Cards ── */}
+      <div
+        className="kpi-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: "1rem",
+          marginBottom: "1rem",
+        }}
+      >
+        {kpiData.map((kpi, i) => {
+          const Icon = kpiIcons[kpi.icon];
+          return (
+            <div
+              key={kpi.id}
+              className={`db-card kpi-hover db-d${i + 1}`}
+              style={{
+                ...cardStyle,
+                padding: "1.25rem 1.375rem",
+                cursor: "default",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "#64748b",
+                    margin: 0,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.07em",
+                  }}
+                >
+                  {kpi.title}
+                </p>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 11,
+                    background: kpi.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: kpi.color,
+                    flexShrink: 0,
+                  }}
+                >
+                  {/* react-icons uses size prop but no strokeWidth */}
+                  <Icon size={18} />
+                </div>
+              </div>
+
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.7rem",
+                  fontWeight: 800,
+                  color: "var(--hms-navy)",
+                  margin: "0 0 0.5rem",
+                  letterSpacing: "-0.025em",
+                  lineHeight: 1.1,
+                }}
+              >
+                {kpi.value}
+              </p>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                {kpi.trend === "up" ? (
+                  <TrendingUp
+                    size={13}
+                    style={{ color: "var(--hms-success)" }}
+                  />
+                ) : (
+                  <TrendingDown
+                    size={13}
+                    style={{ color: "var(--hms-danger)" }}
+                  />
+                )}
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    color:
+                      kpi.trend === "up"
+                        ? "var(--hms-success)"
+                        : "var(--hms-danger)",
+                  }}
+                >
+                  {kpi.change}
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "#94a3b8",
+                    fontWeight: 500,
+                  }}
+                >
+                  {kpi.period}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Quick Stats ── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: "0.75rem",
+          marginBottom: "1rem",
+        }}
+      >
+        {quickStats.map((stat, i) => {
+          const Icon = quickIcons[i];
+          return (
+            <div
+              key={stat.label}
+              className={`db-card db-d5`}
+              style={{
+                ...cardStyle,
+                padding: "0.875rem 1.125rem",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: "var(--hms-sky)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--hms-blue)",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon size={16} />
+              </div>
+              <div>
+                <p
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "1.2rem",
+                    fontWeight: 800,
+                    color: "var(--hms-navy)",
+                    margin: 0,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {stat.value}
+                </p>
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "#64748b",
+                    margin: "2px 0 0",
+                    fontWeight: 500,
+                  }}
+                >
+                  {stat.label}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Charts Row ── */}
+      <div style={{ marginBottom: "1rem" }}>
+        <div
+          className="charts-row"
+          style={{
+            display: "grid",
+            gap: "1rem",
+            gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)",
+          }}
+        >
+          {/* Revenue chart */}
+          <div
+            className="db-card db-d5"
+            style={{ ...cardStyle, padding: "1.375rem" }}
+          >
             <div
               style={{
                 display: "flex",
                 alignItems: "flex-start",
                 justifyContent: "space-between",
-                marginBottom: "1rem",
+                marginBottom: "1.25rem",
+                flexWrap: "wrap",
+                gap: 8,
               }}
             >
-              <p
-                style={{
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  color: "#64748b",
-                  margin: 0,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                {kpi.title}
-              </p>
-              {/* Colored icon circle */}
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
-                  background: kpi.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: kpi.color,
-                  flexShrink: 0,
-                }}
-              >
-                {kpiIcons[kpi.icon]}
+              <div>
+                <h3
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "1rem",
+                    fontWeight: 800,
+                    color: "var(--hms-navy)",
+                    margin: 0,
+                  }}
+                >
+                  Revenue Overview
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#64748b",
+                    marginTop: 3,
+                    fontWeight: 500,
+                  }}
+                >
+                  OPD & IPD revenue trends
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: 5 }}>
+                {["6m", "1y"].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setRevenuePeriod(p)}
+                    style={{
+                      padding: "4px 12px",
+                      borderRadius: 8,
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      background:
+                        revenuePeriod === p
+                          ? "var(--hms-navy)"
+                          : "var(--hms-surface)",
+                      color: revenuePeriod === p ? "#fff" : "#64748b",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {p === "6m" ? "6 Months" : "1 Year"}
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Value */}
-            <p
-              style={{
-                fontSize: "1.65rem",
-                fontWeight: 800,
-                color: "#0f172a",
-                margin: "0 0 0.5rem 0",
-                letterSpacing: "-.02em",
-              }}
-            >
-              {kpi.value}
-            </p>
-
-            {/* Trend */}
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              {kpi.trend === "up" ? (
-                <TrendingUp size={14} style={{ color: "#10b981" }} />
-              ) : (
-                <TrendingDown size={14} style={{ color: "#ef4444" }} />
-              )}
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  color: kpi.trend === "up" ? "#10b981" : "#ef4444",
-                }}
-              >
-                {kpi.change}
-              </span>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-                {kpi.period}
-              </span>
+            <div style={{ height: 240 }}>
+              <Line data={filteredRevenue} options={lineOptions} />
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* ── 3. QUICK STATS BAR ── */}
-      <div className="db-au db-d5 grid grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
-        {quickStats.map((stat, i) => (
+          {/* Doughnut chart */}
           <div
-            key={stat.label}
-            style={{
-              background: "#fff",
-              border: "1px solid #f1f5f9",
-              borderRadius: 12,
-              padding: "0.75rem 1.25rem",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
+            className="db-card db-d6"
+            style={{ ...cardStyle, padding: "1.375rem" }}
           >
-            <div style={{ color: "#0ea5e9" }}>{quickIcons[i]}</div>
-            <div>
-              <p
-                style={{
-                  fontSize: "1.1rem",
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  margin: 0,
-                }}
-              >
-                {stat.value}
-              </p>
-              <p style={{ fontSize: "0.72rem", color: "#94a3b8", margin: 0 }}>
-                {stat.label}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── 4. CHARTS ROW ── */}
-      <div className="db-au db-d5 grid grid-cols-1 xl:grid-cols-3 gap-4 mb-5">
-        {/* Revenue Line Chart — takes 2/3 width on large screens */}
-        <div className="chart-card xl:col-span-2">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "1.25rem",
-            }}
-          >
-            <div>
-              <h3
-                style={{
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  color: "#0f172a",
-                  margin: 0,
-                }}
-              >
-                Revenue Overview
-              </h3>
-              <p
-                style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 2 }}
-              >
-                OPD & IPD revenue trends
-              </p>
-            </div>
-
-            {/* Period toggle buttons */}
-            <div style={{ display: "flex", gap: 6 }}>
-              {["6m", "1y"].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setRevenuePeriod(p)}
-                  className={`period-btn ${revenuePeriod === p ? "active" : "inactive"}`}
-                >
-                  {p === "6m" ? "6 Months" : "1 Year"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Chart container — height must be set explicitly */}
-          <div style={{ height: 260 }}>
-            <Line data={filteredRevenueData} options={lineOptions} />
-          </div>
-        </div>
-
-        {/* Appointment Doughnut Chart — takes 1/3 width */}
-        <div className="chart-card">
-          <div style={{ marginBottom: "1.25rem" }}>
             <h3
               style={{
-                fontSize: "0.95rem",
-                fontWeight: 700,
-                color: "#0f172a",
-                margin: 0,
+                fontFamily: "var(--font-display)",
+                fontSize: "1rem",
+                fontWeight: 800,
+                color: "var(--hms-navy)",
+                margin: "0 0 3px",
               }}
             >
               Appointments
             </h3>
-            <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 2 }}>
-              By category today
-            </p>
-          </div>
-
-          <div style={{ height: 200 }}>
-            <Doughnut data={appointmentChartData} options={doughnutOptions} />
-          </div>
-
-          {/* Total count in the center is hard with Chart.js, so we show it below */}
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "1rem",
-              paddingTop: "1rem",
-              borderTop: "1px solid #f1f5f9",
-            }}
-          >
             <p
               style={{
-                fontSize: "1.75rem",
-                fontWeight: 800,
-                color: "#0f172a",
-                margin: 0,
+                fontSize: "0.75rem",
+                color: "#64748b",
+                marginBottom: "1.25rem",
+                fontWeight: 500,
               }}
             >
-              128
+              By category today
             </p>
-            <p style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Total Today</p>
+            <div style={{ height: 185 }}>
+              <Doughnut data={appointmentChartData} options={doughnutOptions} />
+            </div>
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: "1rem",
+                paddingTop: "0.875rem",
+                borderTop: "1px solid var(--hms-border)",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "1.6rem",
+                  fontWeight: 800,
+                  color: "var(--hms-navy)",
+                  margin: 0,
+                }}
+              >
+                128
+              </p>
+              <p
+                style={{
+                  fontSize: "0.72rem",
+                  color: "#64748b",
+                  fontWeight: 500,
+                }}
+              >
+                Total appointments today
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── 5. RECENT PATIENTS TABLE ── */}
-      <div className="db-au db-d6 chart-card">
+      {/* ── Recent Patients Table ── */}
+      <div
+        className="db-card db-d7"
+        style={{ ...cardStyle, padding: "1.375rem" }}
+      >
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             marginBottom: "1.25rem",
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
           <div>
             <h3
               style={{
-                fontSize: "0.95rem",
-                fontWeight: 700,
-                color: "#0f172a",
+                fontFamily: "var(--font-display)",
+                fontSize: "1rem",
+                fontWeight: 800,
+                color: "var(--hms-navy)",
                 margin: 0,
               }}
             >
               Recent Patients
             </h3>
-            <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: 2 }}>
-              Latest patient activity today
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "#64748b",
+                marginTop: 3,
+                fontWeight: 500,
+              }}
+            >
+              Latest activity — updated live
             </p>
           </div>
-
           <button
             style={{
               display: "flex",
               alignItems: "center",
               gap: 5,
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              color: "#0ea5e9",
-              background: "none",
-              border: "none",
+              padding: "6px 14px",
+              background: "var(--hms-sky)",
+              border: "1px solid rgba(29,111,164,0.2)",
+              borderRadius: 9,
               cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              color: "var(--hms-blue)",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#d0e9f8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--hms-sky)";
             }}
           >
-            View All <ArrowRight size={14} />
+            View All <ArrowUpRight size={13} />
           </button>
         </div>
 
-        {/* Table — horizontally scrollable on small screens */}
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ borderBottom: "1.5px solid #f1f5f9" }}>
+              <tr style={{ borderBottom: "1.5px solid var(--hms-border)" }}>
                 {[
                   "Patient ID",
                   "Name",
@@ -680,13 +780,13 @@ const Dashboard = () => {
                   <th
                     key={h}
                     style={{
-                      padding: "0.6rem 1rem",
+                      padding: "0.625rem 1rem",
                       textAlign: "left",
-                      fontSize: "0.7rem",
+                      fontSize: "0.68rem",
                       fontWeight: 700,
                       color: "#94a3b8",
                       textTransform: "uppercase",
-                      letterSpacing: "0.07em",
+                      letterSpacing: "0.08em",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -699,26 +799,22 @@ const Dashboard = () => {
               {recentPatients.map((p, i) => (
                 <tr
                   key={p.id}
+                  className="patient-row"
                   style={{
                     borderBottom:
                       i < recentPatients.length - 1
                         ? "1px solid #f8fafc"
                         : "none",
                     transition: "background 0.15s",
+                    cursor: "pointer",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#f8fafc")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
                 >
                   <td
                     style={{
                       padding: "0.875rem 1rem",
                       fontSize: "0.8rem",
-                      fontWeight: 600,
-                      color: "#0ea5e9",
+                      fontWeight: 700,
+                      color: "var(--hms-blue)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -728,8 +824,8 @@ const Dashboard = () => {
                     style={{
                       padding: "0.875rem 1rem",
                       fontSize: "0.875rem",
-                      fontWeight: 500,
-                      color: "#0f172a",
+                      fontWeight: 600,
+                      color: "var(--hms-navy)",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -738,8 +834,9 @@ const Dashboard = () => {
                   <td
                     style={{
                       padding: "0.875rem 1rem",
-                      fontSize: "0.875rem",
+                      fontSize: "0.85rem",
                       color: "#64748b",
+                      fontWeight: 500,
                     }}
                   >
                     {p.age}
@@ -753,8 +850,9 @@ const Dashboard = () => {
                     style={{
                       padding: "0.875rem 1rem",
                       fontSize: "0.82rem",
-                      color: "#64748b",
+                      color: "#475569",
                       whiteSpace: "nowrap",
+                      fontWeight: 500,
                     }}
                   >
                     {p.doctor}
@@ -770,6 +868,7 @@ const Dashboard = () => {
                       fontSize: "0.78rem",
                       color: "#94a3b8",
                       whiteSpace: "nowrap",
+                      fontWeight: 500,
                     }}
                   >
                     {p.time}
@@ -782,9 +881,13 @@ const Dashboard = () => {
       </div>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-          50%       { opacity: 0.7; box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+        @keyframes ripple {
+          0%   { box-shadow: 0 0 0 0 rgba(13,158,110,0.4); }
+          70%  { box-shadow: 0 0 0 8px rgba(13,158,110,0); }
+          100% { box-shadow: 0 0 0 0 rgba(13,158,110,0); }
+        }
+        @media (max-width: 1024px) {
+          .charts-row { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

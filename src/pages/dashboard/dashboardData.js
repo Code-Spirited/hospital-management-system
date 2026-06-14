@@ -1,16 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//
-//
-// PURPOSE:
-//   All placeholder/mock data for the Dashboard page lives here.
-//   When the backend is ready in Week 8, this file gets replaced
-//   with real Axios API calls. The Dashboard component itself never changes.
-//
-// This separation is called the "data layer" pattern.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ── KPI Cards ────────────────────────────────────────────────────────────────
-// Each card shows one key metric with a trend indicator
 export const kpiData = [
   {
     id: 1,
@@ -19,7 +6,7 @@ export const kpiData = [
     change: "+12.5%",
     trend: "up",
     period: "vs last month",
-    color: "#0ea5e9", // sky blue
+    color: "#0ea5e9",
     bg: "#f0f9ff",
     icon: "patients",
   },
@@ -30,7 +17,7 @@ export const kpiData = [
     change: "+4.3%",
     trend: "up",
     period: "vs yesterday",
-    color: "#8b5cf6", // violet
+    color: "#8b5cf6",
     bg: "#f5f3ff",
     icon: "appointments",
   },
@@ -41,7 +28,7 @@ export const kpiData = [
     change: "+18.2%",
     trend: "up",
     period: "vs last month",
-    color: "#10b981", // emerald
+    color: "#10b981",
     bg: "#f0fdf4",
     icon: "revenue",
   },
@@ -52,13 +39,13 @@ export const kpiData = [
     change: "-3.1%",
     trend: "down",
     period: "vs last week",
-    color: "#f59e0b", // amber
+    color: "#f59e0b",
     bg: "#fffbeb",
     icon: "beds",
   },
 ];
 
-// ── Revenue Chart Data (Line Chart) ──────────────────────────────────────────
+// Revenue Chart Data
 export const revenueChartData = {
   labels: [
     "Jan",
@@ -88,7 +75,7 @@ export const revenueChartData = {
       pointRadius: 4,
       pointHoverRadius: 6,
       fill: true,
-      tension: 0.4, // makes the line curved instead of sharp
+      tension: 0.4,
     },
     {
       label: "IPD Revenue",
@@ -108,7 +95,7 @@ export const revenueChartData = {
   ],
 };
 
-// ── Appointment Chart Data (Doughnut) ─────────────────────────────────────────
+// Appointment Chart Data
 export const appointmentChartData = {
   labels: ["OPD", "IPD", "Emergency", "Follow-up"],
   datasets: [
@@ -122,7 +109,7 @@ export const appointmentChartData = {
   ],
 };
 
-// ── Recent Patients ───────────────────────────────────────────────────────────
+// Recent Patients
 export const recentPatients = [
   {
     id: "P-1042",
@@ -189,7 +176,7 @@ export const recentPatients = [
   },
 ];
 
-// ── Quick Stats (small summary numbers below KPI cards) ───────────────────────
+// Quick Stats
 export const quickStats = [
   { label: "Surgeries Today", value: "8" },
   { label: "Doctors On Duty", value: "24" },

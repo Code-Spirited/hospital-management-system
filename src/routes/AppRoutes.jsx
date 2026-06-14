@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import Dashboard from "../pages/dashboard/Dashboard";
 
-// Auth pages — imported from their files
+// Auth pages
 import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 
@@ -20,16 +20,13 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Redirect root URL to login page */}
-      {/* A real app shows login first, not dashboard */}
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* ── Auth routes — NO sidebar/header ── */}
-      {/* These are standalone, outside MainLayout */}
+      {/* Auth routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* ── Protected routes — WITH sidebar/header ── */}
-      {/* Everything nested here renders inside MainLayout's <Outlet /> */}
+      {/* Protected routes */}
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/opd" element={<PlaceholderPage title="OPD Module" />} />

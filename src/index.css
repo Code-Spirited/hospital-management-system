@@ -1,3 +1,172 @@
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/manrope/700.css";
+@import "@fontsource/manrope/800.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  /* Sidebar palette — deep navy with high-contrast text */
+  --sidebar-bg: #0b1526;
+  --sidebar-bg-2: #0f1e35;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-text: #a8c4e0; /* inactive text — clearly visible */
+  --sidebar-text-hover: #d4e8f7; /* hover text */
+  --sidebar-text-active: #ffffff; /* active text — full white */
+  --sidebar-icon: #6a9abf; /* inactive icons */
+  --sidebar-label: #3d6b8f; /* section label */
+  --sidebar-active-bg: #1d4ed8; /* active item bg — vivid blue */
+  --sidebar-active-glow: rgba(37, 99, 235, 0.45);
+  --sidebar-hover-bg: rgba(168, 196, 224, 0.08);
+
+  /* App palette */
+  --hms-blue: #2563eb;
+  --hms-blue-dark: #1d4ed8;
+  --hms-blue-light: #eff6ff;
+  --hms-sky: #e0f2fe;
+  --hms-violet: #7c3aed;
+  --hms-violet-light: #f5f3ff;
+  --hms-teal: #0d9488;
+  --hms-teal-light: #f0fdfa;
+
+  --hms-navy: #0f172a;
+  --hms-surface: #f0f4fb;
+  --hms-card: #ffffff;
+  --hms-border: #e2e8f0;
+  --hms-border-2: #c8d6e8;
+
+  --hms-success: #059669;
+  --hms-success-bg: #ecfdf5;
+  --hms-warning: #d97706;
+  --hms-warning-bg: #fffbeb;
+  --hms-danger: #dc2626;
+  --hms-danger-bg: #fef2f2;
+
+  --font-display: "Manrope", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+
+  --shadow-xs: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.14);
+  --shadow-xl: 0 16px 48px rgba(15, 23, 42, 0.18);
+}
+
+/* ── Global resets ─────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--hms-surface);
+  color: var(--hms-navy);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c8d6e8;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HMS LAYOUT SYSTEM
+   All positioning is controlled here via CSS — zero inline styles.
+   This ensures media queries can override without !important battles.
+════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Sidebar widths ── */
+[data-sidebar="open"] .hms-header {
+  left: 256px;
+}
+[data-sidebar="closed"] .hms-header {
+  left: 64px;
+}
+[data-sidebar="open"] .hms-main {
+  margin-left: 256px;
+}
+[data-sidebar="closed"] .hms-main {
+  margin-left: 64px;
+}
+
+/* Smooth transitions */
+.hms-header,
+.hms-main {
+  transition:
+    left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Desktop only ── */
+@media (min-width: 1024px) {
+  /* Hamburger is NEVER shown on desktop */
+  .hms-hamburger {
+    display: none !important;
+  }
+
+  /* Mobile drawer + backdrop are NEVER shown on desktop */
+  .hms-mobile-sidebar {
+    display: none !important;
+  }
+  .hms-mobile-backdrop {
+    display: none !important;
+  }
+}
+
+/* ── Mobile / Tablet (< 1024px) ── */
+@media (max-width: 1023px) {
+  /* Header spans full width on mobile */
+  .hms-header {
+    left: 0 !important;
+  }
+
+  /* No sidebar push on mobile — sidebar is an overlay drawer */
+  .hms-main {
+    margin-left: 0 !important;
+  }
+
+  /* Desktop sidebar is NEVER shown on mobile */
+  .hms-desktop-sidebar {
+    display: none !important;
+  }
+
+  /* Hamburger IS shown on mobile */
+  .hms-hamburger {
+    display: flex !important;
+  }
+  /* ── Mobile typography and spacing ─────────────────────────────────────────── */
+  @media (max-width: 479px) {
+    /* Prevent horizontal overflow on very small screens */
+    body {
+      overflow-x: hidden;
+    }
+
+    /* Scale down large display numbers on mobile */
+    .hms-main * {
+      max-width: 100%;
+    }
+  }
+}
