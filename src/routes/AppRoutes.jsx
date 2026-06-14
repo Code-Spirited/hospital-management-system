@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
+import Dashboard from "../pages/dashboard/Dashboard";
 
 // Auth pages — imported from their files
 import Login from "../pages/auth/Login";
@@ -30,10 +31,7 @@ const AppRoutes = () => {
       {/* ── Protected routes — WITH sidebar/header ── */}
       {/* Everything nested here renders inside MainLayout's <Outlet /> */}
       <Route element={<MainLayout />}>
-        <Route
-          path="/dashboard"
-          element={<PlaceholderPage title="Dashboard" />}
-        />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/opd" element={<PlaceholderPage title="OPD Module" />} />
         <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />
         <Route
