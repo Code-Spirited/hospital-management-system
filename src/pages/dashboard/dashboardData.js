@@ -255,3 +255,106 @@ export const quickStats = [
   { label: "Pharmacy Orders", value: "156" },
   { label: "Lab Tests Pending", value: "43" },
 ];
+
+// ── Appointment Analytics Data ────────────────────────────────────────────────
+//
+// All appointment data below is mock/placeholder for the UI.
+// In Week 8, each export will be replaced by an Axios call to the HMS API.
+// The component that consumes this data will not need to change — only this file.
+
+// Day-wise breakdown for the current week (Mon–Sat).
+// Each entry holds counts by appointment type so the bar chart can be stacked
+// or grouped without restructuring the data.
+export const appointmentsByDay = [
+  { day: "Mon", OPD: 45, IPD: 12, Emergency: 8, FollowUp: 15 },
+  { day: "Tue", OPD: 52, IPD: 10, Emergency: 6, FollowUp: 18 },
+  { day: "Wed", OPD: 48, IPD: 14, Emergency: 11, FollowUp: 20 },
+  { day: "Thu", OPD: 61, IPD: 9, Emergency: 7, FollowUp: 22 },
+  { day: "Fri", OPD: 55, IPD: 16, Emergency: 9, FollowUp: 17 },
+  { day: "Sat", OPD: 38, IPD: 8, Emergency: 5, FollowUp: 14 },
+];
+
+// 30-day rolling appointment trend.
+// Includes both total and outcome breakdown so we can layer
+// a completion area over the total for visual context.
+export const appointmentTrend30d = [
+  { date: "17 May", total: 88, completed: 74, cancelled: 6 },
+  { date: "18 May", total: 95, completed: 80, cancelled: 8 },
+  { date: "19 May", total: 82, completed: 71, cancelled: 5 },
+  { date: "20 May", total: 104, completed: 90, cancelled: 7 },
+  { date: "21 May", total: 98, completed: 85, cancelled: 6 },
+  { date: "22 May", total: 110, completed: 96, cancelled: 8 },
+  { date: "23 May", total: 76, completed: 66, cancelled: 4 },
+  { date: "24 May", total: 91, completed: 78, cancelled: 7 },
+  { date: "25 May", total: 103, completed: 89, cancelled: 9 },
+  { date: "26 May", total: 97, completed: 84, cancelled: 6 },
+  { date: "27 May", total: 115, completed: 100, cancelled: 8 },
+  { date: "28 May", total: 108, completed: 93, cancelled: 7 },
+  { date: "29 May", total: 122, completed: 106, cancelled: 9 },
+  { date: "30 May", total: 79, completed: 68, cancelled: 4 },
+  { date: "31 May", total: 94, completed: 81, cancelled: 6 },
+  { date: "1 Jun", total: 106, completed: 92, cancelled: 8 },
+  { date: "2 Jun", total: 118, completed: 102, cancelled: 9 },
+  { date: "3 Jun", total: 99, completed: 86, cancelled: 7 },
+  { date: "4 Jun", total: 125, completed: 109, cancelled: 10 },
+  { date: "5 Jun", total: 112, completed: 97, cancelled: 8 },
+  { date: "6 Jun", total: 130, completed: 113, cancelled: 11 },
+  { date: "7 Jun", total: 84, completed: 73, cancelled: 5 },
+  { date: "8 Jun", total: 107, completed: 93, cancelled: 7 },
+  { date: "9 Jun", total: 119, completed: 104, cancelled: 9 },
+  { date: "10 Jun", total: 128, completed: 112, cancelled: 9 },
+  { date: "11 Jun", total: 115, completed: 100, cancelled: 8 },
+  { date: "12 Jun", total: 134, completed: 117, cancelled: 10 },
+  { date: "13 Jun", total: 108, completed: 94, cancelled: 7 },
+  { date: "14 Jun", total: 122, completed: 106, cancelled: 9 },
+  { date: "15 Jun", total: 128, completed: 112, cancelled: 8 },
+];
+
+// Doctor workload for the current month.
+// Used in a horizontal bar chart. Sorted descending so the busiest
+// doctor appears at the top — more natural to scan.
+export const doctorWorkload = [
+  { name: "Dr. Priya Mehta", specialty: "General Medicine", appointments: 148 },
+  { name: "Dr. Anil Kumar", specialty: "Surgery", appointments: 132 },
+  { name: "Dr. Neha Singh", specialty: "Emergency", appointments: 119 },
+  { name: "Dr. Ravi Gupta", specialty: "Cardiology", appointments: 104 },
+  { name: "Dr. Sunita Rao", specialty: "Gynaecology", appointments: 97 },
+  { name: "Dr. Mohammed Ali", specialty: "Orthopaedics", appointments: 88 },
+];
+
+// Hourly patient volume — used to identify peak staffing periods.
+// Hours outside 8AM–8PM are omitted as the hospital runs outpatient
+// services only in this window. Emergency operates 24/7 separately.
+export const peakHoursData = [
+  { hour: "8 AM", patients: 18 },
+  { hour: "9 AM", patients: 42 },
+  { hour: "10 AM", patients: 65 },
+  { hour: "11 AM", patients: 72 },
+  { hour: "12 PM", patients: 58 },
+  { hour: "1 PM", patients: 34 },
+  { hour: "2 PM", patients: 48 },
+  { hour: "3 PM", patients: 61 },
+  { hour: "4 PM", patients: 55 },
+  { hour: "5 PM", patients: 38 },
+  { hour: "6 PM", patients: 24 },
+  { hour: "7 PM", patients: 12 },
+];
+
+// Appointment outcome distribution — used in the pie/donut chart.
+// These four states cover every possible appointment lifecycle.
+export const appointmentOutcomes = [
+  { name: "Completed", value: 87, color: "#059669" },
+  { name: "Pending", value: 8, color: "#d97706" },
+  { name: "Cancelled", value: 3, color: "#ef4444" },
+  { name: "No-Show", value: 2, color: "#94a3b8" },
+];
+
+// Summary KPIs shown in the analytics section header row.
+export const appointmentSummary = {
+  totalThisWeek: 589,
+  vsLastWeek: "+8.2%",
+  completionRate: "87%",
+  avgWaitTime: "18 min",
+  cancellationRate: "3%",
+  noShowRate: "2%",
+};

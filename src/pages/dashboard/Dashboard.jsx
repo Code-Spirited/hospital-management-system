@@ -1,3 +1,4 @@
+import AppointmentAnalytics from "./AppointmentAnalytics";
 import { useState } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
@@ -462,7 +463,7 @@ const Dashboard = () => {
         }
       `}</style>
 
-      {/* 1. PAGE HEADER */}
+      {/* PAGE HEADER */}
       <div
         className="db-au"
         style={{
@@ -559,7 +560,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 2. KPI CARDS (with sparklines)*/}
+      {/* KPI CARDS (with sparklines)*/}
       <div className="kpi-grid">
         {kpiData.map((kpi, i) => {
           const Icon = kpiIcons[kpi.icon];
@@ -682,7 +683,7 @@ const Dashboard = () => {
         })}
       </div>
 
-      {/* 3. QUICK STATS BAR */}
+      {/* QUICK STATS BAR */}
       <div className="quick-grid db-au db-d5">
         {quickStats.map((stat, i) => {
           const Icon = quickIcons[i];
@@ -741,7 +742,7 @@ const Dashboard = () => {
         })}
       </div>
 
-      {/* 4. REVENUE BREAKDOWN SECTION */}
+      {/* REVENUE BREAKDOWN SECTION */}
       <div className="db-au db-d5" style={{ marginBottom: "1rem" }}>
         {/* Section header */}
         <div
@@ -799,7 +800,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 5. CHARTS ROW */}
+      {/* CHARTS ROW */}
       <div className="charts-row db-au db-d6">
         {/* Revenue Line Chart */}
         <div style={{ ...card, padding: "1.375rem" }}>
@@ -921,7 +922,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* 6. RECENT PATIENTS TABLE */}
+      {/* RECENT PATIENTS TABLE */}
       <div className="db-au db-d7" style={{ ...card, padding: "1.375rem" }}>
         <div
           style={{
@@ -1095,6 +1096,8 @@ const Dashboard = () => {
           </table>
         </div>
       </div>
+      {/* APPOINTMENT ANALYTICS */}
+      <AppointmentAnalytics />
     </div>
   );
 };
