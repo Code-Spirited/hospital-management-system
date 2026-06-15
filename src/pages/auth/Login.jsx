@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -91,6 +92,9 @@ export default function Login() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      toast.success("Welcome back, Admin!", {
+        description: "You have successfully signed in.",
+      });
       navigate("/dashboard");
     }, 1800);
   };
@@ -339,7 +343,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* ── RIGHT PANEL ── */}
+        {/* RIGHT PANEL */}
         <div
           className="lf-right w-full lg:w-1/2 flex items-center justify-center px-8 py-8"
           style={{ background: "#f8fafc" }}
@@ -528,7 +532,7 @@ export default function Login() {
                   </p>
                 )}
 
-                {/* Live password rules — only shown when user starts typing */}
+                {/* Live password rules */}
                 {password.length > 0 && (
                   <div
                     style={{

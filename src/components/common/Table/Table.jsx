@@ -10,7 +10,7 @@ const Table = ({
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       <table className="w-full border-collapse">
-        {/* ── Table Head ── */}
+        {/* Table Head */}
         <thead>
           <tr
             style={{
@@ -38,9 +38,9 @@ const Table = ({
           </tr>
         </thead>
 
-        {/* ── Table Body ── */}
+        {/* Table Body */}
         <tbody>
-          {/* Loading state — shows animated skeleton rows */}
+          {/* Loading state */}
           {loading &&
             Array.from({ length: 5 }).map((_, rowIdx) => (
               <tr key={rowIdx} style={{ borderBottom: "1px solid #f1f5f9" }}>

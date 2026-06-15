@@ -161,7 +161,7 @@ export default function ForgotPassword() {
       `}</style>
 
       <div className="fp-root h-screen overflow-hidden flex">
-        {/* ── LEFT PANEL — identical to Login ── */}
+        {/* LEFT PANEL — same as Login */}
         <div className="fp-ai hidden lg:block w-1/2 relative overflow-hidden flex-shrink-0">
           <img
             src={loginImage}
@@ -281,7 +281,7 @@ export default function ForgotPassword() {
           </div>
         </div>
 
-        {/* ── RIGHT PANEL ── */}
+        {/* RIGHT PANEL */}
         <div
           className="fp-right w-full lg:w-1/2 flex items-center justify-center px-8 py-8"
           style={{ background: "#f8fafc" }}
@@ -311,7 +311,7 @@ export default function ForgotPassword() {
               </span>
             </div>
 
-            {/* ── Stage 1: Form ── */}
+            {/* Stage 1: Form */}
             {!submitted ? (
               <>
                 <div className="fp-au fp-d1 mb-8">
@@ -441,7 +441,7 @@ export default function ForgotPassword() {
                 </button>
               </>
             ) : (
-              /* ── Stage 2: Success ── */
+              /* Stage 2: Success */
               <div className="text-center">
                 <div
                   className="fp-pop inline-flex items-center justify-center mb-6"

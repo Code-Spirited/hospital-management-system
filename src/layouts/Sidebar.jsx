@@ -1,29 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Sidebar.jsx
-//
-// THREE KEY CLASSES used by CSS in index.css:
-//
-//   .hms-desktop-sidebar
-//     → Visible on desktop (≥1024px)
-//     → display: none !important on mobile (index.css)
-//
-//   .hms-mobile-sidebar
-//     → Visible on mobile/tablet (<1024px)
-//     → display: none !important on desktop (index.css)
-//     → Uses transform for slide-in animation
-//
-//   .hms-mobile-backdrop
-//     → Dark overlay, mobile/tablet only
-//     → display: none !important on desktop (index.css)
-//
-// COLOR DESIGN:
-//   Background: #0b1526 (deep navy)
-//   Inactive text: #a8c4e0 (medium blue-tinted white — clearly visible)
-//   Active text: #ffffff (full white)
-//   Active bg: #1d4ed8 (vivid blue with glow)
-//   Hover bg: rgba(168,196,224,0.08)
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -38,7 +12,7 @@ import {
   Activity,
 } from "lucide-react";
 
-// ── Static menu data ──────────────────────────────────────────────────────────
+// Static menu data
 const MENU = [
   { label: "Dashboard", Icon: LayoutDashboard, path: "/dashboard" },
   { label: "OPD", Icon: Users, path: "/opd" },
@@ -48,7 +22,7 @@ const MENU = [
   { label: "Reports", Icon: BarChart3, path: "/reports" },
 ];
 
-// ── Brand logo block ──────────────────────────────────────────────────────────
+// Brand logo block
 const Brand = ({ showLabel }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
     <div
@@ -97,8 +71,7 @@ const Brand = ({ showLabel }) => (
   </div>
 );
 
-// ── Navigation list ───────────────────────────────────────────────────────────
-// Defined OUTSIDE to avoid "cannot create components during render" error
+// Navigation list
 const NavList = ({ currentPath, onNavigate, showLabels, onItemClick }) => (
   <nav style={{ flex: 1, padding: "0.875rem 0.625rem", overflowY: "auto" }}>
     {showLabels && (
@@ -157,8 +130,8 @@ const NavList = ({ currentPath, onNavigate, showLabels, onItemClick }) => (
                   ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
                   : "transparent",
                 color: active
-                  ? "var(--sidebar-text-active)" /* #ffffff */
-                  : "var(--sidebar-text)" /* #a8c4e0 — clearly visible */,
+                  ? "var(--sidebar-text-active)"
+                  : "var(--sidebar-text)",
                 boxShadow: active
                   ? "0 4px 14px var(--sidebar-active-glow)"
                   : "none",
@@ -203,7 +176,7 @@ const NavList = ({ currentPath, onNavigate, showLabels, onItemClick }) => (
   </nav>
 );
 
-// ── Status footer ─────────────────────────────────────────────────────────────
+// Status footer
 const SidebarFooter = ({ showLabel }) => (
   <div
     style={{
@@ -248,8 +221,7 @@ const SidebarFooter = ({ showLabel }) => (
   </div>
 );
 
-// ── Shared sidebar panel background style ─────────────────────────────────────
-// display is NOT included here so CSS classes can control it freely
+// Shared sidebar panel background style
 const PANEL = {
   background: "linear-gradient(180deg, #0b1526 0%, #0d1c32 50%, #0b1526 100%)",
   borderRight: "1px solid rgba(255,255,255,0.06)",
@@ -260,9 +232,7 @@ const PANEL = {
   left: 0,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
 const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -277,25 +247,19 @@ const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
         }
       `}</style>
 
-      {/* ════════════════════════════════════════════════════════════════════
-          DESKTOP SIDEBAR
-          Class .hms-desktop-sidebar → index.css hides on mobile (<1024px)
-          display: flex here is the default for desktop.
-          The CSS !important on mobile overrides it.
-      ════════════════════════════════════════════════════════════════════ */}
+      {/* DESKTOP SIDEBAR */}
       <aside
         className="hms-desktop-sidebar"
         style={{
           ...PANEL,
-          display: "flex" /* CSS hides this on mobile via !important */,
+          display: "flex",
           width: isOpen ? 256 : 64,
           zIndex: 40,
           transition: "width 0.3s cubic-bezier(.4,0,.2,1)",
         }}
       >
-        {/* Header row — layout changes based on open/collapsed state */}
+        {/* Header row */}
         {isOpen ? (
-          // OPEN: Brand + label on left, arrow button on right — horizontal
           <div
             style={{
               display: "flex",
@@ -337,7 +301,6 @@ const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
             </button>
           </div>
         ) : (
-          // COLLAPSED: Icon on top, arrow directly below it — vertical stack, centered
           <div
             style={{
               display: "flex",
@@ -350,10 +313,8 @@ const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
               minHeight: 64,
             }}
           >
-            {/* Brand icon only — no label */}
             <Brand showLabel={false} />
 
-            {/* Expand arrow — sits directly below the icon */}
             <button
               onClick={onToggle}
               style={{
@@ -392,17 +353,13 @@ const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
         <SidebarFooter showLabel={isOpen} />
       </aside>
 
-      {/* ════════════════════════════════════════════════════════════════════
-          MOBILE BACKDROP
-          Class .hms-mobile-backdrop → index.css hides on desktop (≥1024px)
-          Only rendered when mobileOpen is true (performance optimization)
-      ════════════════════════════════════════════════════════════════════ */}
+      {/* MOBILE BACKDROP */}
       {mobileOpen && (
         <div
           className="hms-mobile-backdrop"
           onClick={onMobileClose}
           style={{
-            display: "block" /* CSS hides on desktop via !important */,
+            display: "block",
             position: "fixed",
             inset: 0,
             background: "rgba(11,21,38,0.7)",
@@ -413,17 +370,12 @@ const Sidebar = ({ isOpen, onToggle, mobileOpen, onMobileClose }) => {
         />
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════
-          MOBILE DRAWER
-          Class .hms-mobile-sidebar → index.css hides on desktop (≥1024px)
-          Always in the DOM; transform slides it in/out.
-          display: flex here → CSS overrides to none on desktop.
-      ════════════════════════════════════════════════════════════════════ */}
+      {/* MOBILE DRAWER */}
       <aside
         className="hms-mobile-sidebar"
         style={{
           ...PANEL,
-          display: "flex" /* CSS hides this on desktop via !important */,
+          display: "flex",
           width: 272,
           zIndex: 50,
           transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",

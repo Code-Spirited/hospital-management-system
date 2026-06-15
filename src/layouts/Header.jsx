@@ -1,21 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Header.jsx
-//
-// RESPONSIVE BEHAVIOR:
-//   Desktop (≥1024px):
-//     - .hms-hamburger → display: none (CSS in index.css)
-//     - .hms-header left offset → controlled by data-sidebar in index.css
-//     - Brand breadcrumb and search bar visible
-//
-//   Mobile/Tablet (<1024px):
-//     - .hms-hamburger → display: flex (CSS in index.css)
-//     - .hms-header left: 0 (CSS in index.css)
-//     - Brand breadcrumb hidden, search collapses to icon
-//
-// NO inline `left` property on the header element.
-// That is handled entirely by CSS.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -130,11 +112,6 @@ const Header = ({ onMobileMenuClick }) => {
         }
       `}</style>
 
-      {/*
-        .hms-header — CSS in index.css controls the `left` property.
-        position: fixed, top: 0, right: 0 are stable and safe as inline.
-        We do NOT set `left` here at all.
-      */}
       <header
         className="hms-header"
         style={{
@@ -155,20 +132,15 @@ const Header = ({ onMobileMenuClick }) => {
           fontFamily: "var(--font-body)",
         }}
       >
-        {/*
-          .hms-hamburger — index.css hides this on desktop (display:none !important)
-          and shows it on mobile (display:flex !important).
-          The inline style here sets the default; CSS overrides per breakpoint.
-        */}
         <button
           className="hms-hamburger hdr-btn"
           onClick={onMobileMenuClick}
-          style={{ display: "none" }} /* CSS shows this on mobile */
+          style={{ display: "none" }}
         >
           <Menu size={20} />
         </button>
 
-        {/* Brand context — desktop only (Tailwind md:flex works fine for display here) */}
+        {/* Brand context */}
         <div
           className="hidden lg:flex items-center gap-2"
           style={{ flexShrink: 0 }}
@@ -194,7 +166,7 @@ const Header = ({ onMobileMenuClick }) => {
           </span>
         </div>
 
-        {/* Divider — desktop */}
+        {/* Divider */}
         <div
           className="hidden lg:block"
           style={{
@@ -205,7 +177,7 @@ const Header = ({ onMobileMenuClick }) => {
           }}
         />
 
-        {/* Search — visible on md and above */}
+        {/* Search */}
         <div
           className="hidden md:flex"
           style={{ flex: 1, maxWidth: 380, position: "relative" }}
@@ -421,7 +393,7 @@ const Header = ({ onMobileMenuClick }) => {
                 </span>
               </div>
 
-              {/* Name and role — hidden on very small screens */}
+              {/* Name and role */}
               <div className="hidden sm:block" style={{ textAlign: "left" }}>
                 <p
                   style={{
@@ -556,7 +528,7 @@ const Header = ({ onMobileMenuClick }) => {
         </div>
       </header>
 
-      {/* Mobile search bar — slides down below header */}
+      {/* Mobile search bar */}
       {showMobileSearch && (
         <div
           className="md:hidden fixed"

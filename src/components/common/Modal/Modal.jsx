@@ -26,11 +26,9 @@ const Modal = ({ isOpen, onClose, title = "", size = "md", children }) => {
     };
   }, [isOpen, onClose]);
 
-  // If modal is closed, render nothing at all
   if (!isOpen) return null;
 
   return (
-    // Portal-style overlay — covers the entire screen
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ fontFamily: "'Inter', sans-serif" }}
@@ -42,14 +40,14 @@ const Modal = ({ isOpen, onClose, title = "", size = "md", children }) => {
         style={{ animation: "fadeIn 0.2s ease both" }}
       />
 
-      {/* Modal box — sits above the backdrop via relative positioning */}
+      {/* Modal box */}
       <div
         className={`relative w-full ${sizes[size]} bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]`}
         style={{
           animation: "modalSlideUp 0.25s cubic-bezier(.22,.68,0,1.2) both",
         }}
       >
-        {/* ── Header ── */}
+        {/* Header */}
         {title && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
             <h3
@@ -72,7 +70,7 @@ const Modal = ({ isOpen, onClose, title = "", size = "md", children }) => {
           </div>
         )}
 
-        {/* ── Body ── */}
+        {/* Body */}
         <div className="px-6 py-5 overflow-y-auto flex-1">{children}</div>
       </div>
 

@@ -8,22 +8,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* ── Design Tokens ─────────────────────────────────────────────────────────── */
 :root {
-  /* Sidebar palette — deep navy with high-contrast text */
   --sidebar-bg: #0b1526;
   --sidebar-bg-2: #0f1e35;
   --sidebar-border: rgba(255, 255, 255, 0.07);
-  --sidebar-text: #a8c4e0; /* inactive text — clearly visible */
-  --sidebar-text-hover: #d4e8f7; /* hover text */
-  --sidebar-text-active: #ffffff; /* active text — full white */
-  --sidebar-icon: #6a9abf; /* inactive icons */
-  --sidebar-label: #3d6b8f; /* section label */
-  --sidebar-active-bg: #1d4ed8; /* active item bg — vivid blue */
+  --sidebar-text: #a8c4e0;
+  --sidebar-text-hover: #d4e8f7;
+  --sidebar-text-active: #ffffff;
+  --sidebar-icon: #6a9abf;
+  --sidebar-label: #3d6b8f;
+  --sidebar-active-bg: #1d4ed8;
   --sidebar-active-glow: rgba(37, 99, 235, 0.45);
   --sidebar-hover-bg: rgba(168, 196, 224, 0.08);
 
-  /* App palette */
   --hms-blue: #2563eb;
   --hms-blue-dark: #1d4ed8;
   --hms-blue-light: #eff6ff;
@@ -56,7 +53,7 @@
   --shadow-xl: 0 16px 48px rgba(15, 23, 42, 0.18);
 }
 
-/* ── Global resets ─────────────────────────────────────────────────────────── */
+/* Global resets */
 *,
 *::before,
 *::after {
@@ -76,7 +73,7 @@ body {
   margin: 0;
 }
 
-/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+/*  Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -92,13 +89,7 @@ body {
   background: #94a3b8;
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   HMS LAYOUT SYSTEM
-   All positioning is controlled here via CSS — zero inline styles.
-   This ensures media queries can override without !important battles.
-════════════════════════════════════════════════════════════════════════════ */
-
-/* ── Sidebar widths ── */
+/* Sidebar widths */
 [data-sidebar="open"] .hms-header {
   left: 256px;
 }
@@ -120,14 +111,12 @@ body {
     margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Desktop only ── */
+/* Desktop only */
 @media (min-width: 1024px) {
-  /* Hamburger is NEVER shown on desktop */
   .hms-hamburger {
     display: none !important;
   }
 
-  /* Mobile drawer + backdrop are NEVER shown on desktop */
   .hms-mobile-sidebar {
     display: none !important;
   }
@@ -136,37 +125,50 @@ body {
   }
 }
 
-/* ── Mobile / Tablet (< 1024px) ── */
 @media (max-width: 1023px) {
-  /* Header spans full width on mobile */
   .hms-header {
     left: 0 !important;
   }
 
-  /* No sidebar push on mobile — sidebar is an overlay drawer */
   .hms-main {
     margin-left: 0 !important;
   }
 
-  /* Desktop sidebar is NEVER shown on mobile */
   .hms-desktop-sidebar {
     display: none !important;
   }
 
-  /* Hamburger IS shown on mobile */
   .hms-hamburger {
     display: flex !important;
   }
-  /* ── Mobile typography and spacing ─────────────────────────────────────────── */
+  /* Mobile typography and spacing */
   @media (max-width: 479px) {
-    /* Prevent horizontal overflow on very small screens */
     body {
       overflow-x: hidden;
     }
 
-    /* Scale down large display numbers on mobile */
     .hms-main * {
       max-width: 100%;
     }
+  }
+  /* Lenis smooth scroll */
+  html.lenis {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
   }
 }

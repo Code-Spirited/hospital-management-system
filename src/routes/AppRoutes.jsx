@@ -19,14 +19,11 @@ const PlaceholderPage = ({ title }) => (
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Redirect root URL to login page */}
       <Route path="/" element={<Navigate to="/login" replace />} />
 
-      {/* Auth routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Protected routes */}
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/opd" element={<PlaceholderPage title="OPD Module" />} />
@@ -45,7 +42,6 @@ const AppRoutes = () => {
         />
       </Route>
 
-      {/* Any unknown URL → 404 */}
       <Route
         path="*"
         element={<PlaceholderPage title="404 - Page Not Found" />}
