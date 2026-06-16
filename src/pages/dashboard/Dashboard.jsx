@@ -1,3 +1,6 @@
+import { createColumnHelper } from "@tanstack/react-table";
+import { DataTable } from "../../components/common";
+import { allPatients } from "./dashboardData";
 import AppointmentAnalytics from "./AppointmentAnalytics";
 import { useState } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
@@ -291,6 +294,83 @@ const DeptServiceCard = ({ dept }) => (
     </p>
   </div>
 );
+
+// ── Patient table column definitions ─────────────────────────────────────────
+// Defined outside the component so they are not recreated on every render.
+// flexRender in DataTable.jsx renders the `cell` function for each row value.
+// Custom cell renderers (badges, styled text) are defined inline here.
+const columnHelper = createColumnHelper();
+
+const patientColumns = [
+  columnHelper.accessor("id", {
+    header: "Patient ID",
+    cell: (info) => (
+      <span
+        style={{
+          fontSize: "0.8rem",
+          fontWeight: 700,
+          color: "var(--hms-blue)",
+        }}
+      >
+        {info.getValue()}
+      </span>
+    ),
+  }),
+  columnHelper.accessor("name", {
+    header: "Name",
+    cell: (info) => (
+      <span
+        style={{
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          color: "var(--hms-navy)",
+        }}
+      >
+        {info.getValue()}
+      </span>
+    ),
+  }),
+  columnHelper.accessor("age", {
+    header: "Age",
+    cell: (info) => (
+      <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>
+        {info.getValue()}
+      </span>
+    ),
+  }),
+  columnHelper.accessor("gender", {
+    header: "Gender",
+    cell: (info) => (
+      <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 500 }}>
+        {info.getValue()}
+      </span>
+    ),
+  }),
+  columnHelper.accessor("type", {
+    header: "Type",
+    cell: (info) => <TypeBadge type={info.getValue()} />,
+  }),
+  columnHelper.accessor("doctor", {
+    header: "Doctor",
+    cell: (info) => (
+      <span style={{ fontSize: "0.82rem", color: "#475569", fontWeight: 500 }}>
+        {info.getValue()}
+      </span>
+    ),
+  }),
+  columnHelper.accessor("status", {
+    header: "Status",
+    cell: (info) => <StatusBadge status={info.getValue()} />,
+  }),
+  columnHelper.accessor("time", {
+    header: "Time",
+    cell: (info) => (
+      <span style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 500 }}>
+        {info.getValue()}
+      </span>
+    ),
+  }),
+];
 
 // MAIN DASHBOARD COMPONENT
 const Dashboard = () => {
@@ -922,180 +1002,17 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* RECENT PATIENTS TABLE */}
-      <div className="db-au db-d7" style={{ ...card, padding: "1.375rem" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "1.25rem",
-            flexWrap: "wrap",
-            gap: 8,
-          }}
-        >
-          <div>
-            <h3
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "0.95rem",
-                fontWeight: 800,
-                color: "var(--hms-navy)",
-                margin: 0,
-              }}
-            >
-              Recent Patients
-            </h3>
-            <p
-              style={{
-                fontSize: "0.75rem",
-                color: "#64748b",
-                marginTop: 3,
-                fontWeight: 500,
-              }}
-            >
-              Latest activity — updated live
-            </p>
-          </div>
-          <button
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "6px 14px",
-              background: "var(--hms-sky)",
-              border: "1px solid rgba(37,99,235,0.2)",
-              borderRadius: 9,
-              cursor: "pointer",
-              fontFamily: "var(--font-body)",
-              fontSize: "0.78rem",
-              fontWeight: 700,
-              color: "var(--hms-blue)",
-              transition: "all 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#bfdbfe")}
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "var(--hms-sky)")
-            }
-          >
-            View All <ArrowUpRight size={13} />
-          </button>
-        </div>
-
-        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: "1.5px solid var(--hms-border)" }}>
-                {[
-                  "Patient ID",
-                  "Name",
-                  "Age",
-                  "Type",
-                  "Doctor",
-                  "Status",
-                  "Time",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    style={{
-                      padding: "0.625rem 1rem",
-                      textAlign: "left",
-                      fontSize: "0.67rem",
-                      fontWeight: 700,
-                      color: "#94a3b8",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentPatients.map((p, i) => (
-                <tr
-                  key={p.id}
-                  className="patient-row"
-                  style={{
-                    borderBottom:
-                      i < recentPatients.length - 1
-                        ? "1px solid #f8fafc"
-                        : "none",
-                    transition: "background 0.15s",
-                  }}
-                >
-                  <td
-                    style={{
-                      padding: "0.875rem 1rem",
-                      fontSize: "0.8rem",
-                      fontWeight: 700,
-                      color: "var(--hms-blue)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.id}
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.875rem 1rem",
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      color: "var(--hms-navy)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.name}
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.875rem 1rem",
-                      fontSize: "0.85rem",
-                      color: "#64748b",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {p.age}
-                  </td>
-                  <td
-                    style={{ padding: "0.875rem 1rem", whiteSpace: "nowrap" }}
-                  >
-                    <TypeBadge type={p.type} />
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.875rem 1rem",
-                      fontSize: "0.82rem",
-                      color: "#475569",
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.doctor}
-                  </td>
-                  <td
-                    style={{ padding: "0.875rem 1rem", whiteSpace: "nowrap" }}
-                  >
-                    <StatusBadge status={p.status} />
-                  </td>
-                  <td
-                    style={{
-                      padding: "0.875rem 1rem",
-                      fontSize: "0.78rem",
-                      color: "#94a3b8",
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.time}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* ── 6. RECENT PATIENTS TABLE — powered by TanStack Table v8 ── */}
+      <div className="db-au db-d7">
+        <DataTable
+          columns={patientColumns}
+          data={allPatients}
+          title="Recent Patients"
+          subtitle="Last 7 days · Click any column header to sort"
+          pageSize={10}
+        />
       </div>
+
       {/* APPOINTMENT ANALYTICS */}
       <AppointmentAnalytics />
     </div>
