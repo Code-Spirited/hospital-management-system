@@ -96,11 +96,11 @@ const getPeakColor = (value) => {
 // ── Shared card wrapper ───────────────────────────────────────────────────────
 const ChartCard = ({ title, subtitle, children, style = {} }) => (
   <div
+    className="hms-chart-card"
     style={{
       background: "#fff",
       borderRadius: 16,
       border: "1px solid var(--hms-border)",
-      padding: "1.375rem",
       boxShadow: "var(--shadow-xs)",
       ...style,
     }}
@@ -240,23 +240,42 @@ const AppointmentAnalytics = () => {
   ];
 
   return (
-    <div style={{ marginTop: "1.5rem" }}>
-      <style>{`
+    <div className="hms-appt-analytics" style={{ marginTop: "1.5rem" }}>
+      <style>{`.hms-appt-analytics {
+          container-type: inline-size;
+          container-name: hms-appt-analytics;
+        }
+
+        .hms-chart-card { padding: 1rem; }
+        @container hms-appt-analytics (min-width: 460px) {
+          .hms-chart-card { padding: 1.375rem; }
+        }
+
         .appt-grid-2 {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr;
           gap: 1rem;
         }
+        .appt-grid-2 > div {
+          min-width: 0;
+        }
         .appt-summary-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 0.875rem;
-          margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+.appt-summary-grid > div {
+  min-width: 0;
+}
+
+        
+        @container hms-appt-analytics (min-width: 700px) {
+          .appt-grid-2 { grid-template-columns: 1fr 1fr; }
         }
-        @media (max-width: 767px) {
-          .appt-grid-2 { grid-template-columns: 1fr; }
-        }
-      `}</style>
+        @container hms-appt-analytics (min-width: 900px) {
+          .appt-summary-grid { grid-template-columns: repeat(4, 1fr); }
+        }`}</style>
 
       {/* ── Section heading ── */}
       <div
@@ -359,6 +378,18 @@ const AppointmentAnalytics = () => {
               >
                 {label}
               </p>
+              {/* Context caption — e.g. "+8.2%", "per patient" — gives each
+                  stat meaning at a glance, matching the Dashboard KPI cards */}
+              <p
+                style={{
+                  fontSize: "0.64rem",
+                  color,
+                  margin: "1px 0 0",
+                  fontWeight: 600,
+                }}
+              >
+                {change}
+              </p>
             </div>
           </div>
         ))}
@@ -371,7 +402,7 @@ const AppointmentAnalytics = () => {
           title="Appointments by Day"
           subtitle="Current week — grouped by type"
         >
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={220} debounce={150}>
             <BarChart
               data={appointmentsByDay}
               barSize={8}
@@ -432,7 +463,7 @@ const AppointmentAnalytics = () => {
         >
           {/* relative+absolute positioning is used for the centre label overlay */}
           <div style={{ position: "relative", height: 220 }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={150}>
               <PieChart>
                 <Pie
                   data={appointmentOutcomes}
@@ -505,7 +536,7 @@ const AppointmentAnalytics = () => {
         subtitle="Daily total with completed vs cancelled overlay"
         style={{ marginBottom: "1rem" }}
       >
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width="100%" height={200} debounce={150}>
           <AreaChart
             data={appointmentTrend30d}
             margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
@@ -586,7 +617,7 @@ const AppointmentAnalytics = () => {
           title="Doctor Workload"
           subtitle="Appointments handled this month"
         >
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={220} debounce={150}>
             <BarChart
               data={doctorWorkload}
               layout="vertical"
@@ -637,7 +668,7 @@ const AppointmentAnalytics = () => {
           title="Peak Hours"
           subtitle="Outpatient volume by hour — 8 AM to 7 PM"
         >
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={220} debounce={150}>
             <BarChart
               data={peakHoursData}
               barSize={18}

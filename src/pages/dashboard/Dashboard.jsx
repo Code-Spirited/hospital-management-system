@@ -19,7 +19,6 @@ import {
 import {
   TrendingUp,
   TrendingDown,
-  ArrowUpRight,
   Clock,
   Sparkles,
   Target,
@@ -37,7 +36,6 @@ import {
   departmentStats,
   revenueChartData,
   appointmentChartData,
-  recentPatients,
   quickStats,
 } from "./dashboardData";
 
@@ -484,7 +482,10 @@ const Dashboard = () => {
 
   // JSX
   return (
-    <div style={{ fontFamily: "var(--font-body)", maxWidth: 1400 }}>
+    <div
+      className="hms-dashboard-container"
+      style={{ fontFamily: "var(--font-body)", maxWidth: 1400 }}
+    >
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(14px); }
@@ -500,40 +501,65 @@ const Dashboard = () => {
         .db-d7  { animation-delay: .28s; }
         .db-d8  { animation-delay: .32s; }
 
-        .kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1rem;
-          margin-bottom: 1rem;
+        .hms-dashboard-container {
+          container-type: inline-size;
+          container-name: hms-dashboard;
         }
-        .quick-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 0.75rem;
-          margin-bottom: 1rem;
-        }
-        .rev-dept-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
+
+        .kpi-grid, .rev-dept-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.kpi-grid > div, .rev-dept-grid > div {
+  min-width: 0;
+}
+
+/* Quick Stats cards are small (icon + number + label) — they never need
+   a full-width single-column phase like the richer KPI/Department cards.
+   2 columns even on the narrowest phone keeps them compact and tidy. */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.quick-grid > div {
+  min-width: 0;
+}
         .charts-row {
-          display: grid;
-          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-          gap: 1rem;
-          margin-bottom: 1rem;
-        }
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.charts-row > div {
+  /* Grid items default to min-width: auto — meaning a chart card's minimum
+     width is set by its content's natural size, not by the column you've
+     defined. If the chart's internal content is wider than the phone
+     screen, the whole row (and the whole page) gets pushed wider than the
+     viewport, causing horizontal scroll with blank space trailing every
+     other section. min-width: 0 removes that floor so the card can
+     actually shrink to the space it's given. */
+  min-width: 0;
+}
         .patient-row:hover { background: var(--hms-sky) !important; cursor: pointer; }
 
-        @media (max-width: 767px) {
-          .kpi-grid     { grid-template-columns: repeat(2, 1fr); }
-          .rev-dept-grid{ grid-template-columns: repeat(2, 1fr); }
-          .charts-row   { grid-template-columns: 1fr; }
+        @container hms-dashboard (min-width: 460px) {
+  .kpi-grid, .rev-dept-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+        @container hms-dashboard (min-width: 700px) {
+          .charts-row {
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+          }
         }
-        @media (max-width: 479px) {
-          .kpi-grid     { grid-template-columns: 1fr; }
-          .rev-dept-grid{ grid-template-columns: 1fr; }
+        @container hms-dashboard (min-width: 900px) {
+          .kpi-grid, .rev-dept-grid, .quick-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
         }
 
         @keyframes ripple {

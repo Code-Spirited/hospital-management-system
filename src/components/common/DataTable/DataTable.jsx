@@ -23,7 +23,7 @@
 //   <DataTable columns={columns} data={patients} title="Recent Patients" />
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -77,6 +77,7 @@ const DataTable = ({
 
   // useMemo prevents the table instance from being recreated on every render.
   // The table only re-initialises when columns or data actually change.
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable() returns functions the React Compiler can't safely auto-memoize. This is a known, harmless characteristic of the library; the table works correctly, it just won't receive automatic compiler optimization on this component.
   const table = useReactTable({
     data,
     columns,
@@ -99,6 +100,7 @@ const DataTable = ({
 
   return (
     <div
+      className="hms-datatable"
       style={{
         background: "#fff",
         borderRadius: 16,
@@ -108,6 +110,34 @@ const DataTable = ({
         overflow: "hidden",
       }}
     >
+      <style>{`
+        .hms-datatable {
+          container-type: inline-size;
+          container-name: hms-datatable;
+        }
+        .dt-pagination-footer {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .dt-pagination-row-info { text-align: center; }
+        .dt-pagination-controls {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.375rem;
+          flex-wrap: wrap;
+        }
+        .dt-nav-edge { display: none; }
+
+        @container hms-datatable (min-width: 480px) {
+          .dt-pagination-footer { flex-direction: row; justify-content: space-between; }
+          .dt-pagination-row-info { text-align: left; }
+          .dt-pagination-controls { justify-content: flex-end; flex-wrap: nowrap; }
+          .dt-nav-edge { display: flex; }
+        }
+      `}</style>
       {/* ── Table header: title + search + export ── */}
       <div
         style={{
@@ -348,20 +378,19 @@ const DataTable = ({
         </table>
       </div>
 
-      {/* ── Pagination controls ── */}
+      {/* ── Pagination controls ──
+          Mobile (<480px container): stacked, centered, First/Last hidden
+          Desktop (≥480px container): single row, First/Last shown */}
       <div
+        className="dt-pagination-footer"
         style={{
           padding: "0.875rem 1.375rem",
           borderTop: "1px solid var(--hms-border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "0.625rem",
         }}
       >
         {/* Row count info */}
         <p
+          className="dt-pagination-row-info"
           style={{
             fontSize: "0.78rem",
             color: "#64748b",
@@ -375,7 +404,7 @@ const DataTable = ({
         </p>
 
         {/* Page navigation */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+        <div className="dt-pagination-controls">
           {/* Page size selector */}
           <select
             value={pagination.pageSize}
@@ -393,7 +422,7 @@ const DataTable = ({
               background: "#fff",
               outline: "none",
               cursor: "pointer",
-              marginRight: "0.5rem",
+              marginRight: "0.25rem",
             }}
           >
             {[10, 25, 50].map((size) => (
@@ -403,42 +432,48 @@ const DataTable = ({
             ))}
           </select>
 
-          {/* Navigation buttons */}
+          {/* Navigation buttons — First/Last carry "dt-nav-edge" so they
+              hide on narrow containers; Prev/Next always stay visible
+              since they're the controls people actually use most. */}
           {[
             {
               icon: ChevronsLeft,
               onClick: () => table.setPageIndex(0),
               disabled: !table.getCanPreviousPage(),
               title: "First page",
+              edge: true,
             },
             {
               icon: ChevronLeft,
               onClick: () => table.previousPage(),
               disabled: !table.getCanPreviousPage(),
               title: "Previous page",
+              edge: false,
             },
             {
               icon: ChevronRight,
               onClick: () => table.nextPage(),
               disabled: !table.getCanNextPage(),
               title: "Next page",
+              edge: false,
             },
             {
               icon: ChevronsRight,
               onClick: () => table.setPageIndex(table.getPageCount() - 1),
               disabled: !table.getCanNextPage(),
               title: "Last page",
+              edge: true,
             },
-          ].map(({ icon: Icon, onClick, disabled, title: btnTitle }) => (
+          ].map(({ icon: Icon, onClick, disabled, title: btnTitle, edge }) => (
             <button
               key={btnTitle}
+              className={edge ? "dt-nav-edge" : undefined}
               onClick={onClick}
               disabled={disabled}
               title={btnTitle}
               style={{
                 width: 30,
                 height: 30,
-                display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 border: "1.5px solid var(--hms-border)",
@@ -447,6 +482,7 @@ const DataTable = ({
                 color: disabled ? "#cbd5e1" : "#64748b",
                 cursor: disabled ? "not-allowed" : "pointer",
                 transition: "all 0.15s",
+                display: edge ? undefined : "flex",
               }}
               onMouseEnter={(e) => {
                 if (!disabled) {

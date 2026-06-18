@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useNotifications } from "../context/NotificationsContext";
 import {
   Search,
   Bell,
@@ -9,43 +11,20 @@ import {
   Menu,
   X,
   Settings,
+  CalendarDays,
 } from "lucide-react";
 
-const Header = ({ onMobileMenuClick }) => {
+const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
   const [showProfile, setShowProfile] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const navigate = useNavigate();
 
-  const notifications = [
-    {
-      id: 1,
-      text: "New patient — Ramesh Sharma registered",
-      time: "2 min ago",
-      unread: true,
-      color: "#2563eb",
-    },
-    {
-      id: 2,
-      text: "Appointment #1042 confirmed",
-      time: "15 min ago",
-      unread: true,
-      color: "#7c3aed",
-    },
-    {
-      id: 3,
-      text: "Paracetamol stock critically low",
-      time: "1 hr ago",
-      unread: false,
-      color: "#d97706",
-    },
-  ];
+  // Read unread count from the shared context.
+  // The full notification list lives in the Dashboard panel —
+  // the bell here is purely a count indicator.
+  const { unreadCount } = useNotifications();
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
-  const closeAll = () => {
-    setShowProfile(false);
-    setShowNotifications(false);
-  };
+  const closeAll = () => setShowProfile(false);
 
   return (
     <>
@@ -56,24 +35,15 @@ const Header = ({ onMobileMenuClick }) => {
         }
         .hdr-drop { animation: hdrSlide 0.18s ease both; }
 
-        /* Icon button base style */
         .hdr-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 9px;
-          border: none;
-          cursor: pointer;
-          background: transparent;
-          color: #4a5568;
-          transition: background 0.15s, color 0.15s;
+          display: flex; align-items: center; justify-content: center;
+          width: 36px; height: 36px; border-radius: 9px;
+          border: none; cursor: pointer; background: transparent;
+          color: #4a5568; transition: background 0.15s, color 0.15s;
           flex-shrink: 0;
         }
         .hdr-btn:hover { background: #eef2f8; color: #0f172a; }
 
-        /* Search input */
         .hdr-search {
           width: 100%;
           padding: 0.5rem 0.875rem 0.5rem 2.25rem;
@@ -93,23 +63,14 @@ const Header = ({ onMobileMenuClick }) => {
           background: #fff;
         }
 
-        /* Profile button */
         .hdr-profile {
-          display: flex;
-          align-items: center;
-          gap: 8px;
+          display: flex; align-items: center; gap: 8px;
           padding: 4px 8px 4px 4px;
-          border-radius: 10px;
-          border: 1.5px solid transparent;
-          cursor: pointer;
-          background: transparent;
-          font-family: var(--font-body);
-          transition: all 0.15s;
+          border-radius: 10px; border: 1.5px solid transparent;
+          cursor: pointer; background: transparent;
+          font-family: var(--font-body); transition: all 0.15s;
         }
-        .hdr-profile:hover {
-          background: #eef2f8;
-          border-color: var(--hms-border);
-        }
+        .hdr-profile:hover { background: #eef2f8; border-color: var(--hms-border); }
       `}</style>
 
       <header
@@ -132,6 +93,7 @@ const Header = ({ onMobileMenuClick }) => {
           fontFamily: "var(--font-body)",
         }}
       >
+        {/* Hamburger — mobile only, shown via CSS in index.css */}
         <button
           className="hms-hamburger hdr-btn"
           onClick={onMobileMenuClick}
@@ -140,7 +102,7 @@ const Header = ({ onMobileMenuClick }) => {
           <Menu size={20} />
         </button>
 
-        {/* Brand context */}
+        {/* Brand context — desktop only */}
         <div
           className="hidden lg:flex items-center gap-2"
           style={{ flexShrink: 0 }}
@@ -166,7 +128,7 @@ const Header = ({ onMobileMenuClick }) => {
           </span>
         </div>
 
-        {/* Divider */}
+        {/* Divider — desktop */}
         <div
           className="hidden lg:block"
           style={{
@@ -177,7 +139,7 @@ const Header = ({ onMobileMenuClick }) => {
           }}
         />
 
-        {/* Search */}
+        {/* Search — desktop / tablet */}
         <div
           className="hidden md:flex"
           style={{ flex: 1, maxWidth: 380, position: "relative" }}
@@ -208,167 +170,58 @@ const Header = ({ onMobileMenuClick }) => {
           {showMobileSearch ? <X size={18} /> : <Search size={18} />}
         </button>
 
-        {/* Push right items to the right edge */}
         <div style={{ flex: 1 }} />
 
         {/* ── Right actions ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {/* Notifications */}
-          <div style={{ position: "relative" }}>
-            <button
-              className="hdr-btn"
-              style={{ position: "relative" }}
-              onClick={() => {
-                setShowNotifications((s) => !s);
-                setShowProfile(false);
-              }}
-            >
-              <Bell size={18} />
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#ef4444",
-                    border: "2px solid #fff",
-                  }}
-                />
-              )}
-            </button>
-
-            {showNotifications && (
-              <div
-                className="hdr-drop"
+          {/* Notifications bell — shows unread count from context only.
+              Full notification management is in the Dashboard panel.
+              Clicking navigates to the dashboard where the panel lives. */}
+          <button
+            className="hdr-btn"
+            style={{ position: "relative" }}
+            onClick={onOpenNotifications}
+            title="View notifications"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <motion.span
+                key={unreadCount}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
                 style={{
                   position: "absolute",
-                  right: 0,
-                  top: "calc(100% + 8px)",
-                  width: 320,
-                  background: "#fff",
-                  borderRadius: 14,
-                  border: "1px solid var(--hms-border)",
-                  boxShadow: "var(--shadow-xl)",
-                  overflow: "hidden",
-                  zIndex: 999,
+                  top: 5,
+                  right: 5,
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#ef4444",
+                  border: "2px solid #fff",
+                  display: "block",
                 }}
-              >
-                <div
-                  style={{
-                    padding: "0.875rem 1rem",
-                    borderBottom: "1px solid var(--hms-border)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      fontSize: "0.875rem",
-                      color: "var(--hms-navy)",
-                    }}
-                  >
-                    Notifications
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "0.72rem",
-                      fontWeight: 600,
-                      color: "var(--hms-blue)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Mark all read
-                  </span>
-                </div>
-                {notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    style={{
-                      padding: "0.75rem 1rem",
-                      borderBottom: "1px solid #f8fafc",
-                      background: n.unread ? "#f0f6ff" : "#fff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 10,
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.background = "#f8fafc")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.background = n.unread
-                        ? "#f0f6ff"
-                        : "#fff")
-                    }
-                  >
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        flexShrink: 0,
-                        marginTop: 5,
-                        background: n.unread ? n.color : "#e2e8f0",
-                      }}
-                    />
-                    <div>
-                      <p
-                        style={{
-                          fontSize: "0.825rem",
-                          fontWeight: n.unread ? 600 : 400,
-                          color: "var(--hms-navy)",
-                          margin: 0,
-                        }}
-                      >
-                        {n.text}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "0.7rem",
-                          color: "#94a3b8",
-                          margin: "3px 0 0",
-                        }}
-                      >
-                        {n.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                <div style={{ padding: "0.625rem 1rem", textAlign: "center" }}>
-                  <span
-                    style={{
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      color: "var(--hms-blue)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    View all notifications
-                  </span>
-                </div>
-              </div>
+              />
             )}
-          </div>
+          </button>
 
-          {/* Profile */}
+          {/* Calendar icon — opens the appointment calendar drawer */}
+          <button
+            className="hdr-btn"
+            onClick={onOpenCalendar}
+            title="Appointment calendar"
+          >
+            <CalendarDays size={18} />
+          </button>
+
+          {/* Profile dropdown */}
           <div style={{ position: "relative" }}>
             <button
               className="hdr-profile"
-              onClick={() => {
-                setShowProfile((s) => !s);
-                setShowNotifications(false);
-              }}
+              onClick={() => setShowProfile((s) => !s)}
               style={{
                 borderColor: showProfile ? "var(--hms-border)" : "transparent",
               }}
             >
-              {/* Avatar initials */}
               <div
                 style={{
                   width: 32,
@@ -393,7 +246,6 @@ const Header = ({ onMobileMenuClick }) => {
                 </span>
               </div>
 
-              {/* Name and role */}
               <div className="hidden sm:block" style={{ textAlign: "left" }}>
                 <p
                   style={{
@@ -478,8 +330,7 @@ const Header = ({ onMobileMenuClick }) => {
                       (e.currentTarget.style.background = "transparent")
                     }
                   >
-                    <Icon size={14} style={{ color: "#64748b" }} />
-                    {label}
+                    <Icon size={14} style={{ color: "#64748b" }} /> {label}
                   </button>
                 ))}
 
@@ -519,8 +370,7 @@ const Header = ({ onMobileMenuClick }) => {
                     (e.currentTarget.style.background = "transparent")
                   }
                 >
-                  <LogOut size={14} />
-                  Sign Out
+                  <LogOut size={14} /> Sign Out
                 </button>
               </div>
             )}

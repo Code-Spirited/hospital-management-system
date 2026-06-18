@@ -8,6 +8,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root {
   --sidebar-bg: #0b1526;
   --sidebar-bg-2: #0f1e35;
@@ -71,9 +72,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
+  /* Prevents any element from forcing horizontal page scroll.
+     Deliberately NOT using a universal `* { max-width: 100% }` rule here —
+     that approach previously broke Recharts' internal percentage-based
+     width measurements on mobile, causing charts to render at zero size. */
+  overflow-x: hidden;
 }
 
-/*  Scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -89,7 +95,7 @@ body {
   background: #94a3b8;
 }
 
-/* Sidebar widths */
+/* ── Layout: sidebar-aware offsets ─────────────────────────────────────────── */
 [data-sidebar="open"] .hms-header {
   left: 256px;
 }
@@ -103,7 +109,6 @@ body {
   margin-left: 64px;
 }
 
-/* Smooth transitions */
 .hms-header,
 .hms-main {
   transition:
@@ -111,12 +116,11 @@ body {
     margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Desktop only */
+/* ── Desktop only ── */
 @media (min-width: 1024px) {
   .hms-hamburger {
     display: none !important;
   }
-
   .hms-mobile-sidebar {
     display: none !important;
   }
@@ -125,50 +129,37 @@ body {
   }
 }
 
+/* ── Mobile / Tablet ── */
 @media (max-width: 1023px) {
   .hms-header {
     left: 0 !important;
   }
-
   .hms-main {
     margin-left: 0 !important;
   }
-
   .hms-desktop-sidebar {
     display: none !important;
   }
-
   .hms-hamburger {
     display: flex !important;
   }
-  /* Mobile typography and spacing */
-  @media (max-width: 479px) {
-    body {
-      overflow-x: hidden;
-    }
+}
 
-    .hms-main * {
-      max-width: 100%;
-    }
-  }
-  /* Lenis smooth scroll */
-  html.lenis {
-    height: auto;
-  }
-
-  .lenis.lenis-smooth {
-    scroll-behavior: auto !important;
-  }
-
-  .lenis.lenis-smooth [data-lenis-prevent] {
-    overscroll-behavior: contain;
-  }
-
-  .lenis.lenis-stopped {
-    overflow: hidden;
-  }
-
-  .lenis.lenis-scrolling iframe {
-    pointer-events: none;
-  }
+/* ── Lenis smooth scroll ──────────────────────────────────────────────────────
+   IMPORTANT: this block must stay at the top level (not nested inside any
+   media query) — Lenis needs to control scroll behaviour on every screen size. */
+html.lenis {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
