@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Sidebar from "./Sidebar";
@@ -28,9 +28,26 @@ const MainLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const location = useLocation();
   useSmoothScroll();
+
+  // Global Ctrl+K / Cmd+K listener — opens the command palette from anywhere
+  // in the app, regardless of which page or input currently has focus.
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        // Closing other overlays first avoids stacked, conflicting modals
+        setNotifOpen(false);
+        setCalendarOpen(false);
+        setPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <NotificationsProvider>
@@ -59,6 +76,8 @@ const MainLayout = () => {
           onMobileMenuClick={() => setMobileMenuOpen(true)}
           onOpenNotifications={() => setNotifOpen(true)}
           onOpenCalendar={() => setCalendarOpen(true)}
+          paletteOpen={paletteOpen}
+          onPaletteOpenChange={setPaletteOpen}
         />
 
         <div
@@ -86,7 +105,6 @@ const MainLayout = () => {
           <Footer />
         </div>
 
-        {/* Global drawers — rendered outside page content so they overlay everything */}
         <NotificationsDrawer open={notifOpen} onOpenChange={setNotifOpen} />
         <CalendarDrawer open={calendarOpen} onOpenChange={setCalendarOpen} />
       </div>

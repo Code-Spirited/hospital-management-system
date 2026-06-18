@@ -1,5 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { DataTable } from "../../components/common";
+import { DataTable, multiSelectFilter } from "../../components/common";
 import { allPatients } from "./dashboardData";
 import AppointmentAnalytics from "./AppointmentAnalytics";
 import { useState } from "react";
@@ -346,6 +346,7 @@ const patientColumns = [
   }),
   columnHelper.accessor("type", {
     header: "Type",
+    filterFn: multiSelectFilter,
     cell: (info) => <TypeBadge type={info.getValue()} />,
   }),
   columnHelper.accessor("doctor", {
@@ -358,6 +359,7 @@ const patientColumns = [
   }),
   columnHelper.accessor("status", {
     header: "Status",
+    filterFn: multiSelectFilter,
     cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   columnHelper.accessor("time", {
@@ -1036,6 +1038,24 @@ const Dashboard = () => {
           title="Recent Patients"
           subtitle="Last 7 days · Click any column header to sort"
           pageSize={10}
+          filters={[
+            {
+              columnId: "type",
+              label: "Type",
+              options: ["OPD", "IPD", "Emergency", "Follow-up"],
+            },
+            {
+              columnId: "status",
+              label: "Status",
+              options: [
+                "Completed",
+                "Admitted",
+                "Waiting",
+                "Critical",
+                "Discharged",
+              ],
+            },
+          ]}
         />
       </div>
 

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import * as Popover from "@radix-ui/react-popover";
 import { useNotifications } from "../context/NotificationsContext";
+import CommandPalette from "../components/common/CommandPalette/CommandPalette";
 import {
   Search,
   Bell,
@@ -9,19 +11,19 @@ import {
   LogOut,
   User,
   Menu,
-  X,
   Settings,
   CalendarDays,
 } from "lucide-react";
 
-const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
+const Header = ({
+  onMobileMenuClick,
+  onOpenNotifications,
+  onOpenCalendar,
+  paletteOpen,
+  onPaletteOpenChange,
+}) => {
   const [showProfile, setShowProfile] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const navigate = useNavigate();
-
-  // Read unread count from the shared context.
-  // The full notification list lives in the Dashboard panel —
-  // the bell here is purely a count indicator.
   const { unreadCount } = useNotifications();
 
   const closeAll = () => setShowProfile(false);
@@ -44,23 +46,44 @@ const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
         }
         .hdr-btn:hover { background: #eef2f8; color: #0f172a; }
 
-        .hdr-search {
-          width: 100%;
-          padding: 0.5rem 0.875rem 0.5rem 2.25rem;
+        /* Desktop search bar — full width pill with label + Ctrl K hint */
+        .hdr-search-desktop {
+          display: flex; align-items: center; gap: 10px;
+          flex: 1;
+          padding: 0.5rem 0.625rem 0.5rem 0.75rem;
           background: var(--hms-surface);
           border: 1.5px solid var(--hms-border);
           border-radius: 10px;
-          font-size: 0.825rem;
-          font-family: var(--font-body);
-          color: var(--hms-navy);
-          outline: none;
-          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+          font-size: 0.825rem; font-family: var(--font-body);
+          color: #94a3b8; cursor: pointer; text-align: left;
+          transition: border-color 0.2s, background 0.2s;
         }
-        .hdr-search::placeholder { color: #94a3b8; }
-        .hdr-search:focus {
-          border-color: var(--hms-blue);
-          box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-          background: #fff;
+        .hdr-search-desktop:hover { border-color: var(--hms-blue); background: #fff; }
+        .hdr-search-label {
+          flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+        .hdr-kbd {
+          font-size: 0.68rem; font-weight: 700; color: #94a3b8;
+          border: 1px solid var(--hms-border); border-radius: 6px;
+          padding: 2px 6px; background: #fff; flex-shrink: 0;
+        }
+
+        /* Mobile search icon — hidden by default, shown only below 768px.
+           Explicit classes + !important here deliberately, matching the
+           pattern already used for .hms-hamburger / .hms-desktop-sidebar
+           elsewhere in this app, since Tailwind's hidden/md: utilities have
+           proven unreliable in this project when other CSS interferes. */
+        .hdr-search-mobile { display: none; }
+        @media (max-width: 767px) {
+          .hdr-search-desktop { display: none !important; }
+          .hdr-search-mobile  { display: flex !important; }
+        }
+
+        /* Shared entrance animation for anchored popovers (search + future ones) */
+        .hms-popover-content[data-state="open"] { animation: hmsPopIn 0.15s ease-out; }
+        @keyframes hmsPopIn {
+          from { opacity: 0; transform: scale(0.97) translateY(-4px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);    }
         }
 
         .hdr-profile {
@@ -102,81 +125,69 @@ const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
           <Menu size={20} />
         </button>
 
-        {/* Brand context — desktop only */}
-        <div
-          className="hidden lg:flex items-center gap-2"
-          style={{ flexShrink: 0 }}
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: "var(--hms-blue)",
-              display: "inline-block",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              color: "#94a3b8",
-              fontFamily: "var(--font-body)",
-            }}
-          >
-            Hospital Management System
-          </span>
-        </div>
+        {/* Search — anchored Popover. Both the wide desktop button and the
+            compact mobile icon sit inside the same Anchor, so whichever one
+            is visible correctly positions the dropdown beneath it. */}
+        <Popover.Root open={paletteOpen} onOpenChange={onPaletteOpenChange}>
+          <Popover.Anchor asChild>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              <button
+                className="hdr-search-desktop"
+                onClick={() => onPaletteOpenChange(true)}
+                style={{ maxWidth: 380 }}
+              >
+                <Search size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />
+                <span className="hdr-search-label">
+                  Search patients, doctors, medicines...
+                </span>
+                <kbd className="hdr-kbd">Ctrl K</kbd>
+              </button>
 
-        {/* Divider — desktop */}
-        <div
-          className="hidden lg:block"
-          style={{
-            width: 1,
-            height: 20,
-            background: "var(--hms-border)",
-            flexShrink: 0,
-          }}
-        />
+              <button
+                className="hdr-search-mobile hdr-btn"
+                onClick={() => onPaletteOpenChange(true)}
+              >
+                <Search size={18} />
+              </button>
+            </div>
+          </Popover.Anchor>
 
-        {/* Search — desktop / tablet */}
-        <div
-          className="hidden md:flex"
-          style={{ flex: 1, maxWidth: 380, position: "relative" }}
-        >
-          <Search
-            size={14}
-            style={{
-              position: "absolute",
-              left: 11,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#94a3b8",
-              pointerEvents: "none",
-            }}
-          />
-          <input
-            type="text"
-            className="hdr-search"
-            placeholder="Search patients, doctors, medicines..."
-          />
-        </div>
-
-        {/* Mobile search toggle */}
-        <button
-          className="hdr-btn md:hidden"
-          onClick={() => setShowMobileSearch((s) => !s)}
-        >
-          {showMobileSearch ? <X size={18} /> : <Search size={18} />}
-        </button>
+          <Popover.Portal>
+            <Popover.Content
+              align="start"
+              sideOffset={10}
+              collisionPadding={12}
+              className="hms-popover-content"
+              style={{
+                width: "min(92vw, 480px)",
+                background: "#fff",
+                borderRadius: 16,
+                border: "1px solid var(--hms-border)",
+                boxShadow: "var(--shadow-xl)",
+                overflow: "hidden",
+                zIndex: 999,
+              }}
+            >
+              <CommandPalette
+                onOpenChange={onPaletteOpenChange}
+                onOpenNotifications={onOpenNotifications}
+                onOpenCalendar={onOpenCalendar}
+              />
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
 
         <div style={{ flex: 1 }} />
 
         {/* ── Right actions ── */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {/* Notifications bell — shows unread count from context only.
-              Full notification management is in the Dashboard panel.
-              Clicking navigates to the dashboard where the panel lives. */}
           <button
             className="hdr-btn"
             style={{ position: "relative" }}
@@ -204,7 +215,6 @@ const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
             )}
           </button>
 
-          {/* Calendar icon — opens the appointment calendar drawer */}
           <button
             className="hdr-btn"
             onClick={onOpenCalendar}
@@ -213,7 +223,6 @@ const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
             <CalendarDays size={18} />
           </button>
 
-          {/* Profile dropdown */}
           <div style={{ position: "relative" }}>
             <button
               className="hdr-profile"
@@ -377,52 +386,6 @@ const Header = ({ onMobileMenuClick, onOpenNotifications, onOpenCalendar }) => {
           </div>
         </div>
       </header>
-
-      {/* Mobile search bar */}
-      {showMobileSearch && (
-        <div
-          className="md:hidden fixed"
-          style={{
-            top: 64,
-            left: 0,
-            right: 0,
-            zIndex: 25,
-            background: "#fff",
-            padding: "0.75rem 1rem",
-            borderBottom: "1px solid var(--hms-border)",
-            boxShadow: "var(--shadow-sm)",
-            animation: "hdrSlide 0.2s ease both",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 9,
-              background: "var(--hms-surface)",
-              borderRadius: 10,
-              padding: "0.5rem 0.875rem",
-              border: "1.5px solid var(--hms-border)",
-            }}
-          >
-            <Search size={14} style={{ color: "#94a3b8", flexShrink: 0 }} />
-            <input
-              autoFocus
-              type="text"
-              placeholder="Search patients, doctors..."
-              style={{
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                fontSize: "0.875rem",
-                fontFamily: "var(--font-body)",
-                color: "var(--hms-navy)",
-                width: "100%",
-              }}
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 };

@@ -44,10 +44,197 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
+  Filter,
+  X,
 } from "lucide-react";
+import * as Popover from "@radix-ui/react-popover";
 
 // Number of skeleton rows shown while data is loading
 const SKELETON_ROW_COUNT = 8;
+
+// ── Consolidated filter menu — one icon, every filter group inside it ──────
+// Built on Radix UI Popover. Replaces the earlier design of one visible
+// button per filter (Type, Status, ...) with a single icon carrying a
+// badge count; clicking it reveals all groups together in one dropdown.
+const FilterMenu = ({ filters, table }) => {
+  const totalActive = filters.reduce(
+    (sum, f) =>
+      sum + (table.getColumn(f.columnId)?.getFilterValue()?.length ?? 0),
+    0,
+  );
+
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          title="Filter"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            height: 36,
+            padding: totalActive > 0 ? "0 0.75rem" : "0 0.625rem",
+            border: `1.5px solid ${totalActive ? "var(--hms-blue)" : "var(--hms-border)"}`,
+            borderRadius: 9,
+            background: totalActive ? "var(--hms-blue-light)" : "#fff",
+            color: totalActive ? "var(--hms-blue)" : "#64748b",
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "all 0.15s",
+          }}
+        >
+          <Filter size={15} />
+          {totalActive > 0 && (
+            <span
+              style={{
+                background: "var(--hms-blue)",
+                color: "#fff",
+                borderRadius: 20,
+                fontSize: "0.65rem",
+                fontWeight: 700,
+                padding: "1px 6px",
+                minWidth: 16,
+                textAlign: "center",
+              }}
+            >
+              {totalActive}
+            </span>
+          )}
+        </button>
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={8}
+          className="hms-popover-content"
+          style={{
+            background: "#fff",
+            borderRadius: 14,
+            border: "1px solid var(--hms-border)",
+            boxShadow: "var(--shadow-lg)",
+            padding: "0.875rem",
+            minWidth: 220,
+            maxWidth: 280,
+            zIndex: 50,
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "0.625rem",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.8rem",
+                fontWeight: 800,
+                color: "var(--hms-navy)",
+              }}
+            >
+              Filters
+            </span>
+            {totalActive > 0 && (
+              <button
+                onClick={() =>
+                  filters.forEach((f) =>
+                    table.getColumn(f.columnId)?.setFilterValue(undefined),
+                  )
+                }
+                style={{
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  color: "#ef4444",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+
+          {filters.map((f, i) => {
+            const selected =
+              table.getColumn(f.columnId)?.getFilterValue() ?? [];
+            return (
+              <div
+                key={f.columnId}
+                style={{ marginBottom: i < filters.length - 1 ? "0.75rem" : 0 }}
+              >
+                <p
+                  style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 700,
+                    color: "#94a3b8",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    margin: "0 0 0.375rem",
+                  }}
+                >
+                  {f.label}
+                </p>
+                {f.options.map((opt) => {
+                  const checked = selected.includes(opt);
+                  return (
+                    <label
+                      key={opt}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        padding: "0.4rem 0.5rem",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        fontSize: "0.8rem",
+                        fontWeight: 500,
+                        color: "var(--hms-navy)",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.background =
+                          "var(--hms-surface)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.background = "transparent")
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const next = checked
+                            ? selected.filter((v) => v !== opt)
+                            : [...selected, opt];
+                          table
+                            .getColumn(f.columnId)
+                            ?.setFilterValue(next.length ? next : undefined);
+                          table.setPageIndex(0);
+                        }}
+                        style={{
+                          width: 14,
+                          height: 14,
+                          accentColor: "var(--hms-blue)",
+                          cursor: "pointer",
+                        }}
+                      />
+                      {opt}
+                    </label>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
 
 // ── Sort direction icon ───────────────────────────────────────────────────────
 // Renders the appropriate sort indicator next to a column header.
@@ -70,9 +257,11 @@ const DataTable = ({
   title,
   subtitle,
   pageSize = 10,
+  filters = [], // [{ columnId, label, options: string[] }]
 }) => {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [columnFilters, setColumnFilters] = useState([]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize });
 
   // useMemo prevents the table instance from being recreated on every render.
@@ -81,9 +270,10 @@ const DataTable = ({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter, pagination },
+    state: { sorting, globalFilter, columnFilters, pagination },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -112,10 +302,36 @@ const DataTable = ({
     >
       <style>{`
         .hms-datatable {
-          container-type: inline-size;
-          container-name: hms-datatable;
-        }
-        .dt-pagination-footer {
+    container-type: inline-size;
+    container-name: hms-datatable;
+  }
+
+  /* Header row (title + search/export/filter) — stacks vertically on
+     narrow containers so the search input never gets squeezed into
+     overflow by the fixed-size controls (Export, Filter) beside it. */
+  .hms-datatable-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 1.125rem 1.375rem;
+    border-bottom: 1px solid var(--hms-border);
+  }
+  .hms-datatable-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+  }
+  .hms-datatable-search-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .hms-datatable-search-wrap input {
+    width: 100%;
+  }
+
+  .dt-pagination-footer {
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -132,24 +348,22 @@ const DataTable = ({
         .dt-nav-edge { display: none; }
 
         @container hms-datatable (min-width: 480px) {
-          .dt-pagination-footer { flex-direction: row; justify-content: space-between; }
+    .hms-datatable-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hms-datatable-controls { width: auto; }
+    .hms-datatable-search-wrap { flex: 0 1 200px; }
+
+    .dt-pagination-footer { flex-direction: row; justify-content: space-between; }
           .dt-pagination-row-info { text-align: left; }
           .dt-pagination-controls { justify-content: flex-end; flex-wrap: nowrap; }
           .dt-nav-edge { display: flex; }
         }
       `}</style>
       {/* ── Table header: title + search + export ── */}
-      <div
-        style={{
-          padding: "1.125rem 1.375rem",
-          borderBottom: "1px solid var(--hms-border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "0.75rem",
-        }}
-      >
+      <div className="hms-datatable-header">
         {/* Title block */}
         <div>
           {title && (
@@ -180,9 +394,9 @@ const DataTable = ({
         </div>
 
         {/* Search + Export */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+        <div className="hms-datatable-controls">
           {/* Global search — filters across ALL columns simultaneously */}
-          <div style={{ position: "relative" }}>
+          <div className="hms-datatable-search-wrap">
             <Search
               size={14}
               style={{
@@ -213,7 +427,7 @@ const DataTable = ({
                 fontFamily: "var(--font-body)",
                 color: "var(--hms-navy)",
                 outline: "none",
-                width: 200,
+                width: "100%",
                 transition: "border-color 0.2s, box-shadow 0.2s",
               }}
               onFocus={(e) => {
@@ -257,6 +471,7 @@ const DataTable = ({
           >
             <Download size={13} /> Export
           </button>
+          {filters.length > 0 && <FilterMenu filters={filters} table={table} />}
         </div>
       </div>
 
