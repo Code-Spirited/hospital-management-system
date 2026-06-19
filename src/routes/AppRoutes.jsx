@@ -7,7 +7,7 @@ import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 
 import OPD from "../pages/opd/OPD";
-import OPDHome from "../pages/opd/OPDHome";
+import PatientList from "../pages/opd/PatientList";
 import PatientRegistration from "../pages/opd/PatientRegistration";
 
 // Placeholder for pages not yet built
@@ -31,7 +31,7 @@ const AppRoutes = () => {
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/opd" element={<OPD />}>
-          <Route index element={<OPDHome />} />
+          <Route index element={<PatientList />} />
           <Route path="register" element={<PatientRegistration />} />
         </Route>
         <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />

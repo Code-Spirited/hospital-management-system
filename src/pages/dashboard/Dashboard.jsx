@@ -1,6 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, multiSelectFilter } from "../../components/common";
-import { allPatients } from "./dashboardData";
+import { usePatients } from "../../context/PatientsContext";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 import AppointmentAnalytics from "./AppointmentAnalytics";
 import { useState } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
@@ -63,10 +65,10 @@ const quickIcons = [FaProcedures, FaStethoscope, FaPills, FaFlask];
 // Status badge
 const StatusBadge = ({ status }) => {
   const map = {
-    Completed: { bg: "#ecfdf5", color: "#059669", dot: "#22c55e" },
-    Admitted: { bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
-    Waiting: { bg: "#fffbeb", color: "#d97706", dot: "#f59e0b" },
+    Active: { bg: "#ecfdf5", color: "#059669", dot: "#22c55e" },
+    Inactive: { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" },
     Critical: { bg: "#fef2f2", color: "#dc2626", dot: "#ef4444" },
+    Discharged: { bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
   };
   const s = map[status] || { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" };
   return (
@@ -344,12 +346,12 @@ const patientColumns = [
       </span>
     ),
   }),
-  columnHelper.accessor("type", {
+  columnHelper.accessor("visitType", {
     header: "Type",
     filterFn: multiSelectFilter,
     cell: (info) => <TypeBadge type={info.getValue()} />,
   }),
-  columnHelper.accessor("doctor", {
+  columnHelper.accessor("assignedDoctor", {
     header: "Doctor",
     cell: (info) => (
       <span style={{ fontSize: "0.82rem", color: "#475569", fontWeight: 500 }}>
@@ -362,11 +364,11 @@ const patientColumns = [
     filterFn: multiSelectFilter,
     cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
-  columnHelper.accessor("time", {
-    header: "Time",
+  columnHelper.accessor("lastVisit", {
+    header: "Last Visit",
     cell: (info) => (
       <span style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 500 }}>
-        {info.getValue()}
+        {dayjs(info.getValue()).fromNow()}
       </span>
     ),
   }),
@@ -375,6 +377,22 @@ const patientColumns = [
 // MAIN DASHBOARD COMPONENT
 const Dashboard = () => {
   const [revenuePeriod, setRevenuePeriod] = useState("1y");
+  const navigate = useNavigate();
+
+  // Live data from the shared patient registry — the SAME list OPD manages.
+  // Any add/edit/delete performed in OPD shows up here automatically.
+  const { patients } = usePatients();
+  const recentPatients = [...patients]
+    .sort((a, b) => new Date(b.lastVisit) - new Date(a.lastVisit))
+    .slice(0, 10);
+
+  // Override the KPI card's value with the real, live count instead of a
+  // hardcoded placeholder number — this is what was actually disconnected
+  // from reality before.
+  const livePatientTotal = patients.length.toLocaleString("en-IN");
+  const kpiDataLive = kpiData.map((k) =>
+    k.icon === "patients" ? { ...k, value: livePatientTotal } : k,
+  );
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -670,7 +688,7 @@ const Dashboard = () => {
 
       {/* KPI CARDS (with sparklines)*/}
       <div className="kpi-grid">
-        {kpiData.map((kpi, i) => {
+        {kpiDataLive.map((kpi, i) => {
           const Icon = kpiIcons[kpi.icon];
           return (
             <div
@@ -1032,28 +1050,47 @@ const Dashboard = () => {
 
       {/* ── 6. RECENT PATIENTS TABLE — powered by TanStack Table v8 ── */}
       <div className="db-au db-d7">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "0.625rem",
+          }}
+        >
+          <button
+            onClick={() => navigate("/opd")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              color: "var(--hms-blue)",
+            }}
+          >
+            View Full Patient Registry →
+          </button>
+        </div>
         <DataTable
           columns={patientColumns}
-          data={allPatients}
+          data={recentPatients}
           title="Recent Patients"
-          subtitle="Last 7 days · Click any column header to sort"
+          subtitle="Most recently active · synced live with the OPD registry"
           pageSize={10}
           filters={[
             {
-              columnId: "type",
+              columnId: "visitType",
               label: "Type",
-              options: ["OPD", "IPD", "Emergency", "Follow-up"],
+              options: ["OPD", "Follow-up", "Emergency"],
             },
             {
               columnId: "status",
               label: "Status",
-              options: [
-                "Completed",
-                "Admitted",
-                "Waiting",
-                "Critical",
-                "Discharged",
-              ],
+              options: ["Active", "Inactive", "Critical", "Discharged"],
             },
           ]}
         />

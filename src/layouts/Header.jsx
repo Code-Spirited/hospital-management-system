@@ -46,7 +46,7 @@ const Header = ({
         }
         .hdr-btn:hover { background: #eef2f8; color: #0f172a; }
 
-        /* Desktop search bar — full width pill with label + Ctrl K hint */
+        /* Desktop search bar */
         .hdr-search-desktop {
           display: flex; align-items: center; gap: 10px;
           flex: 1;
@@ -68,18 +68,14 @@ const Header = ({
           padding: 2px 6px; background: #fff; flex-shrink: 0;
         }
 
-        /* Mobile search icon — hidden by default, shown only below 768px.
-           Explicit classes + !important here deliberately, matching the
-           pattern already used for .hms-hamburger / .hms-desktop-sidebar
-           elsewhere in this app, since Tailwind's hidden/md: utilities have
-           proven unreliable in this project when other CSS interferes. */
+        /* Mobile search */
         .hdr-search-mobile { display: none; }
         @media (max-width: 767px) {
           .hdr-search-desktop { display: none !important; }
           .hdr-search-mobile  { display: flex !important; }
         }
 
-        /* Shared entrance animation for anchored popovers (search + future ones) */
+        /* Popover animation */
         .hms-popover-content[data-state="open"] { animation: hmsPopIn 0.15s ease-out; }
         @keyframes hmsPopIn {
           from { opacity: 0; transform: scale(0.97) translateY(-4px); }
@@ -116,7 +112,7 @@ const Header = ({
           fontFamily: "var(--font-body)",
         }}
       >
-        {/* Hamburger — mobile only, shown via CSS in index.css */}
+        {/* Hamburger — mobile only */}
         <button
           className="hms-hamburger hdr-btn"
           onClick={onMobileMenuClick}
@@ -125,9 +121,7 @@ const Header = ({
           <Menu size={20} />
         </button>
 
-        {/* Search — anchored Popover. Both the wide desktop button and the
-            compact mobile icon sit inside the same Anchor, so whichever one
-            is visible correctly positions the dropdown beneath it. */}
+        {/* Search with Popover */}
         <Popover.Root open={paletteOpen} onOpenChange={onPaletteOpenChange}>
           <Popover.Anchor asChild>
             <div
@@ -161,9 +155,10 @@ const Header = ({
 
           <Popover.Portal>
             <Popover.Content
+              side="bottom"
               align="start"
               sideOffset={10}
-              collisionPadding={12}
+              avoidCollisions={false}
               className="hms-popover-content"
               style={{
                 width: "min(92vw, 480px)",
@@ -186,7 +181,7 @@ const Header = ({
 
         <div style={{ flex: 1 }} />
 
-        {/* ── Right actions ── */}
+        {/* Right actions */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <button
             className="hdr-btn"

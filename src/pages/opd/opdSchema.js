@@ -94,3 +94,16 @@ export const STEP_FIELDS = {
   1: ["mobileNumber", "addressLine1", "city", "state", "pincode"],
   2: ["emergencyName", "emergencyRelation", "emergencyPhone", "chiefComplaint"],
 };
+// ── Edit Patient schema — used by the quick-edit drawer in PatientList ───────
+export const editPatientSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().regex(phoneRegex, "Enter a valid 10-digit mobile number"),
+  email: z
+    .string()
+    .email("Enter a valid email address")
+    .optional()
+    .or(z.literal("")),
+  address: z.string().min(5, "Address must be at least 5 characters"),
+  status: z.string().min(1, "Please select a status"),
+  assignedDoctor: z.string().min(1, "Please select a doctor"),
+});

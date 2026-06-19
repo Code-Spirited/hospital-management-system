@@ -3,11 +3,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import Select, { components as RSComponents } from "react-select";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import {
@@ -22,6 +21,12 @@ import {
   Info,
 } from "lucide-react";
 import { patientRegistrationSchema, STEP_FIELDS } from "./opdSchema";
+import {
+  FormField as Field,
+  FormInput as Input,
+  FormTextarea as Textarea,
+  FormSelect,
+} from "../../components/common";
 
 // ── Option lists ──────────────────────────────────────────────────────────────
 const opt = (v) => ({ value: v, label: v });
@@ -85,203 +90,6 @@ const INDIAN_STATES = [
   "Lakshadweep",
   "Dadra & Nagar Haveli and Daman & Diu",
 ].map(opt);
-
-// ── react-select style factory ────────────────────────────────────────────────
-const rsStyles = (hasError) => ({
-  control: (base, state) => ({
-    ...base,
-    minHeight: 40,
-    borderRadius: 10,
-    borderColor: hasError
-      ? "#dc2626"
-      : state.isFocused
-        ? "var(--hms-blue)"
-        : "var(--hms-border)",
-    boxShadow: state.isFocused
-      ? hasError
-        ? "0 0 0 3px rgba(220,38,38,0.1)"
-        : "0 0 0 3px rgba(37,99,235,0.1)"
-      : "none",
-    fontFamily: "var(--font-body)",
-    fontSize: "0.875rem",
-    background: "#fff",
-    "&:hover": { borderColor: hasError ? "#dc2626" : "var(--hms-blue)" },
-  }),
-  placeholder: (base) => ({ ...base, color: "#94a3b8", fontSize: "0.875rem" }),
-  option: (base, state) => ({
-    ...base,
-    fontFamily: "var(--font-body)",
-    fontSize: "0.875rem",
-    borderRadius: 7,
-    background: state.isSelected
-      ? "var(--hms-blue)"
-      : state.isFocused
-        ? "var(--hms-blue-light)"
-        : "transparent",
-    color: state.isSelected ? "#fff" : "var(--hms-navy)",
-  }),
-  menu: (base) => ({
-    ...base,
-    borderRadius: 12,
-    border: "1px solid var(--hms-border)",
-    boxShadow: "var(--shadow-lg)",
-    overflow: "hidden",
-    fontFamily: "var(--font-body)",
-  }),
-  menuList: (base) => ({ ...base, padding: "0.375rem", maxHeight: 220 }),
-  // Rendered into document.body — needs its own high z-index since it's no
-  // longer nested inside the form's normal stacking context.
-  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-  singleValue: (base) => ({
-    ...base,
-    color: "var(--hms-navy)",
-    fontFamily: "var(--font-body)",
-  }),
-  indicatorSeparator: () => ({ display: "none" }),
-  dropdownIndicator: (base) => ({ ...base, color: "#94a3b8" }),
-  clearIndicator: (base) => ({ ...base, color: "#94a3b8" }),
-});
-
-// Custom MenuList wrapper — ensures Lenis's global smooth-scroll doesn't
-// hijack mouse-wheel scrolling meant for the dropdown's own internal list.
-// Lenis skips any element with (or nested inside) a data-lenis-prevent attribute.
-const SelectMenuList = (props) => (
-  <div data-lenis-prevent>
-    <RSComponents.MenuList {...props} />
-  </div>
-);
-
-// Reusable react-select wrapper. Centralizes the portal fix (escapes the
-// step-content's overflow:hidden clipping) and the Lenis scroll fix, so every
-// dropdown in this form gets both automatically instead of repeating the
-// same five props six times.
-const FormSelect = ({ name, control, options, error, ...rest }) => (
-  <Controller
-    name={name}
-    control={control}
-    render={({ field }) => (
-      <Select
-        options={options}
-        value={
-          field.value ? options.find((o) => o.value === field.value) : null
-        }
-        onChange={(o) => field.onChange(o?.value ?? "")}
-        onBlur={field.onBlur}
-        styles={rsStyles(!!error)}
-        menuPortalTarget={document.body}
-        menuPosition="fixed"
-        components={{ MenuList: SelectMenuList }}
-        {...rest}
-      />
-    )}
-  />
-);
-
-// ── Reusable input wrapper ────────────────────────────────────────────────────
-const Field = ({ label, required, error, hint, children }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-    <label
-      style={{
-        fontSize: "0.78rem",
-        fontWeight: 700,
-        color: "#374151",
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-      }}
-    >
-      {label}
-      {required && <span style={{ color: "#ef4444", lineHeight: 1 }}>*</span>}
-    </label>
-    {children}
-    {hint && !error && (
-      <p
-        style={{
-          fontSize: "0.7rem",
-          color: "#94a3b8",
-          margin: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: 3,
-        }}
-      >
-        <Info size={11} /> {hint}
-      </p>
-    )}
-    {error && (
-      <p
-        style={{
-          fontSize: "0.72rem",
-          color: "#dc2626",
-          margin: 0,
-          fontWeight: 600,
-        }}
-      >
-        {error}
-      </p>
-    )}
-  </div>
-);
-
-const Input = ({ error, ...props }) => (
-  <input
-    {...props}
-    style={{
-      padding: "0.575rem 0.875rem",
-      border: `1.5px solid ${error ? "#dc2626" : "var(--hms-border)"}`,
-      borderRadius: 10,
-      fontSize: "0.875rem",
-      fontFamily: "var(--font-body)",
-      color: "var(--hms-navy)",
-      background: "#fff",
-      outline: "none",
-      width: "100%",
-      transition: "border-color 0.2s, box-shadow 0.2s",
-      boxSizing: "border-box",
-    }}
-    onFocus={(e) => {
-      e.target.style.borderColor = error ? "#dc2626" : "var(--hms-blue)";
-      e.target.style.boxShadow = error
-        ? "0 0 0 3px rgba(220,38,38,0.1)"
-        : "0 0 0 3px rgba(37,99,235,0.1)";
-    }}
-    onBlur={(e) => {
-      e.target.style.borderColor = error ? "#dc2626" : "var(--hms-border)";
-      e.target.style.boxShadow = "none";
-    }}
-  />
-);
-
-const Textarea = ({ error, ...props }) => (
-  <textarea
-    {...props}
-    rows={3}
-    style={{
-      padding: "0.575rem 0.875rem",
-      border: `1.5px solid ${error ? "#dc2626" : "var(--hms-border)"}`,
-      borderRadius: 10,
-      fontSize: "0.875rem",
-      fontFamily: "var(--font-body)",
-      color: "var(--hms-navy)",
-      background: "#fff",
-      outline: "none",
-      width: "100%",
-      resize: "vertical",
-      transition: "border-color 0.2s, box-shadow 0.2s",
-      boxSizing: "border-box",
-    }}
-    onFocus={(e) => {
-      e.target.style.borderColor = error ? "#dc2626" : "var(--hms-blue)";
-      e.target.style.boxShadow = error
-        ? "0 0 0 3px rgba(220,38,38,0.1)"
-        : "0 0 0 3px rgba(37,99,235,0.1)";
-    }}
-    onBlur={(e) => {
-      e.target.style.borderColor = error ? "#dc2626" : "var(--hms-border)";
-      e.target.style.boxShadow = "none";
-    }}
-  />
-);
 
 const STEPS = [
   { label: "Personal", subtitle: "Basic information", Icon: User },

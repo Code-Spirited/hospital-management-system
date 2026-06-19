@@ -12,7 +12,7 @@
 // management.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
 import {
@@ -28,8 +28,7 @@ import {
   Bell,
   CalendarDays,
 } from "lucide-react";
-import { allPatients } from "../../../pages/dashboard/dashboardData";
-
+import { usePatients } from "../../../context/PatientsContext";
 const PAGES = [
   { label: "Dashboard", path: "/dashboard", Icon: LayoutDashboard },
   { label: "OPD", path: "/opd", Icon: Users },
@@ -57,7 +56,21 @@ const CommandPalette = ({
   onOpenCalendar,
 }) => {
   const navigate = useNavigate();
+  const { patients } = usePatients();
   const [search, setSearch] = useState("");
+  const inputRef = useRef(null);
+
+  // Focus the input the instant this opens, but WITHOUT letting the browser
+  // auto-scroll the page to bring it into view. A plain `autoFocus` attribute
+  // triggers that scroll-into-view behavior by default — combined with this
+  // being rendered through a portal, that was dragging the whole page down
+  // to wherever the popover ended up.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const go = (path) => {
     navigate(path);
@@ -92,7 +105,7 @@ const CommandPalette = ({
         >
           <Search size={17} style={{ color: "#94a3b8", flexShrink: 0 }} />
           <Command.Input
-            autoFocus
+            ref={inputRef}
             value={search}
             onValueChange={setSearch}
             placeholder="Search patients, pages, or actions..."
@@ -179,11 +192,11 @@ const CommandPalette = ({
           </Command.Group>
 
           <Command.Group heading="Patients">
-            {allPatients.slice(0, 8).map((p) => (
+            {patients.slice(0, 8).map((p) => (
               <Command.Item
                 key={p.id}
                 value={`${p.name} ${p.id}`}
-                onSelect={() => go("/dashboard")}
+                onSelect={() => go("/opd")}
                 style={itemStyle}
               >
                 <User2 size={16} style={{ color: "#64748b", flexShrink: 0 }} />
