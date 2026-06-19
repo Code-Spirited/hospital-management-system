@@ -6,6 +6,10 @@ import Dashboard from "../pages/dashboard/Dashboard";
 import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 
+import OPD from "../pages/opd/OPD";
+import OPDHome from "../pages/opd/OPDHome";
+import PatientRegistration from "../pages/opd/PatientRegistration";
+
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -26,7 +30,10 @@ const AppRoutes = () => {
 
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/opd" element={<PlaceholderPage title="OPD Module" />} />
+        <Route path="/opd" element={<OPD />}>
+          <Route index element={<OPDHome />} />
+          <Route path="register" element={<PatientRegistration />} />
+        </Route>
         <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />
         <Route
           path="/pharmacy"
