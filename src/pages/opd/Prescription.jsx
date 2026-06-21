@@ -118,9 +118,9 @@ const Prescription = () => {
       },
     });
     toast.success("Prescription saved", {
-      description: `${appt.patientName}'s prescription has been recorded.`,
+      description: "Now let's generate the bill.",
     });
-    navigate("/opd/appointments");
+    navigate(`/opd/billing/${appt.id}`);
   };
 
   return (
@@ -428,7 +428,7 @@ const Prescription = () => {
             boxShadow: "0 4px 14px rgba(5,150,105,0.3)",
           }}
         >
-          <ClipboardCheck size={17} /> Save Prescription
+          <ClipboardCheck size={17} /> Save & Generate Bill
         </button>
       </form>
     </div>

@@ -27,6 +27,7 @@ import {
   Stethoscope,
   Clock,
   FileText,
+  Receipt,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -154,13 +155,21 @@ const RowActions = ({ appt, onView, onReschedule, onCancel }) => {
             </>
           )}
           {appt.status === "Completed" && (
-            <button
-              className="opd-row-action-btn"
-              onClick={() => navigate(`/opd/prescription/${appt.id}`)}
-            >
-              <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
-              Prescription
-            </button>
+            <>
+              <button
+                className="opd-row-action-btn"
+                onClick={() => navigate(`/opd/prescription/${appt.id}`)}
+              >
+                <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
+                Prescription
+              </button>
+              <button
+                className="opd-row-action-btn"
+                onClick={() => navigate(`/opd/billing/${appt.id}`)}
+              >
+                <Receipt size={14} /> {appt.billing ? "Edit" : "Generate"} Bill
+              </button>
+            </>
           )}
         </Popover.Content>
       </Popover.Portal>
@@ -399,6 +408,64 @@ const ViewDrawer = ({ appt, open, onOpenChange }) => (
                       </p>
                     </div>
                   ))}
+                </>
+              )}
+
+              {appt.billing && (
+                <>
+                  <p
+                    style={{
+                      fontSize: "0.68rem",
+                      fontWeight: 800,
+                      color: "var(--hms-blue)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      margin: "1.125rem 0 0.5rem",
+                    }}
+                  >
+                    Billing
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "0.5rem 0",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                        color: "var(--hms-navy)",
+                      }}
+                    >
+                      Total: ₹
+                      {Math.round(appt.billing.total).toLocaleString("en-IN")}
+                    </span>
+                    <span
+                      style={{
+                        padding: "3px 10px",
+                        borderRadius: 20,
+                        fontSize: "0.72rem",
+                        fontWeight: 700,
+                        background:
+                          appt.billing.paymentStatus === "Paid"
+                            ? "#ecfdf5"
+                            : appt.billing.paymentStatus === "Partial"
+                              ? "#fffbeb"
+                              : "#fef2f2",
+                        color:
+                          appt.billing.paymentStatus === "Paid"
+                            ? "#059669"
+                            : appt.billing.paymentStatus === "Partial"
+                              ? "#d97706"
+                              : "#dc2626",
+                      }}
+                    >
+                      {appt.billing.paymentStatus}
+                    </span>
+                  </div>
                 </>
               )}
             </div>

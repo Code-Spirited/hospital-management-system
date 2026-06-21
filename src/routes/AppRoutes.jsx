@@ -4,6 +4,7 @@ import Dashboard from "../pages/dashboard/Dashboard";
 import AppointmentList from "../pages/opd/AppointmentList";
 import Consultation from "../pages/opd/Consultation";
 import Prescription from "../pages/opd/Prescription";
+import Billing from "../pages/opd/Billing";
 
 // Auth pages
 import Login from "../pages/auth/Login";
@@ -45,6 +46,7 @@ const AppRoutes = () => {
             path="prescription/:appointmentId"
             element={<Prescription />}
           />
+          <Route path="billing/:appointmentId" element={<Billing />} />
         </Route>
         <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />
         <Route

@@ -166,3 +166,23 @@ export const prescriptionSchema = z.object({
     .min(1, "Add at least one medicine"),
   generalAdvice: z.string().optional().or(z.literal("")),
 });
+// ── Billing schema ─────────────────────────────────────────────────────────────
+export const billingSchema = z.object({
+  consultationFee: z.coerce.number().min(0, "Enter a valid amount"),
+  items: z.array(
+    z.object({
+      description: z.string().min(2, "Description required"),
+      amount: z.coerce.number().min(0, "Enter a valid amount"),
+    }),
+  ),
+  discountPercent: z.coerce
+    .number()
+    .min(0, "Cannot be negative")
+    .max(100, "Cannot exceed 100%"),
+  taxPercent: z.coerce
+    .number()
+    .min(0, "Cannot be negative")
+    .max(100, "Cannot exceed 100%"),
+  paymentMethod: z.string().min(1, "Select a payment method"),
+  paymentStatus: z.string().min(1, "Select a payment status"),
+});
