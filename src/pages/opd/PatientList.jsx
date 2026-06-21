@@ -15,7 +15,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +23,6 @@ import * as Popover from "@radix-ui/react-popover";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import {
-  UserPlus,
   Users,
   Activity,
   AlertCircle,
@@ -46,7 +44,7 @@ import {
   FormField as Field,
   FormInput as Input,
   FormTextarea as Textarea,
-  FormSelect,
+  DrawerSelect,
 } from "../../components/common";
 import { STATUS_CONFIG, VISIT_TYPE_CONFIG, DOCTORS } from "./opdData";
 import { usePatients } from "../../context/PatientsContext";
@@ -501,12 +499,18 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
 
               <form
                 onSubmit={(e) => e.preventDefault()}
-                style={{ flex: 1, display: "flex", flexDirection: "column" }}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
               >
                 <div
                   data-lenis-prevent
                   style={{
                     flex: 1,
+                    minHeight: 0,
                     overflowY: "auto",
                     padding: "1.125rem 1.375rem",
                     display: "flex",
@@ -544,12 +548,12 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
                     <Textarea {...register("address")} error={errors.address} />
                   </Field>
                   <Field label="Status" required error={errors.status?.message}>
-                    <FormSelect
+                    <DrawerSelect
                       name="status"
                       control={control}
                       options={STATUS_OPTIONS}
                       error={errors.status}
-                      isSearchable={false}
+                      placeholder="Select status"
                     />
                   </Field>
                   <Field
@@ -557,13 +561,12 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
                     required
                     error={errors.assignedDoctor?.message}
                   >
-                    <FormSelect
+                    <DrawerSelect
                       name="assignedDoctor"
                       control={control}
                       options={DOCTOR_OPTIONS}
                       error={errors.assignedDoctor}
-                      isSearchable={false}
-                      menuPlacement="top"
+                      placeholder="Select doctor"
                     />
                   </Field>
                 </div>
@@ -605,7 +608,6 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const PatientList = () => {
-  const navigate = useNavigate();
   const { patients, updatePatient, deletePatient, restorePatient } =
     usePatients();
   const [viewing, setViewing] = useState(null);
@@ -937,36 +939,6 @@ const PatientList = () => {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* ── Register button ── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "1rem",
-        }}
-      >
-        <button
-          onClick={() => navigate("/opd/register")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "0.625rem 1.25rem",
-            border: "none",
-            borderRadius: 10,
-            background: "var(--hms-blue)",
-            color: "#fff",
-            cursor: "pointer",
-            fontFamily: "var(--font-body)",
-            fontSize: "0.875rem",
-            fontWeight: 700,
-            boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
-          }}
-        >
-          <UserPlus size={16} /> Register Patient
-        </button>
       </div>
 
       {/* ── Table ── */}

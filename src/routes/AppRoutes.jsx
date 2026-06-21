@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import Dashboard from "../pages/dashboard/Dashboard";
+import AppointmentList from "../pages/opd/AppointmentList";
+import Consultation from "../pages/opd/Consultation";
 
 // Auth pages
 import Login from "../pages/auth/Login";
@@ -33,6 +35,11 @@ const AppRoutes = () => {
         <Route path="/opd" element={<OPD />}>
           <Route index element={<PatientList />} />
           <Route path="register" element={<PatientRegistration />} />
+          <Route path="appointments" element={<AppointmentList />} />
+          <Route
+            path="consultation/:appointmentId"
+            element={<Consultation />}
+          />
         </Route>
         <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />
         <Route

@@ -26,6 +26,7 @@ import {
   FormInput as Input,
   FormTextarea as Textarea,
   FormSelect,
+  DateInput,
 } from "../../components/common";
 
 // ── Option lists ──────────────────────────────────────────────────────────────
@@ -191,7 +192,7 @@ const PatientRegistration = () => {
   const allValues = form.watch();
 
   const age = allValues.dateOfBirth
-    ? dayjs().diff(dayjs(allValues.dateOfBirth), "year")
+    ? dayjs().diff(dayjs(allValues.dateOfBirth, "DD-MM-YYYY"), "year")
     : null;
 
   const goNext = useCallback(async () => {
@@ -606,10 +607,8 @@ const PatientRegistration = () => {
                       required
                       error={errors.dateOfBirth?.message}
                     >
-                      <Input
+                      <DateInput
                         {...register("dateOfBirth")}
-                        type="date"
-                        max={dayjs().format("YYYY-MM-DD")}
                         error={errors.dateOfBirth}
                       />
                     </Field>
@@ -1088,7 +1087,7 @@ const PatientRegistration = () => {
                         label="Date of Birth"
                         value={
                           allValues.dateOfBirth
-                            ? `${dayjs(allValues.dateOfBirth).format("D MMM YYYY")} (Age ${age})`
+                            ? `${dayjs(allValues.dateOfBirth, "DD-MM-YYYY").format("D MMM YYYY")} (Age ${age})`
                             : ""
                         }
                       />
