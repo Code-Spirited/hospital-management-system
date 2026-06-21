@@ -153,6 +153,15 @@ const RowActions = ({ appt, onView, onReschedule, onCancel }) => {
               </button>
             </>
           )}
+          {appt.status === "Completed" && (
+            <button
+              className="opd-row-action-btn"
+              onClick={() => navigate(`/opd/prescription/${appt.id}`)}
+            >
+              <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
+              Prescription
+            </button>
+          )}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
@@ -305,10 +314,93 @@ const ViewDrawer = ({ appt, open, onOpenChange }) => (
                 label="Reason for Visit"
                 value={appt.reason}
               />
-              <div style={{ display: "flex", gap: 8, marginTop: "1rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginTop: "1rem",
+                  marginBottom: appt.diagnosis ? "1rem" : 0,
+                }}
+              >
                 <TypePill type={appt.visitType} />
                 <StatusPill status={appt.status} />
               </div>
+
+              {appt.diagnosis && (
+                <>
+                  <p
+                    style={{
+                      fontSize: "0.68rem",
+                      fontWeight: 800,
+                      color: "var(--hms-blue)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      margin: "0.5rem 0 0.25rem",
+                    }}
+                  >
+                    Clinical Record
+                  </p>
+                  <DetailRow
+                    Icon={Stethoscope}
+                    label="Diagnosis"
+                    value={appt.diagnosis}
+                  />
+                  {appt.notes && (
+                    <DetailRow
+                      Icon={FileText}
+                      label="Notes"
+                      value={appt.notes}
+                    />
+                  )}
+                </>
+              )}
+
+              {appt.prescription?.medicines?.length > 0 && (
+                <>
+                  <p
+                    style={{
+                      fontSize: "0.68rem",
+                      fontWeight: 800,
+                      color: "var(--hms-blue)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      margin: "1.125rem 0 0.5rem",
+                    }}
+                  >
+                    Prescription
+                  </p>
+                  {appt.prescription.medicines.map((m, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: "0.5rem 0",
+                        borderBottom: "1px solid #f1f5f9",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                          color: "var(--hms-navy)",
+                          margin: 0,
+                        }}
+                      >
+                        {m.medicine}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "0.72rem",
+                          color: "#64748b",
+                          margin: "2px 0 0",
+                        }}
+                      >
+                        {m.dosage} · {m.frequency} · {m.duration}
+                        {m.instructions ? ` · ${m.instructions}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </>
         )}

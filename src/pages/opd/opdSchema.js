@@ -151,3 +151,18 @@ export const consultationSchema = z.object({
   notes: z.string().optional().or(z.literal("")),
   advice: z.string().optional().or(z.literal("")),
 });
+// ── Prescription schema ───────────────────────────────────────────────────────
+export const prescriptionSchema = z.object({
+  medicines: z
+    .array(
+      z.object({
+        medicine: z.string().min(2, "Medicine name required"),
+        dosage: z.string().min(1, "Dosage required"),
+        frequency: z.string().min(1, "Frequency required"),
+        duration: z.string().min(1, "Duration required"),
+        instructions: z.string().optional().or(z.literal("")),
+      }),
+    )
+    .min(1, "Add at least one medicine"),
+  generalAdvice: z.string().optional().or(z.literal("")),
+});

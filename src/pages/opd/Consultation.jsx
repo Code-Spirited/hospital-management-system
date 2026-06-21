@@ -87,10 +87,10 @@ const Consultation = () => {
       notes: data.notes,
       advice: data.advice,
     });
-    toast.success("Consultation completed", {
-      description: `${appt.patientName}'s record has been saved.`,
+    toast.success("Consultation saved", {
+      description: "Now let's write the prescription.",
     });
-    navigate("/opd/appointments");
+    navigate(`/opd/prescription/${appt.id}`);
   };
 
   return (
@@ -336,7 +336,7 @@ const Consultation = () => {
             boxShadow: "0 4px 14px rgba(5,150,105,0.3)",
           }}
         >
-          <ClipboardCheck size={17} /> Complete Consultation
+          <ClipboardCheck size={17} /> Save & Write Prescription
         </button>
       </form>
     </div>
