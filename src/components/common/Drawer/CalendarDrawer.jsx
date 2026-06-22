@@ -1,9 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // CalendarDrawer.jsx
 //
-// Right-side slide-in drawer containing the full appointment calendar.
-// The two-view system (calendar ↔ day detail) works identically to the
-// previous CalendarWidget but now lives in a vaul Drawer overlay.
+// Now reads live from AppointmentsContext instead of the old, separate
+// calendarData.js mock — booking, rescheduling, or cancelling an
+// appointment anywhere in the app shows up here immediately, on the
+// correct date.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -19,16 +20,16 @@ import {
   Clock,
   User2,
 } from "lucide-react";
+import { useAppointments } from "../../../context/AppointmentsContext";
 import {
-  appointmentsByDate,
-  APPOINTMENT_TYPE_COLORS,
-  APPOINTMENT_STATUS_CONFIG,
-} from "../../../pages/dashboard/calendarData";
+  VISIT_TYPE_CONFIG,
+  STATUS_CONFIG,
+} from "../../../pages/opd/appointmentsData";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const TypeBadge = ({ type }) => {
-  const color = APPOINTMENT_TYPE_COLORS[type] || "#94a3b8";
+  const c = VISIT_TYPE_CONFIG[type] || { color: "#94a3b8", bg: "#f8fafc" };
   return (
     <span
       style={{
@@ -36,8 +37,8 @@ const TypeBadge = ({ type }) => {
         borderRadius: 20,
         fontSize: "0.65rem",
         fontWeight: 700,
-        background: color + "18",
-        color,
+        background: c.bg,
+        color: c.color,
       }}
     >
       {type}
@@ -46,10 +47,7 @@ const TypeBadge = ({ type }) => {
 };
 
 const StatusBadge = ({ status }) => {
-  const cfg = APPOINTMENT_STATUS_CONFIG[status] || {
-    color: "#94a3b8",
-    bg: "#f8fafc",
-  };
+  const cfg = STATUS_CONFIG[status] || { color: "#94a3b8", bg: "#f8fafc" };
   return (
     <span
       style={{
@@ -68,6 +66,7 @@ const StatusBadge = ({ status }) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const CalendarDrawer = ({ open, onOpenChange }) => {
+  const { appointments } = useAppointments();
   const today = dayjs();
   const [view, setView] = useState("calendar");
   const [viewMonth, setViewMonth] = useState(today);
@@ -103,7 +102,9 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
     });
 
   const selectedKey = selectedDate.format("YYYY-MM-DD");
-  const appointments = appointmentsByDate[selectedKey] || [];
+  const dayAppointments = appointments
+    .filter((a) => a.date === selectedKey)
+    .sort((a, b) => a.time.localeCompare(b.time));
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
@@ -365,15 +366,15 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                     >
                       {cells.map(({ date, inMonth }, i) => {
                         const key = date.format("YYYY-MM-DD");
-                        const apts = appointmentsByDate[key] || [];
+                        const apts = appointments.filter((a) => a.date === key);
                         const hasApts = apts.length > 0;
                         const uniqueTypes = [
-                          ...new Set(apts.map((a) => a.type)),
+                          ...new Set(apts.map((a) => a.visitType)),
                         ].slice(0, 3);
                         const isToday = date.isSame(today, "day");
                         const isSelected = date.isSame(selectedDate, "day");
                         const hasEmergency = apts.some(
-                          (a) => a.type === "Emergency",
+                          (a) => a.visitType === "Emergency",
                         );
 
                         return (
@@ -453,7 +454,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                                       borderRadius: "50%",
                                       background: isSelected
                                         ? "rgba(255,255,255,0.8)"
-                                        : APPOINTMENT_TYPE_COLORS[type] ||
+                                        : VISIT_TYPE_CONFIG[type]?.color ||
                                           "#94a3b8",
                                     }}
                                   />
@@ -477,37 +478,35 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                       flexWrap: "wrap",
                     }}
                   >
-                    {Object.entries(APPOINTMENT_TYPE_COLORS).map(
-                      ([type, color]) => (
-                        <div
-                          key={type}
+                    {Object.entries(VISIT_TYPE_CONFIG).map(([type, cfg]) => (
+                      <div
+                        key={type}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <span
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 5,
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: cfg.color,
+                            display: "inline-block",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: "0.68rem",
+                            color: "#64748b",
+                            fontWeight: 600,
                           }}
                         >
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: "50%",
-                              background: color,
-                              display: "inline-block",
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontSize: "0.68rem",
-                              color: "#64748b",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {type}
-                          </span>
-                        </div>
-                      ),
-                    )}
+                          {type}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               ) : (
@@ -640,7 +639,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                         color: "var(--hms-blue)",
                       }}
                     >
-                      {appointments.length} appts
+                      {dayAppointments.length} appts
                     </span>
                   </div>
 
@@ -656,7 +655,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                       gap: "0.5rem",
                     }}
                   >
-                    {appointments.length === 0 ? (
+                    {dayAppointments.length === 0 ? (
                       <div
                         style={{
                           display: "flex",
@@ -680,7 +679,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                         </p>
                       </div>
                     ) : (
-                      appointments.map((apt, i) => (
+                      dayAppointments.map((apt, i) => (
                         <motion.div
                           key={apt.id}
                           initial={{ opacity: 0, y: 10 }}
@@ -691,7 +690,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                             borderRadius: 12,
                             border: "1px solid var(--hms-border)",
                             background: "#fafbfd",
-                            borderLeft: `4px solid ${APPOINTMENT_TYPE_COLORS[apt.type] || "#94a3b8"}`,
+                            borderLeft: `4px solid ${VISIT_TYPE_CONFIG[apt.visitType]?.color || "#94a3b8"}`,
                             cursor: "pointer",
                             transition: "all 0.15s",
                           }}
@@ -743,7 +742,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                               margin: "0 0 4px",
                             }}
                           >
-                            {apt.patient}
+                            {apt.patientName}
                           </p>
 
                           <div
@@ -764,21 +763,7 @@ const CalendarDrawer = ({ open, onOpenChange }) => {
                               {apt.doctor}
                             </span>
                             <span style={{ color: "#e2e8f0" }}>•</span>
-                            <TypeBadge type={apt.type} />
-                            {apt.ward && apt.ward !== "—" && (
-                              <>
-                                <span style={{ color: "#e2e8f0" }}>•</span>
-                                <span
-                                  style={{
-                                    fontSize: "0.67rem",
-                                    color: "#94a3b8",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  Ward {apt.ward}
-                                </span>
-                              </>
-                            )}
+                            <TypeBadge type={apt.visitType} />
                           </div>
                         </motion.div>
                       ))

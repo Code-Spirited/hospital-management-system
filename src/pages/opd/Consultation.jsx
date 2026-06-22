@@ -1,9 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Consultation.jsx - Week 3, Thursday
-// Reached via /opd/consultation/:appointmentId from a Scheduled appointment's
-// "Start Consultation" action. Completing it marks that appointment
-// Completed and stores the clinical record directly on it via the existing
-// AppointmentsContext - no new data layer needed.
+// Consultation.jsx — Week 3, Thursday (revised)
+// Reached via /opd/consultation/:appointmentId from a Scheduled (or
+// Consulted, for editing) appointment. Three explicit outcomes, none of
+// them forced through the others:
+//   1. Save & Write Prescription  → status "Consulted", goes to Prescription
+//   2. Save & Generate Bill       → status "Consulted", SKIPS Prescription
+//      entirely and goes straight to Billing (e.g. consultation needed no
+//      medicine but should still be billed)
+//   3. Mark Complete — No Further Action → status "Completed" directly,
+//      for visits needing neither a prescription nor a bill
+// No field in this form is required — a consultation should be easy to
+// log even with minimal detail.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useParams, useNavigate } from "react-router-dom";
@@ -15,6 +22,7 @@ import {
   Activity,
   Stethoscope,
   ClipboardCheck,
+  Receipt,
   User2,
   ArrowLeft,
 } from "lucide-react";
@@ -38,12 +46,18 @@ const Consultation = () => {
     ? patients.find((p) => p.id === appt.patientId)
     : null;
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
+  const { register, handleSubmit } = useForm({
     resolver: zodResolver(consultationSchema),
+    defaultValues: {
+      bloodPressure: appt?.vitals?.bloodPressure ?? "",
+      temperature: appt?.vitals?.temperature ?? "",
+      pulse: appt?.vitals?.pulse ?? "",
+      weight: appt?.vitals?.weight ?? "",
+      spo2: appt?.vitals?.spo2 ?? "",
+      diagnosis: appt?.diagnosis ?? "",
+      notes: appt?.notes ?? "",
+      advice: appt?.advice ?? "",
+    },
   });
 
   if (!appt) {
@@ -78,19 +92,37 @@ const Consultation = () => {
     );
   }
 
-  const submit = (data) => {
-    updateAppointment({
-      ...appt,
-      status: "Completed",
-      vitals: data,
-      diagnosis: data.diagnosis,
-      notes: data.notes,
-      advice: data.advice,
-    });
+  const buildUpdate = (data, status) => ({
+    ...appt,
+    status,
+    vitals: data,
+    diagnosis: data.diagnosis,
+    notes: data.notes,
+    advice: data.advice,
+  });
+
+  const saveAndWritePrescription = (data) => {
+    updateAppointment(buildUpdate(data, "Consulted"));
     toast.success("Consultation saved", {
       description: "Now let's write the prescription.",
     });
     navigate(`/opd/prescription/${appt.id}`);
+  };
+
+  const saveAndGenerateBill = (data) => {
+    updateAppointment(buildUpdate(data, "Consulted"));
+    toast.success("Consultation saved", {
+      description: "No prescription needed — let's generate the bill.",
+    });
+    navigate(`/opd/billing/${appt.id}`);
+  };
+
+  const saveAndComplete = (data) => {
+    updateAppointment(buildUpdate(data, "Completed"));
+    toast.success("Consultation completed", {
+      description: "No further action needed for this visit.",
+    });
+    navigate("/opd/appointments");
   };
 
   return (
@@ -215,6 +247,16 @@ const Consultation = () => {
             }}
           >
             <Activity size={16} style={{ color: "var(--hms-blue)" }} /> Vitals
+            <span
+              style={{
+                fontSize: "0.7rem",
+                fontWeight: 500,
+                color: "#94a3b8",
+                textTransform: "none",
+              }}
+            >
+              (all optional)
+            </span>
           </h2>
           <div
             style={{
@@ -223,34 +265,14 @@ const Consultation = () => {
               gap: "1rem",
             }}
           >
-            <Field
-              label="Blood Pressure"
-              required
-              error={errors.bloodPressure?.message}
-            >
-              <Input
-                {...register("bloodPressure")}
-                placeholder="e.g. 120/80"
-                error={errors.bloodPressure}
-              />
+            <Field label="Blood Pressure">
+              <Input {...register("bloodPressure")} placeholder="e.g. 120/80" />
             </Field>
-            <Field
-              label="Temperature (°F)"
-              required
-              error={errors.temperature?.message}
-            >
-              <Input
-                {...register("temperature")}
-                placeholder="e.g. 98.6"
-                error={errors.temperature}
-              />
+            <Field label="Temperature (°F)">
+              <Input {...register("temperature")} placeholder="e.g. 98.6" />
             </Field>
-            <Field label="Pulse (bpm)" required error={errors.pulse?.message}>
-              <Input
-                {...register("pulse")}
-                placeholder="e.g. 72"
-                error={errors.pulse}
-              />
+            <Field label="Pulse (bpm)">
+              <Input {...register("pulse")} placeholder="e.g. 72" />
             </Field>
             <Field label="Weight (kg)">
               <Input {...register("weight")} placeholder="Optional" />
@@ -293,11 +315,10 @@ const Consultation = () => {
               gap: "1.125rem",
             }}
           >
-            <Field label="Diagnosis" required error={errors.diagnosis?.message}>
+            <Field label="Diagnosis">
               <Textarea
                 {...register("diagnosis")}
-                placeholder="Clinical diagnosis..."
-                error={errors.diagnosis}
+                placeholder="Clinical diagnosis... (optional)"
               />
             </Field>
             <Field label="Observations / Notes">
@@ -317,7 +338,7 @@ const Consultation = () => {
 
         <button
           type="button"
-          onClick={handleSubmit(submit)}
+          onClick={handleSubmit(saveAndWritePrescription)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -327,16 +348,64 @@ const Consultation = () => {
             padding: "0.75rem 1rem",
             border: "none",
             borderRadius: 12,
-            background: "var(--hms-success)",
+            background: "var(--hms-blue)",
             color: "#fff",
             cursor: "pointer",
             fontFamily: "var(--font-body)",
             fontSize: "0.9rem",
             fontWeight: 700,
-            boxShadow: "0 4px 14px rgba(5,150,105,0.3)",
+            boxShadow: "0 4px 14px rgba(37,99,235,0.3)",
+            marginBottom: "0.625rem",
           }}
         >
           <ClipboardCheck size={17} /> Save & Write Prescription
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSubmit(saveAndGenerateBill)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            justifyContent: "center",
+            padding: "0.7rem 1rem",
+            border: "1.5px solid var(--hms-blue)",
+            borderRadius: 12,
+            background: "#fff",
+            color: "var(--hms-blue)",
+            cursor: "pointer",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.875rem",
+            fontWeight: 700,
+            marginBottom: "0.625rem",
+          }}
+        >
+          <Receipt size={16} /> Save & Generate Bill (Skip Prescription)
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSubmit(saveAndComplete)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            justifyContent: "center",
+            padding: "0.65rem 1rem",
+            border: "1.5px solid var(--hms-border)",
+            borderRadius: 12,
+            background: "#fff",
+            color: "#64748b",
+            cursor: "pointer",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.83rem",
+            fontWeight: 600,
+          }}
+        >
+          Mark Complete — No Further Action
         </button>
       </form>
     </div>

@@ -25,7 +25,7 @@ import dayjs from "dayjs";
 import {
   Users,
   Activity,
-  AlertCircle,
+  UserX,
   MoreVertical,
   Eye,
   Pencil,
@@ -35,7 +35,6 @@ import {
   Mail,
   MapPin,
   Calendar,
-  Stethoscope,
   Droplet,
 } from "lucide-react";
 import {
@@ -46,13 +45,25 @@ import {
   FormTextarea as Textarea,
   DrawerSelect,
 } from "../../components/common";
-import { STATUS_CONFIG, VISIT_TYPE_CONFIG, DOCTORS } from "./opdData";
+import { STATUS_CONFIG } from "./opdData";
 import { usePatients } from "../../context/PatientsContext";
+import { useAppointments } from "../../context/AppointmentsContext";
 import { editPatientSchema } from "./opdSchema";
 
 const opt = (v) => ({ value: v, label: v });
 const STATUS_OPTIONS = Object.keys(STATUS_CONFIG).map(opt);
-const DOCTOR_OPTIONS = DOCTORS.map(opt);
+
+// Computed, not stored — finds the most recent appointment for a patient.
+// This is the fix for "Last Visit" silently going stale: it's derived live
+// from the actual appointment record every time, never manually maintained.
+const getLastVisit = (patientId, appointments) => {
+  const matches = appointments.filter((a) => a.patientId === patientId);
+  if (matches.length === 0) return null;
+  return matches.reduce((latest, a) => {
+    const d = dayjs(`${a.date}T${a.time}`);
+    return !latest || d.isAfter(latest) ? d : latest;
+  }, null);
+};
 
 const getInitials = (name) =>
   name
@@ -77,24 +88,6 @@ const StatusPill = ({ status }) => {
       }}
     >
       {status}
-    </span>
-  );
-};
-
-const TypePill = ({ type }) => {
-  const cfg = VISIT_TYPE_CONFIG[type] || { color: "#94a3b8", bg: "#f8fafc" };
-  return (
-    <span
-      style={{
-        padding: "3px 10px",
-        borderRadius: 20,
-        fontSize: "0.72rem",
-        fontWeight: 700,
-        background: cfg.bg,
-        color: cfg.color,
-      }}
-    >
-      {type}
     </span>
   );
 };
@@ -186,6 +179,56 @@ const DetailRow = ({ Icon, label, value }) => (
     </div>
   </div>
 );
+
+const RecentAppointments = ({ patientId }) => {
+  const { appointments } = useAppointments();
+  const recent = appointments
+    .filter((a) => a.patientId === patientId)
+    .sort(
+      (a, b) =>
+        new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`),
+    )
+    .slice(0, 5);
+
+  if (recent.length === 0) {
+    return (
+      <p style={{ fontSize: "0.8rem", color: "#94a3b8", margin: "0.5rem 0" }}>
+        No appointments yet.
+      </p>
+    );
+  }
+  return recent.map((a) => (
+    <div
+      key={a.id}
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "0.5rem 0",
+        borderBottom: "1px solid #f1f5f9",
+      }}
+    >
+      <div>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            color: "var(--hms-navy)",
+          }}
+        >
+          {dayjs(a.date).format("D MMM YYYY")} · {a.time}
+        </p>
+        <p style={{ margin: "1px 0 0", fontSize: "0.7rem", color: "#94a3b8" }}>
+          {a.doctor} · {a.visitType}
+        </p>
+      </div>
+      <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#64748b" }}>
+        {a.status}
+      </span>
+    </div>
+  ));
+};
 
 // ── View drawer ────────────────────────────────────────────────────────────────
 const ViewDrawer = ({ patient, open, onOpenChange }) => (
@@ -340,11 +383,6 @@ const ViewDrawer = ({ patient, open, onOpenChange }) => (
                 label="Blood Group"
                 value={patient.bloodGroup}
               />
-              <DetailRow
-                Icon={Stethoscope}
-                label="Assigned Doctor"
-                value={patient.assignedDoctor}
-              />
 
               <p
                 style={{
@@ -363,16 +401,24 @@ const ViewDrawer = ({ patient, open, onOpenChange }) => (
                 label="Registered On"
                 value={dayjs(patient.registeredOn).format("D MMMM YYYY")}
               />
-              <DetailRow
-                Icon={Calendar}
-                label="Last Visit"
-                value={dayjs(patient.lastVisit).format("D MMMM YYYY")}
-              />
 
-              <div style={{ display: "flex", gap: 8, marginTop: "1rem" }}>
-                <TypePill type={patient.visitType} />
+              <div style={{ marginTop: "0.5rem" }}>
                 <StatusPill status={patient.status} />
               </div>
+
+              <p
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 800,
+                  color: "var(--hms-blue)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                  margin: "1.125rem 0 0.25rem",
+                }}
+              >
+                Recent Appointments
+              </p>
+              <RecentAppointments patientId={patient.id} />
             </div>
           </>
         )}
@@ -405,7 +451,6 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
         email: patient.email,
         address: patient.address,
         status: patient.status,
-        assignedDoctor: patient.assignedDoctor,
       });
     }
   }, [patient, open, reset]);
@@ -556,19 +601,6 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
                       placeholder="Select status"
                     />
                   </Field>
-                  <Field
-                    label="Assigned Doctor"
-                    required
-                    error={errors.assignedDoctor?.message}
-                  >
-                    <DrawerSelect
-                      name="assignedDoctor"
-                      control={control}
-                      options={DOCTOR_OPTIONS}
-                      error={errors.assignedDoctor}
-                      placeholder="Select doctor"
-                    />
-                  </Field>
                 </div>
 
                 <div
@@ -610,9 +642,18 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
 const PatientList = () => {
   const { patients, updatePatient, deletePatient, restorePatient } =
     usePatients();
+  const { appointments } = useAppointments();
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
 
+  // Table rows carry a computed lastVisit alongside the real patient data —
+  // this augmented copy is what's displayed; View/Edit/Delete always look
+  // up the clean, unaugmented record from context so the computed field
+  // never accidentally gets saved back into storage.
+  const patientsForTable = patients.map((p) => ({
+    ...p,
+    lastVisit: getLastVisit(p.id, appointments),
+  }));
   const handleDelete = (patient) => {
     deletePatient(patient.id);
     toast(`${patient.name} removed`, {
@@ -702,39 +743,32 @@ const PatientList = () => {
         </span>
       ),
     }),
-    columnHelper.accessor("visitType", {
-      header: "Visit Type",
-      filterFn: multiSelectFilter,
-      cell: (info) => <TypePill type={info.getValue()} />,
-    }),
-    columnHelper.accessor("assignedDoctor", {
-      header: "Doctor",
+    columnHelper.accessor("email", {
+      header: "Email",
       cell: (info) => (
         <span
-          style={{
-            fontSize: "0.8rem",
-            color: "#475569",
-            fontWeight: 500,
-            whiteSpace: "nowrap",
-          }}
+          style={{ fontSize: "0.8rem", color: "#64748b", whiteSpace: "nowrap" }}
         >
-          {info.getValue()}
+          {info.getValue() || "—"}
         </span>
       ),
     }),
     columnHelper.accessor("lastVisit", {
       header: "Last Visit",
-      cell: (info) => (
-        <span
-          style={{
-            fontSize: "0.78rem",
-            color: "#64748b",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {dayjs(info.getValue()).format("D MMM YYYY")}
-        </span>
-      ),
+      cell: (info) => {
+        const v = info.getValue();
+        return (
+          <span
+            style={{
+              fontSize: "0.78rem",
+              color: v ? "#94a3b8" : "#cbd5e1",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {v ? v.fromNow() : "No visits yet"}
+          </span>
+        );
+      },
     }),
     columnHelper.accessor("status", {
       header: "Status",
@@ -744,20 +778,23 @@ const PatientList = () => {
     columnHelper.display({
       id: "actions",
       header: "",
-      cell: (info) => (
-        <RowActions
-          patient={info.row.original}
-          onView={setViewing}
-          onEdit={setEditing}
-          onDelete={handleDelete}
-        />
-      ),
+      cell: (info) => {
+        const original = patients.find((p) => p.id === info.row.original.id);
+        return (
+          <RowActions
+            patient={original}
+            onView={setViewing}
+            onEdit={setEditing}
+            onDelete={handleDelete}
+          />
+        );
+      },
     }),
   ];
 
   const total = patients.length;
   const active = patients.filter((p) => p.status === "Active").length;
-  const critical = patients.filter((p) => p.status === "Critical").length;
+  const inactive = patients.filter((p) => p.status === "Inactive").length;
 
   return (
     <div className="opd-page" style={{ fontFamily: "var(--font-body)" }}>
@@ -907,13 +944,13 @@ const PatientList = () => {
               width: 38,
               height: 38,
               borderRadius: 10,
-              background: "var(--hms-danger-bg)",
+              background: "#f1f5f9",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <AlertCircle size={18} style={{ color: "var(--hms-danger)" }} />
+            <UserX size={18} style={{ color: "#64748b" }} />
           </div>
           <div>
             <p
@@ -925,7 +962,7 @@ const PatientList = () => {
                 margin: 0,
               }}
             >
-              {critical}
+              {inactive}
             </p>
             <p
               style={{
@@ -935,7 +972,7 @@ const PatientList = () => {
                 fontWeight: 500,
               }}
             >
-              Critical Cases
+              Inactive Patients
             </p>
           </div>
         </div>
@@ -944,7 +981,7 @@ const PatientList = () => {
       {/* ── Table ── */}
       <DataTable
         columns={columns}
-        data={patients}
+        data={patientsForTable}
         title="Patient List"
         subtitle="Full OPD register · Click a row's ⋮ menu for actions"
         pageSize={10}
@@ -953,11 +990,6 @@ const PatientList = () => {
             columnId: "status",
             label: "Status",
             options: Object.keys(STATUS_CONFIG),
-          },
-          {
-            columnId: "visitType",
-            label: "Visit Type",
-            options: Object.keys(VISIT_TYPE_CONFIG),
           },
         ]}
       />

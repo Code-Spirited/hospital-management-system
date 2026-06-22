@@ -108,9 +108,10 @@ const Prescription = () => {
     );
   }
 
-  const submit = (data) => {
+  const saveAndContinue = (data) => {
     updateAppointment({
       ...appt,
+      status: "Prescribed",
       prescription: {
         medicines: data.medicines,
         generalAdvice: data.generalAdvice,
@@ -121,6 +122,20 @@ const Prescription = () => {
       description: "Now let's generate the bill.",
     });
     navigate(`/opd/billing/${appt.id}`);
+  };
+
+  const saveAndComplete = (data) => {
+    updateAppointment({
+      ...appt,
+      status: "Completed",
+      prescription: {
+        medicines: data.medicines,
+        generalAdvice: data.generalAdvice,
+        issuedOn: dayjs().format("YYYY-MM-DD"),
+      },
+    });
+    toast.success("Prescription saved & visit completed");
+    navigate("/opd/appointments");
   };
 
   return (
@@ -209,19 +224,65 @@ const Prescription = () => {
             {appt.doctor} · {dayjs(appt.date).format("D MMM YYYY")}
           </p>
           {appt.diagnosis && (
-            <p
+            <div
               style={{
-                fontSize: "0.82rem",
-                color: "var(--hms-navy)",
-                margin: "8px 0 0",
-                fontWeight: 600,
+                marginTop: 10,
+                paddingTop: 10,
+                borderTop: "1px solid var(--hms-border)",
+                width: "100%",
               }}
             >
-              Diagnosis:{" "}
-              <span style={{ fontWeight: 500, color: "#475569" }}>
-                {appt.diagnosis}
-              </span>
-            </p>
+              <p
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 800,
+                  color: "var(--hms-blue)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.07em",
+                  margin: "0 0 5px",
+                }}
+              >
+                From Consultation
+              </p>
+              <p
+                style={{
+                  fontSize: "0.82rem",
+                  color: "var(--hms-navy)",
+                  margin: 0,
+                  fontWeight: 600,
+                }}
+              >
+                Diagnosis:{" "}
+                <span style={{ fontWeight: 500, color: "#475569" }}>
+                  {appt.diagnosis}
+                </span>
+              </p>
+              {appt.vitals && (
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "#64748b",
+                    margin: "4px 0 0",
+                  }}
+                >
+                  BP {appt.vitals.bloodPressure} · Temp{" "}
+                  {appt.vitals.temperature}°F · Pulse {appt.vitals.pulse} bpm
+                  {appt.vitals.weight ? ` · ${appt.vitals.weight} kg` : ""}
+                  {appt.vitals.spo2 ? ` · SpO2 ${appt.vitals.spo2}%` : ""}
+                </p>
+              )}
+              {appt.notes && (
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "#64748b",
+                    margin: "4px 0 0",
+                  }}
+                >
+                  Notes: {appt.notes}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -409,7 +470,7 @@ const Prescription = () => {
 
         <button
           type="button"
-          onClick={handleSubmit(submit)}
+          onClick={handleSubmit(saveAndContinue)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -419,16 +480,39 @@ const Prescription = () => {
             padding: "0.75rem 1rem",
             border: "none",
             borderRadius: 12,
-            background: "var(--hms-success)",
+            background: "var(--hms-blue)",
             color: "#fff",
             cursor: "pointer",
             fontFamily: "var(--font-body)",
             fontSize: "0.9rem",
             fontWeight: 700,
-            boxShadow: "0 4px 14px rgba(5,150,105,0.3)",
+            boxShadow: "0 4px 14px rgba(37,99,235,0.3)",
+            marginBottom: "0.75rem",
           }}
         >
           <ClipboardCheck size={17} /> Save & Generate Bill
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit(saveAndComplete)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            justifyContent: "center",
+            padding: "0.7rem 1rem",
+            border: "1.5px solid var(--hms-border)",
+            borderRadius: 12,
+            background: "#fff",
+            color: "#64748b",
+            cursor: "pointer",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+          }}
+        >
+          No billing needed — Mark Complete
         </button>
       </form>
     </div>

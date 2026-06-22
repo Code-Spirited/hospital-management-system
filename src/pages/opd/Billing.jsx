@@ -71,7 +71,6 @@ const Billing = () => {
   });
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form's useWatch() returns values via a subscription the React Compiler can't safely auto-memoize. Expected and harmless; the live total still recalculates correctly on every keystroke.
   const watched = useWatch({ control });
 
   if (!appt) {
@@ -122,6 +121,7 @@ const Billing = () => {
   const submit = (data) => {
     updateAppointment({
       ...appt,
+      status: "Completed",
       billing: {
         ...data,
         subtotal,
@@ -131,7 +131,7 @@ const Billing = () => {
         billedOn: dayjs().format("YYYY-MM-DD"),
       },
     });
-    toast.success("Bill saved", {
+    toast.success("Bill saved — visit completed", {
       description: `Invoice for ${appt.patientName} — ${fmt(grandTotal)}`,
     });
     navigate("/opd/appointments");
@@ -236,6 +236,53 @@ const Billing = () => {
           {appt.visitType}
         </span>
       </div>
+
+      {(appt.diagnosis || appt.prescription) && (
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid var(--hms-border)",
+            boxShadow: "var(--shadow-xs)",
+            padding: "1.25rem 1.5rem",
+            marginBottom: "1.25rem",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.68rem",
+              fontWeight: 800,
+              color: "var(--hms-blue)",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              margin: "0 0 0.5rem",
+            }}
+          >
+            From Consultation & Prescription
+          </p>
+          {appt.diagnosis && (
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: "var(--hms-navy)",
+                margin: "0 0 4px",
+                fontWeight: 600,
+              }}
+            >
+              Diagnosis:{" "}
+              <span style={{ fontWeight: 500, color: "#475569" }}>
+                {appt.diagnosis}
+              </span>
+            </p>
+          )}
+          {appt.prescription?.medicines?.length > 0 && (
+            <p style={{ fontSize: "0.8rem", color: "#475569", margin: 0 }}>
+              Prescribed:{" "}
+              {appt.prescription.medicines.map((m) => m.medicine).join(", ")}
+            </p>
+          )}
+        </div>
+      )}
 
       <form onSubmit={(e) => e.preventDefault()}>
         <div

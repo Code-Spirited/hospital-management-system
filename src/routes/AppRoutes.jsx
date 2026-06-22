@@ -14,6 +14,10 @@ import OPD from "../pages/opd/OPD";
 import PatientList from "../pages/opd/PatientList";
 import PatientRegistration from "../pages/opd/PatientRegistration";
 
+import IPD from "../pages/ipd/IPD";
+import IPDHome from "../pages/ipd/IPDHome";
+import AdmissionForm from "../pages/ipd/AdmissionForm";
+
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -48,7 +52,10 @@ const AppRoutes = () => {
           />
           <Route path="billing/:appointmentId" element={<Billing />} />
         </Route>
-        <Route path="/ipd" element={<PlaceholderPage title="IPD Module" />} />
+        <Route path="/ipd" element={<IPD />}>
+          <Route index element={<IPDHome />} />
+          <Route path="admit" element={<AdmissionForm />} />
+        </Route>{" "}
         <Route
           path="/pharmacy"
           element={<PlaceholderPage title="Pharmacy" />}

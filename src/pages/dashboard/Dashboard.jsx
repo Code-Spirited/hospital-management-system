@@ -1,6 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, multiSelectFilter } from "../../components/common";
 import { usePatients } from "../../context/PatientsContext";
+import { useAppointments } from "../../context/AppointmentsContext";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import AppointmentAnalytics from "./AppointmentAnalytics";
@@ -65,10 +66,10 @@ const quickIcons = [FaProcedures, FaStethoscope, FaPills, FaFlask];
 // Status badge
 const StatusBadge = ({ status }) => {
   const map = {
-    Active: { bg: "#ecfdf5", color: "#059669", dot: "#22c55e" },
-    Inactive: { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" },
-    Critical: { bg: "#fef2f2", color: "#dc2626", dot: "#ef4444" },
-    Discharged: { bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
+    Scheduled: { bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
+    Completed: { bg: "#ecfdf5", color: "#059669", dot: "#22c55e" },
+    Cancelled: { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" },
+    "No-Show": { bg: "#fffbeb", color: "#d97706", dot: "#f59e0b" },
   };
   const s = map[status] || { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" };
   return (
@@ -301,47 +302,44 @@ const DeptServiceCard = ({ dept }) => (
 // Custom cell renderers (badges, styled text) are defined inline here.
 const columnHelper = createColumnHelper();
 
-const patientColumns = [
-  columnHelper.accessor("id", {
-    header: "Patient ID",
+const recentActivityColumns = [
+  columnHelper.accessor("patientName", {
+    header: "Patient",
+    cell: (info) => {
+      const a = info.row.original;
+      return (
+        <div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              color: "var(--hms-navy)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {info.getValue()}
+          </p>
+          {a.patientId && (
+            <p style={{ margin: 0, fontSize: "0.68rem", color: "#94a3b8" }}>
+              {a.patientId}
+            </p>
+          )}
+        </div>
+      );
+    },
+  }),
+  columnHelper.accessor("doctor", {
+    header: "Doctor",
     cell: (info) => (
       <span
         style={{
-          fontSize: "0.8rem",
-          fontWeight: 700,
-          color: "var(--hms-blue)",
+          fontSize: "0.82rem",
+          color: "#475569",
+          fontWeight: 500,
+          whiteSpace: "nowrap",
         }}
       >
-        {info.getValue()}
-      </span>
-    ),
-  }),
-  columnHelper.accessor("name", {
-    header: "Name",
-    cell: (info) => (
-      <span
-        style={{
-          fontSize: "0.875rem",
-          fontWeight: 600,
-          color: "var(--hms-navy)",
-        }}
-      >
-        {info.getValue()}
-      </span>
-    ),
-  }),
-  columnHelper.accessor("age", {
-    header: "Age",
-    cell: (info) => (
-      <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 500 }}>
-        {info.getValue()}
-      </span>
-    ),
-  }),
-  columnHelper.accessor("gender", {
-    header: "Gender",
-    cell: (info) => (
-      <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 500 }}>
         {info.getValue()}
       </span>
     ),
@@ -351,24 +349,23 @@ const patientColumns = [
     filterFn: multiSelectFilter,
     cell: (info) => <TypeBadge type={info.getValue()} />,
   }),
-  columnHelper.accessor("assignedDoctor", {
-    header: "Doctor",
-    cell: (info) => (
-      <span style={{ fontSize: "0.82rem", color: "#475569", fontWeight: 500 }}>
-        {info.getValue()}
-      </span>
-    ),
-  }),
   columnHelper.accessor("status", {
     header: "Status",
     filterFn: multiSelectFilter,
     cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
-  columnHelper.accessor("lastVisit", {
-    header: "Last Visit",
+  columnHelper.accessor("date", {
+    header: "Date & Time",
     cell: (info) => (
-      <span style={{ fontSize: "0.78rem", color: "#94a3b8", fontWeight: 500 }}>
-        {dayjs(info.getValue()).fromNow()}
+      <span
+        style={{
+          fontSize: "0.78rem",
+          color: "#94a3b8",
+          fontWeight: 500,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {dayjs(info.getValue()).format("D MMM")} · {info.row.original.time}
       </span>
     ),
   }),
@@ -382,8 +379,12 @@ const Dashboard = () => {
   // Live data from the shared patient registry — the SAME list OPD manages.
   // Any add/edit/delete performed in OPD shows up here automatically.
   const { patients } = usePatients();
-  const recentPatients = [...patients]
-    .sort((a, b) => new Date(b.lastVisit) - new Date(a.lastVisit))
+  const { appointments } = useAppointments();
+  const recentActivity = [...appointments]
+    .sort(
+      (a, b) =>
+        new Date(`${b.date}T${b.time}`) - new Date(`${a.date}T${a.time}`),
+    )
     .slice(0, 10);
 
   // Override the KPI card's value with the real, live count instead of a
@@ -1058,7 +1059,7 @@ const Dashboard = () => {
           }}
         >
           <button
-            onClick={() => navigate("/opd")}
+            onClick={() => navigate("/opd/appointments")}
             style={{
               display: "flex",
               alignItems: "center",
@@ -1072,14 +1073,14 @@ const Dashboard = () => {
               color: "var(--hms-blue)",
             }}
           >
-            View Full Patient Registry →
+            View All Appointments →
           </button>
         </div>
         <DataTable
-          columns={patientColumns}
-          data={recentPatients}
-          title="Recent Patients"
-          subtitle="Most recently active · synced live with the OPD registry"
+          columns={recentActivityColumns}
+          data={recentActivity}
+          title="Recent Activity"
+          subtitle="Most recent appointments · live from the OPD schedule"
           pageSize={10}
           filters={[
             {
@@ -1090,7 +1091,7 @@ const Dashboard = () => {
             {
               columnId: "status",
               label: "Status",
-              options: ["Active", "Inactive", "Critical", "Discharged"],
+              options: ["Scheduled", "Completed", "Cancelled", "No-Show"],
             },
           ]}
         />

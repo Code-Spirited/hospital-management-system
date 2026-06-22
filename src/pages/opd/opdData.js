@@ -1,24 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // opdData.js
 //
-// OPD's patient register — the primary CRUD data source for this module.
-// Deliberately separate from dashboardData.js: the Dashboard only needs a
-// small "recent activity" slice, while OPD needs the full register. In
-// Week 8 this becomes a real API call; the shape of each record stays the
-// same so PatientList.jsx won't need to change.
+// Patient master registry. Deliberately holds ONLY durable facts about a
+// person — never anything tied to one specific visit. visitType, doctor,
+// and clinical status used to live here, which was a real modeling error:
+// those describe a single encounter, not a person. They now live solely on
+// the Appointment record (appointmentsData.js) — see AppointmentList.jsx.
+// Status here is intentionally just Active/Inactive: "is this still a
+// recognized patient of ours," nothing clinical.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const STATUS_CONFIG = {
   Active: { color: "#059669", bg: "#ecfdf5" },
   Inactive: { color: "#94a3b8", bg: "#f8fafc" },
-  Critical: { color: "#dc2626", bg: "#fef2f2" },
-  Discharged: { color: "#2563eb", bg: "#eff6ff" },
-};
-
-export const VISIT_TYPE_CONFIG = {
-  OPD: { color: "#2563eb", bg: "#eff6ff" },
-  "Follow-up": { color: "#059669", bg: "#ecfdf5" },
-  Emergency: { color: "#dc2626", bg: "#fef2f2" },
 };
 
 export const DOCTORS = [
@@ -41,10 +35,7 @@ export const initialPatients = [
     bloodGroup: "B+",
     address: "Andheri, Mumbai, Maharashtra",
     registeredOn: "2026-01-15",
-    lastVisit: "2026-06-12",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Priya Mehta",
   },
   {
     id: "P-1002",
@@ -56,10 +47,7 @@ export const initialPatients = [
     bloodGroup: "O+",
     address: "Karol Bagh, Delhi",
     registeredOn: "2026-01-18",
-    lastVisit: "2026-06-14",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Anil Kumar",
   },
   {
     id: "P-1003",
@@ -71,10 +59,7 @@ export const initialPatients = [
     bloodGroup: "A-",
     address: "Navrangpura, Ahmedabad",
     registeredOn: "2026-01-20",
-    lastVisit: "2026-06-15",
-    visitType: "Emergency",
-    status: "Critical",
-    assignedDoctor: "Dr. Neha Singh",
+    status: "Active",
   },
   {
     id: "P-1004",
@@ -86,10 +71,7 @@ export const initialPatients = [
     bloodGroup: "AB+",
     address: "Banjara Hills, Hyderabad",
     registeredOn: "2026-01-22",
-    lastVisit: "2026-06-13",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Priya Mehta",
   },
   {
     id: "P-1005",
@@ -101,10 +83,7 @@ export const initialPatients = [
     bloodGroup: "O-",
     address: "Park Circus, Kolkata",
     registeredOn: "2026-01-25",
-    lastVisit: "2026-06-09",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Ravi Gupta",
   },
   {
     id: "P-1006",
@@ -116,10 +95,7 @@ export const initialPatients = [
     bloodGroup: "B-",
     address: "Satellite, Ahmedabad",
     registeredOn: "2026-01-28",
-    lastVisit: "2026-06-11",
-    visitType: "OPD",
     status: "Inactive",
-    assignedDoctor: "Dr. Anil Kumar",
   },
   {
     id: "P-1007",
@@ -131,10 +107,7 @@ export const initialPatients = [
     bloodGroup: "A+",
     address: "Kochi, Kerala",
     registeredOn: "2026-02-01",
-    lastVisit: "2026-06-08",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Ravi Gupta",
   },
   {
     id: "P-1008",
@@ -146,10 +119,7 @@ export const initialPatients = [
     bloodGroup: "O+",
     address: "T Nagar, Chennai",
     registeredOn: "2026-02-03",
-    lastVisit: "2026-06-07",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Sunita Rao",
   },
   {
     id: "P-1009",
@@ -161,10 +131,7 @@ export const initialPatients = [
     bloodGroup: "B+",
     address: "Indiranagar, Bengaluru",
     registeredOn: "2026-02-05",
-    lastVisit: "2026-06-06",
-    visitType: "OPD",
-    status: "Discharged",
-    assignedDoctor: "Dr. Neha Singh",
+    status: "Active",
   },
   {
     id: "P-1010",
@@ -176,10 +143,7 @@ export const initialPatients = [
     bloodGroup: "AB-",
     address: "Mylapore, Chennai",
     registeredOn: "2026-02-08",
-    lastVisit: "2026-06-05",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Priya Mehta",
   },
   {
     id: "P-1011",
@@ -191,10 +155,7 @@ export const initialPatients = [
     bloodGroup: "O+",
     address: "Civil Lines, Jaipur",
     registeredOn: "2026-02-10",
-    lastVisit: "2026-06-04",
-    visitType: "Emergency",
-    status: "Discharged",
-    assignedDoctor: "Dr. Neha Singh",
+    status: "Active",
   },
   {
     id: "P-1012",
@@ -206,10 +167,7 @@ export const initialPatients = [
     bloodGroup: "A+",
     address: "Adyar, Chennai",
     registeredOn: "2026-02-12",
-    lastVisit: "2026-06-03",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Ravi Gupta",
   },
   {
     id: "P-1013",
@@ -221,10 +179,7 @@ export const initialPatients = [
     bloodGroup: "B+",
     address: "Gomti Nagar, Lucknow",
     registeredOn: "2026-02-14",
-    lastVisit: "2026-06-02",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Anil Kumar",
   },
   {
     id: "P-1014",
@@ -236,10 +191,7 @@ export const initialPatients = [
     bloodGroup: "O-",
     address: "Sector 17, Chandigarh",
     registeredOn: "2026-02-16",
-    lastVisit: "2026-06-01",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Sunita Rao",
   },
   {
     id: "P-1015",
@@ -251,10 +203,7 @@ export const initialPatients = [
     bloodGroup: "AB+",
     address: "Boring Road, Patna",
     registeredOn: "2026-02-18",
-    lastVisit: "2026-05-30",
-    visitType: "Follow-up",
     status: "Inactive",
-    assignedDoctor: "Dr. Mohammed Ali",
   },
   {
     id: "P-1016",
@@ -266,10 +215,7 @@ export const initialPatients = [
     bloodGroup: "B-",
     address: "Panampilly Nagar, Kochi",
     registeredOn: "2026-02-20",
-    lastVisit: "2026-05-29",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Priya Mehta",
   },
   {
     id: "P-1017",
@@ -281,10 +227,7 @@ export const initialPatients = [
     bloodGroup: "O+",
     address: "Vasant Kunj, Delhi",
     registeredOn: "2026-02-22",
-    lastVisit: "2026-05-28",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Ravi Gupta",
   },
   {
     id: "P-1018",
@@ -296,10 +239,7 @@ export const initialPatients = [
     bloodGroup: "A+",
     address: "Malviya Nagar, Jaipur",
     registeredOn: "2026-02-25",
-    lastVisit: "2026-05-27",
-    visitType: "Emergency",
-    status: "Discharged",
-    assignedDoctor: "Dr. Neha Singh",
+    status: "Active",
   },
   {
     id: "P-1019",
@@ -311,10 +251,7 @@ export const initialPatients = [
     bloodGroup: "B+",
     address: "Kothrud, Pune",
     registeredOn: "2026-02-27",
-    lastVisit: "2026-05-26",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Mohammed Ali",
   },
   {
     id: "P-1020",
@@ -326,10 +263,7 @@ export const initialPatients = [
     bloodGroup: "O-",
     address: "Vyttila, Kochi",
     registeredOn: "2026-03-01",
-    lastVisit: "2026-05-25",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Sunita Rao",
   },
   {
     id: "P-1021",
@@ -341,10 +275,7 @@ export const initialPatients = [
     bloodGroup: "AB+",
     address: "Velachery, Chennai",
     registeredOn: "2026-03-03",
-    lastVisit: "2026-05-24",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Anil Kumar",
   },
   {
     id: "P-1022",
@@ -356,10 +287,7 @@ export const initialPatients = [
     bloodGroup: "A-",
     address: "Salt Lake, Kolkata",
     registeredOn: "2026-03-05",
-    lastVisit: "2026-05-23",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Priya Mehta",
   },
   {
     id: "P-1023",
@@ -371,10 +299,7 @@ export const initialPatients = [
     bloodGroup: "O+",
     address: "Anna Nagar, Chennai",
     registeredOn: "2026-03-08",
-    lastVisit: "2026-05-22",
-    visitType: "Emergency",
-    status: "Discharged",
-    assignedDoctor: "Dr. Neha Singh",
+    status: "Active",
   },
   {
     id: "P-1024",
@@ -386,10 +311,7 @@ export const initialPatients = [
     bloodGroup: "B+",
     address: "Fort Kochi, Kerala",
     registeredOn: "2026-03-10",
-    lastVisit: "2026-05-21",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Ravi Gupta",
   },
   {
     id: "P-1025",
@@ -401,10 +323,7 @@ export const initialPatients = [
     bloodGroup: "O-",
     address: "Hazratganj, Lucknow",
     registeredOn: "2026-03-12",
-    lastVisit: "2026-05-20",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Mohammed Ali",
   },
   {
     id: "P-1026",
@@ -416,10 +335,7 @@ export const initialPatients = [
     bloodGroup: "AB-",
     address: "Mahanagar, Lucknow",
     registeredOn: "2026-03-15",
-    lastVisit: "2026-05-19",
-    visitType: "OPD",
     status: "Inactive",
-    assignedDoctor: "Dr. Sunita Rao",
   },
   {
     id: "P-1027",
@@ -431,10 +347,7 @@ export const initialPatients = [
     bloodGroup: "B+",
     address: "Jubilee Hills, Hyderabad",
     registeredOn: "2026-03-18",
-    lastVisit: "2026-05-18",
-    visitType: "Follow-up",
     status: "Active",
-    assignedDoctor: "Dr. Priya Mehta",
   },
   {
     id: "P-1028",
@@ -446,10 +359,7 @@ export const initialPatients = [
     bloodGroup: "A+",
     address: "Edappally, Kochi",
     registeredOn: "2026-03-20",
-    lastVisit: "2026-05-17",
-    visitType: "Emergency",
-    status: "Critical",
-    assignedDoctor: "Dr. Neha Singh",
+    status: "Active",
   },
   {
     id: "P-1029",
@@ -461,10 +371,7 @@ export const initialPatients = [
     bloodGroup: "O+",
     address: "Besant Nagar, Chennai",
     registeredOn: "2026-03-22",
-    lastVisit: "2026-05-16",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Anil Kumar",
   },
   {
     id: "P-1030",
@@ -476,10 +383,7 @@ export const initialPatients = [
     bloodGroup: "B-",
     address: "C-Scheme, Jaipur",
     registeredOn: "2026-03-25",
-    lastVisit: "2026-05-15",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Ravi Gupta",
   },
   {
     id: "P-1031",
@@ -491,10 +395,7 @@ export const initialPatients = [
     bloodGroup: "A-",
     address: "Thrissur, Kerala",
     registeredOn: "2026-03-28",
-    lastVisit: "2026-05-14",
-    visitType: "Follow-up",
-    status: "Discharged",
-    assignedDoctor: "Dr. Mohammed Ali",
+    status: "Active",
   },
   {
     id: "P-1032",
@@ -506,9 +407,6 @@ export const initialPatients = [
     bloodGroup: "O-",
     address: "Aundh, Pune",
     registeredOn: "2026-03-30",
-    lastVisit: "2026-05-13",
-    visitType: "OPD",
     status: "Active",
-    assignedDoctor: "Dr. Sunita Rao",
   },
 ];

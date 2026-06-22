@@ -1,34 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // opdSchema.js
 //
-// Zod validation schema for the patient registration form.
-// Kept in its own file so it can be imported by both the form (for client-side
-// validation) and, in Week 8, any server-side validation layer without change.
+// Zod validation schemas for every OPD form. Date validation now imports
+// from the shared utils/dateValidators.js instead of defining its own copy
+// (that duplication was removed once IPD needed the same logic — see
+// AdmissionForm/ipdSchema.js).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
+import { validDDMMYYYY, parseDDMMYYYY } from "../../utils/dateValidators";
 
 const phoneRegex = /^\d{10}$/;
 const pincodeRegex = /^\d{6}$/;
-const ddmmyyyyRegex = /^\d{2}-\d{2}-\d{4}$/;
-
-// Confirms a DD-MM-YYYY string is a real calendar date (rejects things
-// like "31-02-2026"). Shared by both the registration form's date of
-// birth and the appointment form's date field.
-const validDDMMYYYY = (val) => {
-  if (!ddmmyyyyRegex.test(val)) return false;
-  const [d, m, y] = val.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  return (
-    date.getDate() === d &&
-    date.getMonth() === m - 1 &&
-    date.getFullYear() === y
-  );
-};
-const parseDDMMYYYY = (val) => {
-  const [d, m, y] = val.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
 
 export const patientRegistrationSchema = z.object({
   // ── Step 1: Personal ──────────────────────────────────────────────────────
@@ -113,6 +96,7 @@ export const STEP_FIELDS = {
   1: ["mobileNumber", "addressLine1", "city", "state", "pincode"],
   2: ["emergencyName", "emergencyRelation", "emergencyPhone", "chiefComplaint"],
 };
+
 // ── Edit Patient schema — used by the quick-edit drawer in PatientList ───────
 export const editPatientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -124,12 +108,11 @@ export const editPatientSchema = z.object({
     .or(z.literal("")),
   address: z.string().min(5, "Address must be at least 5 characters"),
   status: z.string().min(1, "Please select a status"),
-  assignedDoctor: z.string().min(1, "Please select a doctor"),
 });
 
 // ── Appointment schema — used by the Book/Reschedule drawer ──────────────────
 export const appointmentSchema = z.object({
-  patientName: z.string().min(2, "Please enter the patient name"),
+  patientId: z.string().min(1, "Please select a patient"),
   doctor: z.string().min(1, "Please select a doctor"),
   date: z
     .string()
@@ -141,16 +124,22 @@ export const appointmentSchema = z.object({
 });
 
 // ── Consultation schema — vitals + clinical notes ─────────────────────────────
+// Deliberately fully optional. Not every consultation needs a recorded
+// diagnosis or vitals to still be considered a valid, savable encounter —
+// e.g. a brief check-in that's marked complete with no further detail.
+// Required fields here would block exactly the kind of lightweight
+// consultation that should be easy to log.
 export const consultationSchema = z.object({
-  bloodPressure: z.string().min(1, "Required"),
-  temperature: z.string().min(1, "Required"),
-  pulse: z.string().min(1, "Required"),
+  bloodPressure: z.string().optional().or(z.literal("")),
+  temperature: z.string().optional().or(z.literal("")),
+  pulse: z.string().optional().or(z.literal("")),
   weight: z.string().optional().or(z.literal("")),
   spo2: z.string().optional().or(z.literal("")),
-  diagnosis: z.string().min(3, "Please enter a diagnosis"),
+  diagnosis: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
   advice: z.string().optional().or(z.literal("")),
 });
+
 // ── Prescription schema ───────────────────────────────────────────────────────
 export const prescriptionSchema = z.object({
   medicines: z
@@ -166,6 +155,7 @@ export const prescriptionSchema = z.object({
     .min(1, "Add at least one medicine"),
   generalAdvice: z.string().optional().or(z.literal("")),
 });
+
 // ── Billing schema ─────────────────────────────────────────────────────────────
 export const billingSchema = z.object({
   consultationFee: z.coerce.number().min(0, "Enter a valid amount"),

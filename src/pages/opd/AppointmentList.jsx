@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Drawer } from "vaul";
 import * as Popover from "@radix-ui/react-popover";
@@ -34,7 +34,6 @@ import {
   DataTable,
   multiSelectFilter,
   FormField as Field,
-  FormInput as Input,
   FormTextarea as Textarea,
   DrawerSelect,
   DateInput,
@@ -125,14 +124,17 @@ const RowActions = ({ appt, onView, onReschedule, onCancel }) => {
           <button className="opd-row-action-btn" onClick={() => onView(appt)}>
             <Eye size={14} /> View Details
           </button>
+          {(appt.status === "Scheduled" || appt.status === "Consulted") && (
+            <button
+              className="opd-row-action-btn"
+              onClick={() => navigate(`/opd/consultation/${appt.id}`)}
+            >
+              <Stethoscope size={14} />{" "}
+              {appt.status === "Scheduled" ? "Start" : "Edit"} Consultation
+            </button>
+          )}
           {appt.status === "Scheduled" && (
             <>
-              <button
-                className="opd-row-action-btn"
-                onClick={() => navigate(`/opd/consultation/${appt.id}`)}
-              >
-                <Stethoscope size={14} /> Start Consultation
-              </button>
               <button
                 className="opd-row-action-btn"
                 onClick={() => onReschedule(appt)}
@@ -154,22 +156,26 @@ const RowActions = ({ appt, onView, onReschedule, onCancel }) => {
               </button>
             </>
           )}
-          {appt.status === "Completed" && (
-            <>
-              <button
-                className="opd-row-action-btn"
-                onClick={() => navigate(`/opd/prescription/${appt.id}`)}
-              >
-                <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
-                Prescription
-              </button>
-              <button
-                className="opd-row-action-btn"
-                onClick={() => navigate(`/opd/billing/${appt.id}`)}
-              >
-                <Receipt size={14} /> {appt.billing ? "Edit" : "Generate"} Bill
-              </button>
-            </>
+          {(appt.status === "Consulted" ||
+            appt.status === "Prescribed" ||
+            appt.status === "Completed") && (
+            <button
+              className="opd-row-action-btn"
+              onClick={() => navigate(`/opd/prescription/${appt.id}`)}
+            >
+              <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
+              Prescription
+            </button>
+          )}
+          {(appt.status === "Consulted" ||
+            appt.status === "Prescribed" ||
+            appt.status === "Completed") && (
+            <button
+              className="opd-row-action-btn"
+              onClick={() => navigate(`/opd/billing/${appt.id}`)}
+            >
+              <Receipt size={14} /> {appt.billing ? "Edit" : "Generate"} Bill
+            </button>
           )}
         </Popover.Content>
       </Popover.Portal>
@@ -476,9 +482,43 @@ const ViewDrawer = ({ appt, open, onOpenChange }) => (
   </Drawer.Root>
 );
 
+// Shows the selected patient's identifying details the instant an ID is
+// picked — directly solving "two people can share the exact same name."
+// Re-renders live as the watched patientId changes.
+const SelectedPatientCard = ({ control, patients }) => {
+  const patientId = useWatch({ control, name: "patientId" });
+  const patient = patients.find((p) => p.id === patientId);
+  if (!patient) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "0.625rem 0.875rem",
+        borderRadius: 10,
+        background: "var(--hms-blue-light)",
+        border: "1px solid rgba(37,99,235,0.2)",
+        fontSize: "0.78rem",
+        color: "var(--hms-blue)",
+        fontWeight: 600,
+      }}
+    >
+      <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
+      {patient.name} · {patient.age} yrs, {patient.gender} · {patient.phone}
+    </div>
+  );
+};
+
 // ── Book / Reschedule drawer ──────────────────────────────────────────────────
 const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
   const { patients } = usePatients();
+  // Labels carry age/gender/phone too — patients can share a name, and this
+  // is the detail that disambiguates them inside the dropdown itself.
+  const patientOptions = patients.map((p) => ({
+    value: p.id,
+    label: `${p.name} — ${p.id} · ${p.age}y, ${p.gender}`,
+  }));
 
   const {
     register,
@@ -495,7 +535,7 @@ const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
     if (!open) return;
     if (editingAppt) {
       reset({
-        patientName: editingAppt.patientName,
+        patientId: editingAppt.patientId,
         doctor: editingAppt.doctor,
         date: dayjs(editingAppt.date).format("DD-MM-YYYY"),
         time: editingAppt.time,
@@ -504,7 +544,7 @@ const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
       });
     } else {
       reset({
-        patientName: "",
+        patientId: "",
         doctor: "",
         date: "",
         time: "",
@@ -516,14 +556,8 @@ const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
 
   const submit = (data) => {
     const isoDate = dayjs(data.date, "DD-MM-YYYY").format("YYYY-MM-DD");
-    // Soft cross-reference: if the typed name matches a registered patient
-    // exactly, link the appointment to their record so the table can still
-    // show a patient ID. If not — e.g. a walk-in — it saves fine with just
-    // the name, no registered patient required.
-    const matched = patients.find(
-      (p) => p.name.toLowerCase() === data.patientName.trim().toLowerCase(),
-    );
-    onSubmitAppt({ ...data, date: isoDate, patientId: matched?.id ?? null });
+    const patient = patients.find((p) => p.id === data.patientId);
+    onSubmitAppt({ ...data, date: isoDate, patientName: patient?.name ?? "" });
     onOpenChange(false);
   };
 
@@ -616,17 +650,17 @@ const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
                 gap: "1rem",
               }}
             >
-              <Field
-                label="Patient Name"
-                required
-                error={errors.patientName?.message}
-              >
-                <Input
-                  {...register("patientName")}
-                  placeholder="Type the patient's full name"
-                  error={errors.patientName}
+              <Field label="Patient" required error={errors.patientId?.message}>
+                <DrawerSelect
+                  name="patientId"
+                  control={control}
+                  options={patientOptions}
+                  error={errors.patientId}
+                  placeholder="Search by name or ID"
+                  searchable
                 />
               </Field>
+              <SelectedPatientCard control={control} patients={patients} />
               <Field label="Doctor" required error={errors.doctor?.message}>
                 <DrawerSelect
                   name="doctor"

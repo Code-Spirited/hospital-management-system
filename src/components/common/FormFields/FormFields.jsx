@@ -6,7 +6,7 @@
 // Registration form so this styling and the dropdown-clipping/scroll fixes
 // built into FormSelect only need to exist in one place.
 // ─────────────────────────────────────────────────────────────────────────────
-
+import { useState } from "react";
 import { Controller } from "react-hook-form";
 import Select, { components as RSComponents } from "react-select";
 import * as RadixSelect from "@radix-ui/react-select";
@@ -171,98 +171,157 @@ export const DrawerSelect = ({
   error,
   placeholder,
   disabled,
-}) => (
-  <Controller
-    name={name}
-    control={control}
-    render={({ field }) => (
-      <RadixSelect.Root
-        value={field.value}
-        onValueChange={field.onChange}
-        disabled={disabled}
-      >
-        <style>{`
-          .hms-dsel-item[data-highlighted] { background: var(--hms-surface) !important; outline: none; }
-          .hms-dsel-item[data-state="checked"] { color: var(--hms-blue) !important; font-weight: 700 !important; }
-        `}</style>
+  searchable,
+}) => {
+  const [query, setQuery] = useState("");
+  const filtered =
+    searchable && query
+      ? options.filter((o) =>
+          o.label.toLowerCase().includes(query.toLowerCase()),
+        )
+      : options;
 
-        <RadixSelect.Trigger
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-            padding: "0.575rem 0.875rem",
-            border: `1.5px solid ${error ? "#dc2626" : "var(--hms-border)"}`,
-            borderRadius: 10,
-            fontSize: "0.875rem",
-            fontFamily: "var(--font-body)",
-            color: field.value ? "var(--hms-navy)" : "#94a3b8",
-            background: disabled ? "var(--hms-surface)" : "#fff",
-            cursor: disabled ? "not-allowed" : "pointer",
-            outline: "none",
-            boxSizing: "border-box",
-            textAlign: "left",
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field }) => (
+        <RadixSelect.Root
+          value={field.value}
+          onValueChange={field.onChange}
+          disabled={disabled}
+          onOpenChange={(open) => {
+            if (!open) setQuery("");
           }}
         >
-          <RadixSelect.Value placeholder={placeholder} />
-          <RadixSelect.Icon
-            style={{ flexShrink: 0, marginLeft: 8, display: "flex" }}
+          <style>{`
+            .hms-dsel-item[data-highlighted] { background: var(--hms-surface) !important; outline: none; }
+            .hms-dsel-item[data-state="checked"] { color: var(--hms-blue) !important; font-weight: 700 !important; }
+          `}</style>
+
+          <RadixSelect.Trigger
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              padding: "0.575rem 0.875rem",
+              border: `1.5px solid ${error ? "#dc2626" : "var(--hms-border)"}`,
+              borderRadius: 10,
+              fontSize: "0.875rem",
+              fontFamily: "var(--font-body)",
+              color: field.value ? "var(--hms-navy)" : "#94a3b8",
+              background: disabled ? "var(--hms-surface)" : "#fff",
+              cursor: disabled ? "not-allowed" : "pointer",
+              outline: "none",
+              boxSizing: "border-box",
+              textAlign: "left",
+            }}
           >
-            <ChevronDown size={15} style={{ color: "#94a3b8" }} />
-          </RadixSelect.Icon>
-        </RadixSelect.Trigger>
+            <RadixSelect.Value placeholder={placeholder} />
+            <RadixSelect.Icon
+              style={{ flexShrink: 0, marginLeft: 8, display: "flex" }}
+            >
+              <ChevronDown size={15} style={{ color: "#94a3b8" }} />
+            </RadixSelect.Icon>
+          </RadixSelect.Trigger>
 
-        <RadixSelect.Content
-          position="popper"
-          sideOffset={6}
-          style={{
-            width: "var(--radix-select-trigger-width)",
-            maxHeight:
-              "min(260px, var(--radix-select-content-available-height))",
-            background: "#fff",
-            borderRadius: 12,
-            border: "1px solid var(--hms-border)",
-            boxShadow: "var(--shadow-lg)",
-            overflow: "hidden",
-            zIndex: 50,
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          <RadixSelect.Viewport style={{ padding: "0.375rem" }}>
-            {options.map((opt) => (
-              <RadixSelect.Item
-                key={opt.value}
-                value={opt.value}
-                className="hms-dsel-item"
+          <RadixSelect.Content
+            position="popper"
+            sideOffset={6}
+            style={{
+              width: "var(--radix-select-trigger-width)",
+              maxHeight:
+                "min(320px, var(--radix-select-content-available-height))",
+              background: "#fff",
+              borderRadius: 12,
+              border: "1px solid var(--hms-border)",
+              boxShadow: "var(--shadow-lg)",
+              overflow: "hidden",
+              zIndex: 50,
+              fontFamily: "var(--font-body)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {searchable && (
+              <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "0.5rem 0.625rem 0.5rem 1.875rem",
-                  position: "relative",
-                  borderRadius: 8,
-                  fontSize: "0.85rem",
-                  color: "var(--hms-navy)",
-                  cursor: "pointer",
-                  outline: "none",
-                  userSelect: "none",
+                  padding: "0.5rem",
+                  borderBottom: "1px solid var(--hms-border)",
+                  flexShrink: 0,
                 }}
               >
-                <RadixSelect.ItemIndicator
-                  style={{ position: "absolute", left: 8, display: "flex" }}
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder="Type to search..."
+                  style={{
+                    width: "100%",
+                    padding: "0.4rem 0.625rem",
+                    border: "1.5px solid var(--hms-border)",
+                    borderRadius: 8,
+                    fontSize: "0.82rem",
+                    fontFamily: "var(--font-body)",
+                    color: "var(--hms-navy)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            )}
+            <RadixSelect.Viewport
+              style={{ padding: "0.375rem", overflowY: "auto" }}
+            >
+              {filtered.length === 0 ? (
+                <div
+                  style={{
+                    padding: "1rem",
+                    textAlign: "center",
+                    fontSize: "0.8rem",
+                    color: "#94a3b8",
+                  }}
                 >
-                  <Check size={14} style={{ color: "var(--hms-blue)" }} />
-                </RadixSelect.ItemIndicator>
-                <RadixSelect.ItemText>{opt.label}</RadixSelect.ItemText>
-              </RadixSelect.Item>
-            ))}
-          </RadixSelect.Viewport>
-        </RadixSelect.Content>
-      </RadixSelect.Root>
-    )}
-  />
-);
+                  No matches
+                </div>
+              ) : (
+                filtered.map((opt) => (
+                  <RadixSelect.Item
+                    key={opt.value}
+                    value={opt.value}
+                    className="hms-dsel-item"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "0.5rem 0.625rem 0.5rem 1.875rem",
+                      position: "relative",
+                      borderRadius: 8,
+                      fontSize: "0.85rem",
+                      color: "var(--hms-navy)",
+                      cursor: "pointer",
+                      outline: "none",
+                      userSelect: "none",
+                    }}
+                  >
+                    <RadixSelect.ItemIndicator
+                      style={{ position: "absolute", left: 8, display: "flex" }}
+                    >
+                      <Check size={14} style={{ color: "var(--hms-blue)" }} />
+                    </RadixSelect.ItemIndicator>
+                    <RadixSelect.ItemText>{opt.label}</RadixSelect.ItemText>
+                  </RadixSelect.Item>
+                ))
+              )}
+            </RadixSelect.Viewport>
+          </RadixSelect.Content>
+        </RadixSelect.Root>
+      )}
+    />
+  );
+};
 
 // ── DateInput — plain text field, DD-MM-YYYY, no native calendar popup ───────
 // Auto-inserts the dashes as digits are typed (typing "20062026" becomes
