@@ -11,7 +11,13 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { BedDouble, Activity, ClipboardPlus, X } from "lucide-react";
+import {
+  BedDouble,
+  Activity,
+  ClipboardPlus,
+  ClipboardList,
+  X,
+} from "lucide-react";
 import { DataTable, multiSelectFilter } from "../../components/common";
 import { useIPD } from "../../context/IPDContext";
 import { ADMISSION_STATUS_CONFIG, WARD_TYPE_CONFIG } from "./ipdData";
@@ -148,6 +154,32 @@ const IPDHome = () => {
       header: "Status",
       filterFn: multiSelectFilter,
       cell: (info) => <StatusPill status={info.getValue()} />,
+    }),
+    columnHelper.display({
+      id: "actions",
+      header: "",
+      cell: (info) => (
+        <button
+          onClick={() => navigate(`/ipd/treatment/${info.row.original.id}`)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "0.4rem 0.75rem",
+            borderRadius: 8,
+            border: "1.5px solid var(--hms-border)",
+            background: "#fff",
+            color: "#64748b",
+            cursor: "pointer",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <ClipboardList size={13} /> Treatment
+        </button>
+      ),
     }),
   ];
 
