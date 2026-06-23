@@ -257,12 +257,17 @@ const DataTable = ({
   subtitle,
   pageSize = 10,
   filters = [], // [{ columnId, label, options: string[] }]
+  // Lets a parent pre-apply a filter the moment this table mounts — e.g.
+  // Ward Management's "View All" button linking straight to one ward.
+  // Shape matches TanStack's own columnFilters format:
+  // [{ id: columnId, value: [...] }]. Only seeds the INITIAL state; the
+  // table's own Filter menu still fully controls filtering afterward.
+  initialColumnFilters = [],
 }) => {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnFilters, setColumnFilters] = useState(initialColumnFilters);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize });
-
   // useMemo prevents the table instance from being recreated on every render.
   // The table only re-initialises when columns or data actually change.
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable() returns functions the React Compiler can't safely auto-memoize. This is a known, harmless characteristic of the library; the table works correctly, it just won't receive automatic compiler optimization on this component.

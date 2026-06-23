@@ -1,16 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// IPDHome.jsx — Week 4, Monday
+// IPDHome.jsx — Week 4, Monday (updated Tuesday)
 // Lightweight landing page for the IPD module: shows current admissions so
-// there's an immediate way to verify the Admission Form worked. This is
-// NOT the full Ward Management view (that's Tuesday's dedicated task,
-// which will organize patients by ward/bed) — today's table is a simple,
-// flat list across all wards.
+// there's an immediate way to verify the Admission Form worked.
+//
+// Now reads an optional ?ward=<type> URL query param — set by Ward
+// Management's "View All" buttons — and pre-applies it as the table's
+// initial Ward Type filter via DataTable's initialColumnFilters prop.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { BedDouble, Activity, ClipboardPlus } from "lucide-react";
+import { BedDouble, Activity, ClipboardPlus, X } from "lucide-react";
 import { DataTable, multiSelectFilter } from "../../components/common";
 import { useIPD } from "../../context/IPDContext";
 import { ADMISSION_STATUS_CONFIG, WARD_TYPE_CONFIG } from "./ipdData";
@@ -56,6 +57,21 @@ const WardPill = ({ type }) => {
 const IPDHome = () => {
   const navigate = useNavigate();
   const { admissions } = useIPD();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const wardFilter = searchParams.get("ward");
+
+  // TanStack's columnFilters shape — only read once, on mount, by DataTable.
+  const initialColumnFilters = wardFilter
+    ? [{ id: "wardType", value: [wardFilter] }]
+    : [];
+
+  const clearWardFilter = () => {
+    setSearchParams({});
+    // The pre-applied filter already lives inside DataTable's own state by
+    // this point; the simplest reliable way to fully reset it is a fresh
+    // mount, since DataTable doesn't expose an imperative "clear" method.
+    navigate(0);
+  };
 
   const columnHelper = createColumnHelper();
   const columns = [
@@ -305,10 +321,54 @@ const IPDHome = () => {
       <div
         style={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
+          alignItems: "center",
           marginBottom: "1rem",
+          gap: 8,
+          flexWrap: "wrap",
         }}
       >
+        {wardFilter ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "0.5rem 0.875rem",
+              borderRadius: 10,
+              background: "var(--hms-blue-light)",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                color: "var(--hms-blue)",
+              }}
+            >
+              Showing <strong>{wardFilter}</strong> ward admissions only
+            </span>
+            <button
+              onClick={clearWardFilter}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                border: "none",
+                background: "transparent",
+                color: "var(--hms-blue)",
+                cursor: "pointer",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              <X size={13} /> Clear
+            </button>
+          </div>
+        ) : (
+          <div />
+        )}
         <button
           onClick={() => navigate("/ipd/admit")}
           style={{
@@ -335,8 +395,9 @@ const IPDHome = () => {
         columns={columns}
         data={admissions}
         title="Admissions"
-        subtitle="All inpatient admissions · Ward-wise management arrives this week"
+        subtitle="All inpatient admissions"
         pageSize={10}
+        initialColumnFilters={initialColumnFilters}
         filters={[
           {
             columnId: "status",

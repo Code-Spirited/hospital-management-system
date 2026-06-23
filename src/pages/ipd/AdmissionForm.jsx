@@ -24,6 +24,7 @@ import {
 } from "../../components/common";
 import { usePatients } from "../../context/PatientsContext";
 import { useIPD } from "../../context/IPDContext";
+import { generateId } from "../../utils/generateId";
 import { DOCTORS } from "../opd/opdData";
 import { WARD_TYPE_CONFIG } from "./ipdData";
 import { admissionSchema } from "./ipdSchema";
@@ -99,7 +100,7 @@ const AdmissionForm = () => {
       "YYYY-MM-DD",
     );
     await new Promise((r) => setTimeout(r, 600));
-    const newId = `ADM-${3003 + Math.floor(Math.random() * 900)}`;
+    const newId = generateId("ADM", 3003, 900);
     addAdmission({
       id: newId,
       ...data,

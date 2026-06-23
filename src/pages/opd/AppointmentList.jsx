@@ -40,6 +40,7 @@ import {
 } from "../../components/common";
 import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
+import { generateId } from "../../utils/generateId";
 import { STATUS_CONFIG, VISIT_TYPE_CONFIG } from "./appointmentsData";
 import { DOCTORS } from "./opdData";
 import { appointmentSchema } from "./opdSchema";
@@ -762,7 +763,7 @@ const AppointmentList = () => {
         description: `${data.patientName}'s appointment has been updated.`,
       });
     } else {
-      const newId = `APT-${2021 + Math.floor(Math.random() * 500)}`;
+      const newId = generateId("APT", 2021, 500);
       addAppointment({ id: newId, status: "Scheduled", ...data });
       toast.success("Appointment booked", {
         description: `${data.patientName} — ${dayjs(data.date).format("D MMM")} at ${data.time}`,
