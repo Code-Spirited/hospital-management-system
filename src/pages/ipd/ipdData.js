@@ -1,17 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // ipdData.js
 //
-// IPD admission registry — the primary data source for the IPD module,
-// following the same pattern as opdData.js/appointmentsData.js. An
-// admission record represents ONE inpatient stay: who, which doctor,
-// what ward type, why, and when. It is deliberately separate from both
-// the Patient record (permanent identity) and an OPD Appointment (an
-// outpatient encounter) — one patient can have many admissions over time,
-// just as they can have many appointments.
+// IPD admission registry. An admission record represents ONE inpatient
+// stay: who, which doctor, what ward type, why, and when. Separate from
+// both the Patient record (permanent identity) and an OPD Appointment (an
+// outpatient encounter) — one patient can have many admissions over time.
 //
-// Expanded to 27 records (23 currently Admitted, 4 Discharged) spread
-// across all four ward types, so Ward Management's occupancy circles show
-// meaningful, visibly populated numbers instead of three near-empty wards.
+// bedNumber (added Week 4 Wednesday) is a SPECIFIC bed within the ward
+// (1-indexed, scoped to that ward type — "General Bed 3" and "ICU Bed 3"
+// are different beds). Deliberately left unset on about half the
+// currently-admitted seed records: this models a realistic backlog of
+// patients admitted before bed-level tracking existed, which the new
+// BedAllocation.jsx page lets you resolve interactively rather than
+// pretending every record was always perfectly tracked.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Admission status — tracks whether this inpatient stay is ongoing or has
@@ -22,16 +23,13 @@
 //                admitted to ICU since 16 Jun for post-accident monitoring."
 //   Discharged — the inpatient stay has formally ended (Week 4 Friday's
 //                Discharge Summary task implements this transition in
-//                full). Until then, this status exists here as a defined
-//                concept but isn't yet reachable from the UI.
+//                full).
 export const ADMISSION_STATUS_CONFIG = {
   Admitted: { color: "#2563eb", bg: "#eff6ff" },
   Discharged: { color: "#059669", bg: "#ecfdf5" },
 };
 
-// Ward type — the category of room/bed a patient is admitted under. Exact
-// bed/room NUMBER assignment is Week 4 Wednesday's dedicated Bed
-// Allocation task — Ward Management only deals with the ward CATEGORY.
+// Ward type — the category of room/bed a patient is admitted under.
 //
 //   General      — shared, multi-bed ward. Most economical. Example:
 //                  routine post-surgery recovery, stable conditions.
@@ -43,16 +41,14 @@ export const ADMISSION_STATUS_CONFIG = {
 //                  critical patients. Example: severe trauma, post-major-
 //                  surgery critical care, unstable vitals.
 export const WARD_TYPE_CONFIG = {
-  General: { color: "#1aa34f", bg: "#eff6ff" },
+  General: { color: "#2563eb", bg: "#eff6ff" },
   "Semi-Private": { color: "#7c3aed", bg: "#f5f3ff" },
   Private: { color: "#d97706", bg: "#fffbeb" },
   ICU: { color: "#dc2626", bg: "#fef2f2" },
 };
 
 // Total bed count per ward CATEGORY. Placeholder figures until a real
-// facilities/bed-inventory API exists (Week 8). Independent of the
-// Dashboard's "Beds Occupied" KPI card, which uses an unrelated hardcoded
-// figure — a known inconsistency flagged separately, not fixed here.
+// facilities/bed-inventory API exists (Week 8).
 export const WARD_CAPACITY = {
   General: 40,
   "Semi-Private": 20,
@@ -61,7 +57,7 @@ export const WARD_CAPACITY = {
 };
 
 export const initialAdmissions = [
-  // ── General Ward (10 currently Admitted) ──────────────────────────────────
+  // ── General Ward (10 Admitted · 5 have a specific bed, 5 don't yet) ──────
   {
     id: "ADM-3003",
     patientId: "P-1001",
@@ -75,6 +71,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543260",
     expectedStayDays: "3",
     status: "Admitted",
+    bedNumber: 1,
   },
   {
     id: "ADM-3004",
@@ -89,6 +86,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543261",
     expectedStayDays: "2",
     status: "Admitted",
+    bedNumber: 2,
   },
   {
     id: "ADM-3005",
@@ -103,6 +101,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543262",
     expectedStayDays: "2",
     status: "Admitted",
+    bedNumber: 3,
   },
   {
     id: "ADM-3006",
@@ -117,6 +116,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543263",
     expectedStayDays: "4",
     status: "Admitted",
+    bedNumber: 4,
   },
   {
     id: "ADM-3007",
@@ -131,6 +131,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543264",
     expectedStayDays: "2",
     status: "Admitted",
+    bedNumber: 5,
   },
   {
     id: "ADM-3008",
@@ -203,7 +204,7 @@ export const initialAdmissions = [
     status: "Admitted",
   },
 
-  // ── Semi-Private Ward (6 currently Admitted) ──────────────────────────────
+  // ── Semi-Private Ward (6 Admitted · 3 have a specific bed) ────────────────
   {
     id: "ADM-3013",
     patientId: "P-1002",
@@ -217,6 +218,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543270",
     expectedStayDays: "3",
     status: "Admitted",
+    bedNumber: 1,
   },
   {
     id: "ADM-3014",
@@ -231,6 +233,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543271",
     expectedStayDays: "4",
     status: "Admitted",
+    bedNumber: 2,
   },
   {
     id: "ADM-3015",
@@ -245,6 +248,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543272",
     expectedStayDays: "5",
     status: "Admitted",
+    bedNumber: 3,
   },
   {
     id: "ADM-3016",
@@ -290,7 +294,7 @@ export const initialAdmissions = [
     status: "Admitted",
   },
 
-  // ── Private Ward (4 currently Admitted) ───────────────────────────────────
+  // ── Private Ward (4 Admitted · 2 have a specific bed) ─────────────────────
   {
     id: "ADM-3019",
     patientId: "P-1022",
@@ -304,6 +308,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543276",
     expectedStayDays: "3",
     status: "Admitted",
+    bedNumber: 1,
   },
   {
     id: "ADM-3020",
@@ -318,6 +323,7 @@ export const initialAdmissions = [
     attendantPhone: "9876543277",
     expectedStayDays: "3",
     status: "Admitted",
+    bedNumber: 2,
   },
   {
     id: "ADM-3021",
@@ -349,23 +355,7 @@ export const initialAdmissions = [
     status: "Admitted",
   },
 
-  // ── ICU (3 currently Admitted) ────────────────────────────────────────────
-  {
-    id: "ADM-3023",
-    patientId: "P-1003",
-    patientName: "Arjun Patel",
-    admittingDoctor: "Dr. Neha Singh",
-    wardType: "ICU",
-    admissionDate: "2026-06-20",
-    reasonForAdmission:
-      "Continuous cardiac monitoring after chest pain episode",
-    diagnosisAtAdmission:
-      "Suspected cardiac event, ruled out via ECG, under observation",
-    attendantName: "Mahesh Patel",
-    attendantPhone: "9876543280",
-    expectedStayDays: "2",
-    status: "Admitted",
-  },
+  // ── ICU (3 Admitted · 2 have a specific bed) ──────────────────────────────
   {
     id: "ADM-3001",
     patientId: "P-1011",
@@ -381,6 +371,24 @@ export const initialAdmissions = [
     attendantPhone: "9876543250",
     expectedStayDays: "3",
     status: "Admitted",
+    bedNumber: 1,
+  },
+  {
+    id: "ADM-3023",
+    patientId: "P-1003",
+    patientName: "Arjun Patel",
+    admittingDoctor: "Dr. Neha Singh",
+    wardType: "ICU",
+    admissionDate: "2026-06-20",
+    reasonForAdmission:
+      "Continuous cardiac monitoring after chest pain episode",
+    diagnosisAtAdmission:
+      "Suspected cardiac event, ruled out via ECG, under observation",
+    attendantName: "Mahesh Patel",
+    attendantPhone: "9876543280",
+    expectedStayDays: "2",
+    status: "Admitted",
+    bedNumber: 2,
   },
   {
     id: "ADM-3024",
@@ -399,7 +407,7 @@ export const initialAdmissions = [
     status: "Admitted",
   },
 
-  // ── Discharged (historical, 4 records) ────────────────────────────────────
+  // ── Discharged (historical, beds already freed) ───────────────────────────
   {
     id: "ADM-3025",
     patientId: "P-1010",

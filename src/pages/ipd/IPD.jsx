@@ -8,12 +8,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { BedDouble, ClipboardPlus, LayoutGrid } from "lucide-react";
+import { BedDouble, ClipboardPlus, LayoutGrid, Grid3x3 } from "lucide-react";
 
 const TABS = [
   { label: "Admissions", to: "/ipd", end: true, Icon: BedDouble },
   { label: "New Admission", to: "/ipd/admit", end: false, Icon: ClipboardPlus },
   { label: "Ward Management", to: "/ipd/wards", end: false, Icon: LayoutGrid },
+  { label: "Bed Allocation", to: "/ipd/beds", end: false, Icon: Grid3x3 },
 ];
 
 const IPD = () => (
