@@ -41,3 +41,26 @@ export const treatmentRecordSchema = z.object({
   notes: z.string().optional().or(z.literal("")),
   medicationGiven: z.string().optional().or(z.literal("")),
 });
+
+// ── Discharge Summary schema — closes out an IPD admission ───────────────────
+// conditionAtDischarge and dischargedBy are required: every closed
+// admission needs at least a recorded outcome and an accountable doctor.
+// Narrative fields stay optional, consistent with consultationSchema.
+export const dischargeSummarySchema = z.object({
+  dischargeDate: z
+    .string()
+    .min(1, "Discharge date is required")
+    .refine(validDDMMYYYY, "Enter date as DD-MM-YYYY"),
+  conditionAtDischarge: z
+    .string()
+    .min(1, "Please select condition at discharge"),
+  dischargedBy: z.string().min(1, "Please select the discharging doctor"),
+  finalDiagnosis: z.string().optional().or(z.literal("")),
+  treatmentSummary: z.string().optional().or(z.literal("")),
+  followUpDate: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((val) => !val || validDDMMYYYY(val), "Enter date as DD-MM-YYYY"),
+  followUpInstructions: z.string().optional().or(z.literal("")),
+});

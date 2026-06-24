@@ -56,6 +56,31 @@ export const WARD_CAPACITY = {
   ICU: 8,
 };
 
+// Condition at discharge — the clinical OUTCOME of this specific admission,
+// captured once at the end of the stay (distinct from the ongoing,
+// repeatable treatment records logged DURING the stay).
+//
+//   Recovered  — fully better, no lingering issues. Example: viral fever,
+//                fully resolved.
+//   Improved   — significantly better, safe to continue recovery at home.
+//                Example: post-surgery patient, stable enough to leave.
+//   Stable     — condition unchanged but no longer needs hospital-level
+//                monitoring. Example: chronic condition, managed, fine
+//                for home care.
+//   Referred   — being sent to another facility for care not available
+//                here. Example: needs a specialized procedure elsewhere.
+//   Deceased   — the patient died during this admission. Included
+//                because it is a real, necessary outcome category in any
+//                hospital system — handled in the UI with a neutral,
+//                respectful tone, not the same styling as other outcomes.
+export const CONDITION_AT_DISCHARGE_CONFIG = {
+  Recovered: { color: "#059669", bg: "#ecfdf5" },
+  Improved: { color: "#2563eb", bg: "#eff6ff" },
+  Stable: { color: "#7c3aed", bg: "#f5f3ff" },
+  Referred: { color: "#d97706", bg: "#fffbeb" },
+  Deceased: { color: "#64748b", bg: "#f1f5f9" },
+};
+
 export const initialAdmissions = [
   // ── General Ward (10 Admitted · 5 have a specific bed, 5 don't yet) ──────
   {

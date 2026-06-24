@@ -16,6 +16,7 @@ import {
   Activity,
   ClipboardPlus,
   ClipboardList,
+  LogOut,
   X,
 } from "lucide-react";
 import { DataTable, multiSelectFilter } from "../../components/common";
@@ -158,28 +159,54 @@ const IPDHome = () => {
     columnHelper.display({
       id: "actions",
       header: "",
-      cell: (info) => (
-        <button
-          onClick={() => navigate(`/ipd/treatment/${info.row.original.id}`)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "0.4rem 0.75rem",
-            borderRadius: 8,
-            border: "1.5px solid var(--hms-border)",
-            background: "#fff",
-            color: "#64748b",
-            cursor: "pointer",
-            fontFamily: "var(--font-body)",
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-          }}
-        >
-          <ClipboardList size={13} /> Treatment
-        </button>
-      ),
+      cell: (info) => {
+        const a = info.row.original;
+        return (
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={() => navigate(`/ipd/treatment/${a.id}`)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "0.4rem 0.7rem",
+                borderRadius: 8,
+                border: "1.5px solid var(--hms-border)",
+                background: "#fff",
+                color: "#64748b",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.76rem",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <ClipboardList size={13} /> Treatment
+            </button>
+            <button
+              onClick={() => navigate(`/ipd/discharge/${a.id}`)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "0.4rem 0.7rem",
+                borderRadius: 8,
+                border: "1.5px solid var(--hms-border)",
+                background: "#fff",
+                color: "#64748b",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.76rem",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <LogOut size={13} />{" "}
+              {a.status === "Discharged" ? "View Summary" : "Discharge"}
+            </button>
+          </div>
+        );
+      },
     }),
   ];
 

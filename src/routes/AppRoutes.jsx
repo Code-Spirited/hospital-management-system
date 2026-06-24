@@ -20,6 +20,7 @@ import AdmissionForm from "../pages/ipd/AdmissionForm";
 import WardManagement from "../pages/ipd/WardManagement";
 import BedAllocation from "../pages/ipd/BedAllocation";
 import TreatmentRecords from "../pages/ipd/TreatmentRecords";
+import DischargeSummary from "../pages/ipd/DischargeSummary";
 
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
@@ -61,6 +62,7 @@ const AppRoutes = () => {
           <Route path="wards" element={<WardManagement />} />
           <Route path="beds" element={<BedAllocation />} />
           <Route path="treatment/:admissionId" element={<TreatmentRecords />} />
+          <Route path="discharge/:admissionId" element={<DischargeSummary />} />
         </Route>{" "}
         <Route
           path="/pharmacy"
