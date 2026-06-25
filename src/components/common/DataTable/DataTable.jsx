@@ -263,11 +263,38 @@ const DataTable = ({
   // [{ id: columnId, value: [...] }]. Only seeds the INITIAL state; the
   // table's own Filter menu still fully controls filtering afterward.
   initialColumnFilters = [],
+  // Seeds which page this table opens on — e.g. a parent restoring the
+  // page the user was viewing before clicking a row's ⋮ action and
+  // navigating away. Like initialColumnFilters, this only sets the
+  // INITIAL state; the table's own pagination controls drive it afterward.
+  initialPageIndex = 0,
+  // Notified on every page change — Prev/Next/First/Last, a page-size
+  // change, or an automatic reset to page 0 from search/filtering — so a
+  // parent can remember the current page across this component being
+  // unmounted. TanStack's pagination state lives only here and is lost
+  // the instant this unmounts, which happens on every route navigation.
+  onPageIndexChange,
 }) => {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState(initialColumnFilters);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize });
+  const [pagination, setPagination] = useState({
+    pageIndex: initialPageIndex,
+    pageSize,
+  });
+
+  // Wraps setPagination so every change — whether triggered from inside
+  // this component (Prev/Next/page-size) or externally via
+  // table.setPageIndex(0) (FilterMenu, global search reset) — also
+  // reports the new page index upward to whichever parent is listening.
+  const handlePaginationChange = (updater) => {
+    setPagination((old) => {
+      const next = typeof updater === "function" ? updater(old) : updater;
+      onPageIndexChange?.(next.pageIndex);
+      return next;
+    });
+  };
+
   // useMemo prevents the table instance from being recreated on every render.
   // The table only re-initialises when columns or data actually change.
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable() returns functions the React Compiler can't safely auto-memoize. This is a known, harmless characteristic of the library; the table works correctly, it just won't receive automatic compiler optimization on this component.
@@ -278,7 +305,7 @@ const DataTable = ({
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
+    onPaginationChange: handlePaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

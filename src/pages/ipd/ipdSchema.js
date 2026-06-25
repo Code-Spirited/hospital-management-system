@@ -64,3 +64,28 @@ export const dischargeSummarySchema = z.object({
     .refine((val) => !val || validDDMMYYYY(val), "Enter date as DD-MM-YYYY"),
   followUpInstructions: z.string().optional().or(z.literal("")),
 });
+
+// ── IPD Billing schema ────────────────────────────────────────────────────────
+// dailyRate and numberOfDays are both editable — auto-suggested from the
+// admission's ward type and stay duration, the same "suggest, allow
+// override" pattern used for OPD's consultationFee.
+export const ipdBillingSchema = z.object({
+  dailyRate: z.coerce.number().min(0, "Enter a valid amount"),
+  numberOfDays: z.coerce.number().min(1, "Must be at least 1 day"),
+  items: z.array(
+    z.object({
+      description: z.string().min(2, "Description required"),
+      amount: z.coerce.number().min(0, "Enter a valid amount"),
+    }),
+  ),
+  discountPercent: z.coerce
+    .number()
+    .min(0, "Cannot be negative")
+    .max(100, "Cannot exceed 100%"),
+  taxPercent: z.coerce
+    .number()
+    .min(0, "Cannot be negative")
+    .max(100, "Cannot exceed 100%"),
+  paymentMethod: z.string().min(1, "Select a payment method"),
+  paymentStatus: z.string().min(1, "Select a payment status"),
+});

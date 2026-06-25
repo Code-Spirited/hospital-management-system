@@ -48,6 +48,7 @@ import {
 import { STATUS_CONFIG } from "./opdData";
 import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
+import { useTablePagination } from "../../context/TablePaginationContext";
 import { editPatientSchema } from "./opdSchema";
 
 const opt = (v) => ({ value: v, label: v });
@@ -643,6 +644,7 @@ const PatientList = () => {
   const { patients, updatePatient, deletePatient, restorePatient } =
     usePatients();
   const { appointments } = useAppointments();
+  const { getPageIndex, setPageIndex } = useTablePagination();
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
 
@@ -985,6 +987,8 @@ const PatientList = () => {
         title="Patient List"
         subtitle="Full OPD register · Click a row's ⋮ menu for actions"
         pageSize={10}
+        initialPageIndex={getPageIndex("opd-patient-list")}
+        onPageIndexChange={(i) => setPageIndex("opd-patient-list", i)}
         filters={[
           {
             columnId: "status",

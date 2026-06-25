@@ -40,6 +40,7 @@ import {
 } from "../../components/common";
 import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
+import { useTablePagination } from "../../context/TablePaginationContext";
 import { generateId } from "../../utils/generateId";
 import { STATUS_CONFIG, VISIT_TYPE_CONFIG } from "./appointmentsData";
 import { DOCTORS } from "./opdData";
@@ -745,6 +746,7 @@ const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
 const AppointmentList = () => {
   const { appointments, addAppointment, updateAppointment, cancelAppointment } =
     useAppointments();
+  const { getPageIndex, setPageIndex } = useTablePagination();
   const [viewing, setViewing] = useState(null);
   const [booking, setBooking] = useState(false);
   const [editingAppt, setEditingAppt] = useState(null);
@@ -1092,6 +1094,8 @@ const AppointmentList = () => {
         title="Appointments"
         subtitle="Click a row's ⋮ menu for actions"
         pageSize={10}
+        initialPageIndex={getPageIndex("opd-appointments")}
+        onPageIndexChange={(i) => setPageIndex("opd-appointments", i)}
         filters={[
           {
             columnId: "status",

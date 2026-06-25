@@ -56,6 +56,23 @@ export const WARD_CAPACITY = {
   ICU: 8,
 };
 
+// Daily room/bed rate per ward type (₹), used by IPD Billing to calculate
+// Room & Stay Charges = dailyRate × number of days. Distinct from OPD's
+// flat per-visit consultation fee, since an inpatient stay's cost scales
+// with duration.
+//
+//   General      ₹800/day  — shared ward, basic nursing care.
+//   Semi-Private ₹1,500/day — 2-bed room, more privacy.
+//   Private      ₹2,500/day — single room, added comfort/privacy.
+//   ICU          ₹5,000/day — continuous monitoring, higher staff ratio,
+//                specialized equipment.
+export const WARD_DAILY_RATE = {
+  General: 800,
+  "Semi-Private": 1500,
+  Private: 2500,
+  ICU: 5000,
+};
+
 // Condition at discharge — the clinical OUTCOME of this specific admission,
 // captured once at the end of the stay (distinct from the ongoing,
 // repeatable treatment records logged DURING the stay).
@@ -445,7 +462,19 @@ export const initialAdmissions = [
     attendantName: "Suresh Pillai",
     attendantPhone: "9876543282",
     expectedStayDays: "5",
+    dischargeDate: "2026-06-13",
     status: "Discharged",
+    dischargeSummary: {
+      conditionAtDischarge: "Recovered",
+      dischargedBy: "Dr. Priya Mehta",
+      finalDiagnosis:
+        "Post-operative recovery from knee replacement, uneventful",
+      treatmentSummary:
+        "Physiotherapy initiated, wound healed well, pain managed effectively",
+      followUpDate: "2026-06-27",
+      followUpInstructions:
+        "Continue physiotherapy exercises, follow up in 2 weeks",
+    },
   },
   {
     id: "ADM-3026",
@@ -459,7 +488,17 @@ export const initialAdmissions = [
     attendantName: "Sunita Pandey",
     attendantPhone: "9876543283",
     expectedStayDays: "2",
+    dischargeDate: "2026-06-12",
     status: "Discharged",
+    dischargeSummary: {
+      conditionAtDischarge: "Stable",
+      dischargedBy: "Dr. Ravi Gupta",
+      finalDiagnosis: "Hypertension, stabilized on oral medication",
+      treatmentSummary:
+        "IV antihypertensives administered initially, transitioned to oral medication",
+      followUpDate: "2026-06-19",
+      followUpInstructions: "Monitor BP daily at home, follow up in 1 week",
+    },
   },
   {
     id: "ADM-3002",
@@ -474,7 +513,18 @@ export const initialAdmissions = [
     attendantName: "Suresh Sharma",
     attendantPhone: "9876543251",
     expectedStayDays: "1",
+    dischargeDate: "2026-06-13",
     status: "Discharged",
+    dischargeSummary: {
+      conditionAtDischarge: "Improved",
+      dischargedBy: "Dr. Neha Singh",
+      finalDiagnosis: "Hairline fracture, left wrist, cast applied",
+      treatmentSummary:
+        "Cast applied and well-tolerated, pain managed with oral analgesics",
+      followUpDate: "2026-07-03",
+      followUpInstructions:
+        "Return for cast removal in 3 weeks, avoid lifting with affected wrist",
+    },
   },
   {
     id: "ADM-3027",
@@ -489,6 +539,18 @@ export const initialAdmissions = [
     attendantName: "Ravi Menon",
     attendantPhone: "9876543284",
     expectedStayDays: "1",
+    dischargeDate: "2026-06-06",
     status: "Discharged",
+    dischargeSummary: {
+      conditionAtDischarge: "Recovered",
+      dischargedBy: "Dr. Neha Singh",
+      finalDiagnosis:
+        "Anaphylaxis, fully resolved following emergency treatment",
+      treatmentSummary:
+        "Emergency epinephrine administered, observed for recurrence, no further reaction",
+      followUpDate: "2026-06-13",
+      followUpInstructions:
+        "Carry epinephrine auto-injector, avoid known allergen, follow up with allergist",
+    },
   },
 ];

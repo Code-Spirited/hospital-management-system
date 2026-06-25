@@ -21,6 +21,7 @@ import WardManagement from "../pages/ipd/WardManagement";
 import BedAllocation from "../pages/ipd/BedAllocation";
 import TreatmentRecords from "../pages/ipd/TreatmentRecords";
 import DischargeSummary from "../pages/ipd/DischargeSummary";
+import IPDBilling from "../pages/ipd/IPDBilling";
 
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
@@ -63,6 +64,7 @@ const AppRoutes = () => {
           <Route path="beds" element={<BedAllocation />} />
           <Route path="treatment/:admissionId" element={<TreatmentRecords />} />
           <Route path="discharge/:admissionId" element={<DischargeSummary />} />
+          <Route path="billing/:admissionId" element={<IPDBilling />} />
         </Route>{" "}
         <Route
           path="/pharmacy"
