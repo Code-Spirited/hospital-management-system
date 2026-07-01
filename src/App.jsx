@@ -1,4 +1,5 @@
 import { Toaster } from "sonner";
+import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   CheckCircle2,
   XCircle,
@@ -11,7 +12,9 @@ import AppRoutes from "./routes/AppRoutes";
 function App() {
   return (
     <>
-      <AppRoutes />
+      <Tooltip.Provider delayDuration={150}>
+        <AppRoutes />
+      </Tooltip.Provider>
 
       <style>{`
         [data-sonner-toaster] [data-sonner-toast] {

@@ -35,6 +35,7 @@ import {
   FormInput as Input,
   FormSelect,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useIPD } from "../../context/IPDContext";
 import { usePatients } from "../../context/PatientsContext";
 import {
@@ -649,7 +650,14 @@ const IPDBilling = () => {
                 error={errors.discountPercent}
               />
             </Field>
-            <Field label="Tax / GST (%)" error={errors.taxPercent?.message}>
+            <Field
+              label={
+                <>
+                  Tax / <Abbr underline={false}>GST</Abbr> (%)
+                </>
+              }
+              error={errors.taxPercent?.message}
+            >
               <Input
                 {...register("taxPercent")}
                 type="number"

@@ -28,6 +28,8 @@ import {
   FormSelect,
   DateInput,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
+import { generateId } from "../../utils/generateId";
 
 // ── Option lists ──────────────────────────────────────────────────────────────
 const opt = (v) => ({ value: v, label: v });
@@ -212,7 +214,13 @@ const PatientRegistration = () => {
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 1400));
     setSubmitting(false);
-    const newId = `P-${1043 + Math.floor(Math.random() * 100)}`;
+    // generateId, not Math.random() directly here: this function runs
+    // after an `await`, and a setState updater or async continuation that
+    // calls Math.random() directly is the same react-hooks/purity risk
+    // already fixed in AdmissionForm.jsx and AppointmentList.jsx — React
+    // re-invoking this on an interrupted render could mint a different,
+    // possibly duplicate, ID.
+    const newId = generateId("P", 1043, 100);
     toast.success(`Patient registered successfully`, {
       description: `${data.fullName} · ID: ${newId}`,
     });
@@ -316,7 +324,7 @@ const PatientRegistration = () => {
                 letterSpacing: "0.07em",
               }}
             >
-              OPD · New Registration
+              <Abbr underline={false}>OPD</Abbr> · New Registration
             </span>
           </div>
           <h1

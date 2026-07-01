@@ -31,6 +31,7 @@ import {
   FormInput as Input,
   FormTextarea as Textarea,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { usePatients } from "../../context/PatientsContext";
 import { consultationSchema } from "./opdSchema";
@@ -277,7 +278,13 @@ const Consultation = () => {
             <Field label="Weight (kg)">
               <Input {...register("weight")} placeholder="Optional" />
             </Field>
-            <Field label="SpO2 (%)">
+            <Field
+              label={
+                <>
+                  <Abbr underline={false}>SpO2</Abbr> (%)
+                </>
+              }
+            >
               <Input {...register("spo2")} placeholder="Optional" />
             </Field>
           </div>

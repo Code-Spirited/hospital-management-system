@@ -22,6 +22,7 @@ import {
   FormSelect,
   DateInput,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { usePatients } from "../../context/PatientsContext";
 import { useIPD } from "../../context/IPDContext";
 import { generateId } from "../../utils/generateId";
@@ -154,7 +155,7 @@ const AdmissionForm = () => {
               letterSpacing: "0.07em",
             }}
           >
-            IPD · New Admission
+            <Abbr underline={false}>IPD</Abbr> · New Admission
           </span>
         </div>
         <h1

@@ -40,6 +40,7 @@ import {
   appointmentOutcomes,
   appointmentSummary,
 } from "./dashboardData";
+import Abbr from "../../components/common/Abbr/Abbr";
 
 // ── Design constants ──────────────────────────────────────────────────────────
 // Centralised here so changing a color updates all four charts at once.
@@ -438,6 +439,7 @@ const AppointmentAnalytics = () => {
                   fontSize: "0.72rem",
                   paddingTop: 12,
                 }}
+                formatter={(value) => <Abbr underline={false}>{value}</Abbr>}
               />
               <Bar dataKey="OPD" fill={COLORS.OPD} radius={[4, 4, 0, 0]} />
               <Bar dataKey="IPD" fill={COLORS.IPD} radius={[4, 4, 0, 0]} />

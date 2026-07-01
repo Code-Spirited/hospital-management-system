@@ -23,7 +23,7 @@
 //   <DataTable columns={columns} data={patients} title="Recent Patients" />
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -47,6 +47,7 @@ import {
   Filter,
 } from "lucide-react";
 import * as Popover from "@radix-ui/react-popover";
+import Abbr from "../Abbr/Abbr";
 
 // Number of skeleton rows shown while data is loading
 const SKELETON_ROW_COUNT = 8;
@@ -56,6 +57,7 @@ const SKELETON_ROW_COUNT = 8;
 // button per filter (Type, Status, ...) with a single icon carrying a
 // badge count; clicking it reveals all groups together in one dropdown.
 const FilterMenu = ({ filters, table }) => {
+  const [filterOpen, setFilterOpen] = useState(false);
   const totalActive = filters.reduce(
     (sum, f) =>
       sum + (table.getColumn(f.columnId)?.getFilterValue()?.length ?? 0),
@@ -63,175 +65,211 @@ const FilterMenu = ({ filters, table }) => {
   );
 
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          title="Filter"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-            height: 36,
-            padding: totalActive > 0 ? "0 0.75rem" : "0 0.625rem",
-            border: `1.5px solid ${totalActive ? "var(--hms-blue)" : "var(--hms-border)"}`,
-            borderRadius: 9,
-            background: totalActive ? "var(--hms-blue-light)" : "#fff",
-            color: totalActive ? "var(--hms-blue)" : "#64748b",
-            cursor: "pointer",
-            flexShrink: 0,
-            transition: "all 0.15s",
-          }}
-        >
-          <Filter size={15} />
-          {totalActive > 0 && (
-            <span
-              style={{
-                background: "var(--hms-blue)",
-                color: "#fff",
-                borderRadius: 20,
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                padding: "1px 6px",
-                minWidth: 16,
-                textAlign: "center",
-              }}
-            >
-              {totalActive}
-            </span>
-          )}
-        </button>
-      </Popover.Trigger>
-
-      <Popover.Portal>
-        <Popover.Content
-          align="end"
-          sideOffset={8}
-          className="hms-popover-content"
-          style={{
-            background: "#fff",
-            borderRadius: 14,
-            border: "1px solid var(--hms-border)",
-            boxShadow: "var(--shadow-lg)",
-            padding: "0.875rem",
-            minWidth: 220,
-            maxWidth: 280,
-            zIndex: 50,
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          <div
+    <>
+      {filterOpen && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 49 }}
+          onPointerDown={() => setFilterOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <Popover.Root open={filterOpen} onOpenChange={setFilterOpen}>
+        <Popover.Trigger asChild>
+          <button
+            title="Filter"
             style={{
+              position: "relative",
+              zIndex: 50,
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "0.625rem",
+              justifyContent: "center",
+              gap: 6,
+              height: 36,
+              padding: totalActive > 0 ? "0 0.75rem" : "0 0.625rem",
+              border: `1.5px solid ${totalActive ? "var(--hms-blue)" : "var(--hms-border)"}`,
+              borderRadius: 9,
+              background: totalActive ? "var(--hms-blue-light)" : "#fff",
+              color: totalActive ? "var(--hms-blue)" : "#64748b",
+              cursor: "pointer",
+              flexShrink: 0,
+              transition: "all 0.15s",
             }}
           >
-            <span
-              style={{
-                fontSize: "0.8rem",
-                fontWeight: 800,
-                color: "var(--hms-navy)",
-              }}
-            >
-              Filters
-            </span>
+            <Filter size={15} />
             {totalActive > 0 && (
-              <button
-                onClick={() =>
-                  filters.forEach((f) =>
-                    table.getColumn(f.columnId)?.setFilterValue(undefined),
-                  )
-                }
+              <span
                 style={{
-                  fontSize: "0.72rem",
+                  background: "var(--hms-blue)",
+                  color: "#fff",
+                  borderRadius: 20,
+                  fontSize: "0.65rem",
                   fontWeight: 700,
-                  color: "#ef4444",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-body)",
+                  padding: "1px 6px",
+                  minWidth: 16,
+                  textAlign: "center",
                 }}
               >
-                Clear all
-              </button>
+                {totalActive}
+              </span>
             )}
-          </div>
+          </button>
+        </Popover.Trigger>
 
-          {filters.map((f, i) => {
-            const selected =
-              table.getColumn(f.columnId)?.getFilterValue() ?? [];
-            return (
-              <div
-                key={f.columnId}
-                style={{ marginBottom: i < filters.length - 1 ? "0.75rem" : 0 }}
+        <Popover.Portal>
+          <Popover.Content
+            align="end"
+            sideOffset={8}
+            className="hms-popover-content"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              background: "#fff",
+              borderRadius: 14,
+              border: "1px solid var(--hms-border)",
+              boxShadow: "var(--shadow-lg)",
+              minWidth: 220,
+              maxWidth: 280,
+              // Caps height so a long filter group (Pharmacy's Category
+              // list alone has 13 options) can never push the popover
+              // taller than the viewport. Uses Radix's own live-computed
+              // available-space variable — the same technique already used
+              // for DrawerSelect's dropdown — so it adapts to wherever the
+              // Filter button actually sits on screen, with a flat 70vh as
+              // a safe fallback if that variable isn't set.
+              maxHeight:
+                "min(420px, var(--radix-popover-content-available-height, 70vh))",
+              zIndex: 50,
+              fontFamily: "var(--font-body)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.875rem 0.875rem 0.625rem",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "0.8rem",
+                  fontWeight: 800,
+                  color: "var(--hms-navy)",
+                }}
               >
-                <p
+                Filters
+              </span>
+              {totalActive > 0 && (
+                <button
+                  onClick={() =>
+                    filters.forEach((f) =>
+                      table.getColumn(f.columnId)?.setFilterValue(undefined),
+                    )
+                  }
                   style={{
-                    fontSize: "0.68rem",
+                    fontSize: "0.72rem",
                     fontWeight: 700,
-                    color: "#94a3b8",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    margin: "0 0 0.375rem",
+                    color: "#ef4444",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-body)",
                   }}
                 >
-                  {f.label}
-                </p>
-                {f.options.map((opt) => {
-                  const checked = selected.includes(opt);
-                  return (
-                    <label
-                      key={opt}
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Scrollable body. data-lenis-prevent stops the page's global
+              smooth-scroll from hijacking wheel scrolling meant for this
+              list — same fix already used for every other independently
+              -scrollable panel in this app. */}
+            <div
+              data-lenis-prevent
+              style={{ overflowY: "auto", padding: "0 0.875rem 0.875rem" }}
+            >
+              {filters.map((f, i) => {
+                const selected =
+                  table.getColumn(f.columnId)?.getFilterValue() ?? [];
+                return (
+                  <div
+                    key={f.columnId}
+                    style={{
+                      marginBottom: i < filters.length - 1 ? "0.75rem" : 0,
+                    }}
+                  >
+                    <p
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        padding: "0.4rem 0.5rem",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        fontSize: "0.8rem",
-                        fontWeight: 500,
-                        color: "var(--hms-navy)",
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                        color: "#94a3b8",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        margin: "0 0 0.375rem",
                       }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          "var(--hms-surface)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
                     >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => {
-                          const next = checked
-                            ? selected.filter((v) => v !== opt)
-                            : [...selected, opt];
-                          table
-                            .getColumn(f.columnId)
-                            ?.setFilterValue(next.length ? next : undefined);
-                          table.setPageIndex(0);
-                        }}
-                        style={{
-                          width: 14,
-                          height: 14,
-                          accentColor: "var(--hms-blue)",
-                          cursor: "pointer",
-                        }}
-                      />
-                      {opt}
-                    </label>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+                      {f.label}
+                    </p>
+                    {f.options.map((opt) => {
+                      const checked = selected.includes(opt);
+                      return (
+                        <label
+                          key={opt}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 9,
+                            padding: "0.4rem 0.5rem",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            fontSize: "0.8rem",
+                            fontWeight: 500,
+                            color: "var(--hms-navy)",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background =
+                              "var(--hms-surface)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = "transparent")
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const next = checked
+                                ? selected.filter((v) => v !== opt)
+                                : [...selected, opt];
+                              table
+                                .getColumn(f.columnId)
+                                ?.setFilterValue(
+                                  next.length ? next : undefined,
+                                );
+                              table.setPageIndex(0);
+                            }}
+                            style={{
+                              width: 14,
+                              height: 14,
+                              accentColor: "var(--hms-blue)",
+                              cursor: "pointer",
+                            }}
+                          />
+                          <Abbr underline={false}>{opt}</Abbr>
+                        </label>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </>
   );
 };
 
@@ -274,6 +312,15 @@ const DataTable = ({
   // unmounted. TanStack's pagination state lives only here and is lost
   // the instant this unmounts, which happens on every route navigation.
   onPageIndexChange,
+  // Generic by default — "Search...", "No results found", "results" —
+  // rather than the previous hardcoded patient-specific wording, which
+  // was visibly wrong on every non-patient table (Pharmacy, Appointments,
+  // IPD Admissions all showed "Search patients..." regardless). Override
+  // any of these per-table only where a more specific noun genuinely
+  // adds clarity.
+  searchPlaceholder = "Search...",
+  emptyMessage = "No results found",
+  rowNoun = "results",
 }) => {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -283,17 +330,17 @@ const DataTable = ({
     pageSize,
   });
 
-  // Wraps setPagination so every change — whether triggered from inside
-  // this component (Prev/Next/page-size) or externally via
-  // table.setPageIndex(0) (FilterMenu, global search reset) — also
-  // reports the new page index upward to whichever parent is listening.
-  const handlePaginationChange = (updater) => {
-    setPagination((old) => {
-      const next = typeof updater === "function" ? updater(old) : updater;
-      onPageIndexChange?.(next.pageIndex);
-      return next;
-    });
-  };
+  // Reports the current page index upward via a plain effect — NOT from
+  // inside the setPagination updater itself. A setState updater function
+  // must stay pure; React can invoke it more than once per update, and
+  // calling an external callback from inside it is a real side effect
+  // that can fire inconsistently — exactly the cause of "Next"
+  // intermittently failing to advance. Same category of bug as the
+  // earlier Math.random()-during-render issue.
+  useEffect(() => {
+    onPageIndexChange?.(pagination.pageIndex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.pageIndex]);
 
   // useMemo prevents the table instance from being recreated on every render.
   // The table only re-initialises when columns or data actually change.
@@ -305,13 +352,30 @@ const DataTable = ({
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: handlePaginationChange,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     // Tells TanStack how many rows exist — needed when pagination is server-side.
     // For client-side (our case now), this is calculated automatically.
+    //
+    // autoResetPageIndex defaults to true in TanStack Table — it silently
+    // snaps pageIndex back to 0 whenever the `data` array reference
+    // changes. Several pages here (PatientList, MedicineInventory) build
+    // their row data with a fresh .map() on every render to attach
+    // computed fields (lastVisit, stockStatus, expiryStatus) — meaning
+    // `data` gets a NEW array reference on every re-render, even when the
+    // underlying records haven't actually changed. Combined with the
+    // page-memory feature (which re-renders the parent page on every
+    // page-index change to record it), this created a render loop:
+    // click Next → page index reports upward → parent re-renders →
+    // recomputes a new data array → TanStack sees "data changed" →
+    // auto-resets back to page 0 → reports 0 upward → loop. Disabling
+    // this is correct now that pagination is fully, explicitly managed:
+    // search and the Filter menu already call table.setPageIndex(0)
+    // themselves exactly when the result set actually changes.
+    autoResetPageIndex: false,
   });
 
   const { pageIndex } = table.getState().pagination;
@@ -448,7 +512,7 @@ const DataTable = ({
                 // so users don't end up on page 5 with 0 results visible
                 table.setPageIndex(0);
               }}
-              placeholder="Search patients..."
+              placeholder={searchPlaceholder}
               style={{
                 padding: "0.45rem 0.75rem 0.45rem 2rem",
                 background: "var(--hms-surface)",
@@ -586,7 +650,7 @@ const DataTable = ({
                       fontWeight: 500,
                     }}
                   >
-                    No patients found matching your search
+                    {emptyMessage}
                   </p>
                 </td>
               </tr>
@@ -646,7 +710,7 @@ const DataTable = ({
         >
           {totalRows === 0
             ? "No results"
-            : `Showing ${firstRow}–${lastRow} of ${totalRows} patients`}
+            : `Showing ${firstRow}–${lastRow} of ${totalRows} ${rowNoun}`}
         </p>
 
         {/* Page navigation */}

@@ -219,6 +219,13 @@ const Header = ({
           </button>
 
           <div style={{ position: "relative" }}>
+            {showProfile && (
+              <div
+                style={{ position: "fixed", inset: 0, zIndex: 998 }}
+                onPointerDown={() => setShowProfile(false)}
+                aria-hidden="true"
+              />
+            )}
             <button
               className="hdr-profile"
               onClick={() => setShowProfile((s) => !s)}

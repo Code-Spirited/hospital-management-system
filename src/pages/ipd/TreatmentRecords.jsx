@@ -32,6 +32,7 @@ import {
   FormTextarea as Textarea,
   FormSelect,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useIPD } from "../../context/IPDContext";
 import { usePatients } from "../../context/PatientsContext";
 import { generateId } from "../../utils/generateId";
@@ -42,16 +43,41 @@ import { treatmentRecordSchema } from "./ipdSchema";
 const opt = (v) => ({ value: v, label: v });
 const DOCTOR_OPTIONS = DOCTORS.map(opt);
 
-// Builds a single readable line from whichever vitals were actually
-// recorded — skips any that were left blank, so a partial entry never
-// shows "BP undefined · Temp undefined".
+// Builds a readable, JSX-based vitals summary from whichever fields were
+// actually recorded — skips any left blank, so a partial entry never
+// shows "BP undefined · Temp undefined". Returns JSX (not a plain
+// string) specifically so BP and SpO2 can carry the same hover glossary
+// used everywhere else in the app.
 const formatVitalsLine = (r) => {
   const parts = [];
-  if (r.bloodPressure) parts.push(`BP ${r.bloodPressure}`);
-  if (r.temperature) parts.push(`Temp ${r.temperature}°F`);
-  if (r.pulse) parts.push(`Pulse ${r.pulse} bpm`);
-  if (r.spo2) parts.push(`SpO2 ${r.spo2}%`);
-  return parts.length ? parts.join(" · ") : null;
+  if (r.bloodPressure)
+    parts.push({
+      key: "bp",
+      node: (
+        <>
+          <Abbr underline={false}>BP</Abbr> {r.bloodPressure}
+        </>
+      ),
+    });
+  if (r.temperature)
+    parts.push({ key: "temp", node: <>Temp {r.temperature}°F</> });
+  if (r.pulse) parts.push({ key: "pulse", node: <>Pulse {r.pulse} bpm</> });
+  if (r.spo2)
+    parts.push({
+      key: "spo2",
+      node: (
+        <>
+          <Abbr underline={false}>SpO2</Abbr> {r.spo2}%
+        </>
+      ),
+    });
+  if (parts.length === 0) return null;
+  return parts.map((p, i) => (
+    <span key={p.key}>
+      {i > 0 && " · "}
+      {p.node}
+    </span>
+  ));
 };
 
 const TreatmentRecords = () => {
@@ -379,7 +405,13 @@ const TreatmentRecords = () => {
               <Field label="Pulse (bpm)">
                 <Input {...register("pulse")} placeholder="e.g. 72" />
               </Field>
-              <Field label="SpO2 (%)">
+              <Field
+                label={
+                  <>
+                    <Abbr underline={false}>SpO2</Abbr> (%)
+                  </>
+                }
+              >
                 <Input {...register("spo2")} placeholder="Optional" />
               </Field>
             </div>

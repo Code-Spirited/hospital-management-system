@@ -100,88 +100,114 @@ const TypePill = ({ type }) => {
 // ── Row action menu ─────────────────────────────────────────────────────────
 const RowActions = ({ appt, onView, onReschedule, onCancel }) => {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <button className="opd-row-action-trigger" title="Actions">
-          <MoreVertical size={15} />
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          align="end"
-          sideOffset={6}
-          className="hms-popover-content"
-          style={{
-            background: "#fff",
-            borderRadius: 12,
-            border: "1px solid var(--hms-border)",
-            boxShadow: "var(--shadow-lg)",
-            padding: "0.375rem",
-            minWidth: 175,
-            zIndex: 50,
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          <button className="opd-row-action-btn" onClick={() => onView(appt)}>
-            <Eye size={14} /> View Details
+    <>
+      {open && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 49 }}
+          onPointerDown={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger asChild>
+          <button
+            className="opd-row-action-trigger"
+            style={{ position: "relative", zIndex: 50 }}
+            title="Actions"
+          >
+            <MoreVertical size={15} />
           </button>
-          {(appt.status === "Scheduled" || appt.status === "Consulted") && (
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            align="end"
+            sideOffset={6}
+            className="hms-popover-content"
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              border: "1px solid var(--hms-border)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "0.375rem",
+              minWidth: 175,
+              zIndex: 50,
+              fontFamily: "var(--font-body)",
+            }}
+          >
             <button
               className="opd-row-action-btn"
-              onClick={() => navigate(`/opd/consultation/${appt.id}`)}
+              onClick={() => {
+                setOpen(false);
+                onView(appt);
+              }}
             >
-              <Stethoscope size={14} />{" "}
-              {appt.status === "Scheduled" ? "Start" : "Edit"} Consultation
+              <Eye size={14} /> View Details
             </button>
-          )}
-          {appt.status === "Scheduled" && (
-            <>
+            {(appt.status === "Scheduled" || appt.status === "Consulted") && (
               <button
                 className="opd-row-action-btn"
-                onClick={() => onReschedule(appt)}
+                onClick={() => navigate(`/opd/consultation/${appt.id}`)}
               >
-                <RefreshCcw size={14} /> Reschedule
+                <Stethoscope size={14} />{" "}
+                {appt.status === "Scheduled" ? "Start" : "Edit"} Consultation
               </button>
-              <div
-                style={{
-                  height: 1,
-                  background: "var(--hms-border)",
-                  margin: "0.3rem 0",
-                }}
-              />
+            )}
+            {appt.status === "Scheduled" && (
+              <>
+                <button
+                  className="opd-row-action-btn"
+                  onClick={() => {
+                    setOpen(false);
+                    onReschedule(appt);
+                  }}
+                >
+                  <RefreshCcw size={14} /> Reschedule
+                </button>
+                <div
+                  style={{
+                    height: 1,
+                    background: "var(--hms-border)",
+                    margin: "0.3rem 0",
+                  }}
+                />
+                <button
+                  className="opd-row-action-btn opd-row-action-danger"
+                  onClick={() => {
+                    setOpen(false);
+                    onCancel(appt);
+                  }}
+                >
+                  <Ban size={14} /> Cancel Appointment
+                </button>
+              </>
+            )}
+            {(appt.status === "Consulted" ||
+              appt.status === "Prescribed" ||
+              appt.status === "Completed") && (
               <button
-                className="opd-row-action-btn opd-row-action-danger"
-                onClick={() => onCancel(appt)}
+                className="opd-row-action-btn"
+                onClick={() => navigate(`/opd/prescription/${appt.id}`)}
               >
-                <Ban size={14} /> Cancel Appointment
+                <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
+                Prescription
               </button>
-            </>
-          )}
-          {(appt.status === "Consulted" ||
-            appt.status === "Prescribed" ||
-            appt.status === "Completed") && (
-            <button
-              className="opd-row-action-btn"
-              onClick={() => navigate(`/opd/prescription/${appt.id}`)}
-            >
-              <FileText size={14} /> {appt.prescription ? "Edit" : "Write"}{" "}
-              Prescription
-            </button>
-          )}
-          {(appt.status === "Consulted" ||
-            appt.status === "Prescribed" ||
-            appt.status === "Completed") && (
-            <button
-              className="opd-row-action-btn"
-              onClick={() => navigate(`/opd/billing/${appt.id}`)}
-            >
-              <Receipt size={14} /> {appt.billing ? "Edit" : "Generate"} Bill
-            </button>
-          )}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+            )}
+            {(appt.status === "Consulted" ||
+              appt.status === "Prescribed" ||
+              appt.status === "Completed") && (
+              <button
+                className="opd-row-action-btn"
+                onClick={() => navigate(`/opd/billing/${appt.id}`)}
+              >
+                <Receipt size={14} /> {appt.billing ? "Edit" : "Generate"} Bill
+              </button>
+            )}
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </>
   );
 };
 

@@ -20,6 +20,7 @@ import { motion } from "framer-motion";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { BedDouble, Users, Lock, Activity, ArrowRight } from "lucide-react";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useIPD } from "../../context/IPDContext";
 import { WARD_TYPE_CONFIG, WARD_CAPACITY } from "./ipdData";
 
@@ -100,7 +101,7 @@ const OccupancyCircle = ({
           textAlign: "center",
         }}
       >
-        {label}
+        <Abbr underline={false}>{label}</Abbr>
       </p>
       <p
         style={{

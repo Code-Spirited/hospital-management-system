@@ -29,6 +29,7 @@ import {
   Check,
   X,
 } from "lucide-react";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useIPD } from "../../context/IPDContext";
 import { WARD_TYPE_CONFIG, WARD_CAPACITY } from "./ipdData";
 
@@ -391,7 +392,7 @@ const BedAllocation = () => {
                       margin: 0,
                     }}
                   >
-                    {w.ward} Ward
+                    <Abbr underline={false}>{w.ward}</Abbr> Ward
                   </h3>
                   <p
                     style={{

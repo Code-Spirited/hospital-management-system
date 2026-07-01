@@ -94,52 +94,83 @@ const StatusPill = ({ status }) => {
 };
 
 // ── Row action menu (View / Edit / Delete) ────────────────────────────────────
-const RowActions = ({ patient, onView, onEdit, onDelete }) => (
-  <Popover.Root>
-    <Popover.Trigger asChild>
-      <button className="opd-row-action-trigger" title="Actions">
-        <MoreVertical size={15} />
-      </button>
-    </Popover.Trigger>
-    <Popover.Portal>
-      <Popover.Content
-        align="end"
-        sideOffset={6}
-        className="hms-popover-content"
-        style={{
-          background: "#fff",
-          borderRadius: 12,
-          border: "1px solid var(--hms-border)",
-          boxShadow: "var(--shadow-lg)",
-          padding: "0.375rem",
-          minWidth: 170,
-          zIndex: 50,
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        <button className="opd-row-action-btn" onClick={() => onView(patient)}>
-          <Eye size={14} /> View Details
-        </button>
-        <button className="opd-row-action-btn" onClick={() => onEdit(patient)}>
-          <Pencil size={14} /> Edit Patient
-        </button>
+const RowActions = ({ patient, onView, onEdit, onDelete }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {open && (
         <div
-          style={{
-            height: 1,
-            background: "var(--hms-border)",
-            margin: "0.3rem 0",
-          }}
+          style={{ position: "fixed", inset: 0, zIndex: 49 }}
+          onPointerDown={() => setOpen(false)}
+          aria-hidden="true"
         />
-        <button
-          className="opd-row-action-btn opd-row-action-danger"
-          onClick={() => onDelete(patient)}
-        >
-          <Trash2 size={14} /> Delete Patient
-        </button>
-      </Popover.Content>
-    </Popover.Portal>
-  </Popover.Root>
-);
+      )}
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger asChild>
+          <button
+            className="opd-row-action-trigger"
+            style={{ position: "relative", zIndex: 50 }}
+            title="Actions"
+          >
+            <MoreVertical size={15} />
+          </button>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            align="end"
+            sideOffset={6}
+            className="hms-popover-content"
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              border: "1px solid var(--hms-border)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "0.375rem",
+              minWidth: 170,
+              zIndex: 50,
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            <button
+              className="opd-row-action-btn"
+              onClick={() => {
+                setOpen(false);
+                onView(patient);
+              }}
+            >
+              <Eye size={14} /> View Details
+            </button>
+            <button
+              className="opd-row-action-btn"
+              onClick={() => {
+                setOpen(false);
+                onEdit(patient);
+              }}
+            >
+              <Pencil size={14} /> Edit Patient
+            </button>
+            <div
+              style={{
+                height: 1,
+                background: "var(--hms-border)",
+                margin: "0.3rem 0",
+              }}
+            />
+            <button
+              className="opd-row-action-btn opd-row-action-danger"
+              onClick={() => {
+                setOpen(false);
+                onDelete(patient);
+              }}
+            >
+              <Trash2 size={14} /> Delete Patient
+            </button>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </>
+  );
+};
 
 // ── Detail row used inside the View drawer ────────────────────────────────────
 const DetailRow = ({ Icon, label, value }) => (

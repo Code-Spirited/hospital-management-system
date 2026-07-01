@@ -23,6 +23,8 @@ import TreatmentRecords from "../pages/ipd/TreatmentRecords";
 import DischargeSummary from "../pages/ipd/DischargeSummary";
 import IPDBilling from "../pages/ipd/IPDBilling";
 
+import Pharmacy from "../pages/pharmacy/Pharmacy";
+import MedicineInventory from "../pages/pharmacy/MedicineInventory";
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -66,10 +68,9 @@ const AppRoutes = () => {
           <Route path="discharge/:admissionId" element={<DischargeSummary />} />
           <Route path="billing/:admissionId" element={<IPDBilling />} />
         </Route>{" "}
-        <Route
-          path="/pharmacy"
-          element={<PlaceholderPage title="Pharmacy" />}
-        />
+        <Route path="/pharmacy" element={<Pharmacy />}>
+          <Route index element={<MedicineInventory />} />
+        </Route>
         <Route
           path="/users"
           element={<PlaceholderPage title="User Management" />}

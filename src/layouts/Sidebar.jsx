@@ -11,6 +11,7 @@ import {
   X,
   Activity,
 } from "lucide-react";
+import Abbr from "../components/common/Abbr/Abbr";
 
 // Static menu data
 const MENU = [
@@ -165,7 +166,7 @@ const NavList = ({ currentPath, onNavigate, showLabels, onItemClick }) => (
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {label}
+                  <Abbr underline={false}>{label}</Abbr>
                 </span>
               )}
             </button>

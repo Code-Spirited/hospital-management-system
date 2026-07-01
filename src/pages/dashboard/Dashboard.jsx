@@ -1,5 +1,6 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { DataTable, multiSelectFilter } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { useNavigate } from "react-router-dom";
@@ -114,7 +115,7 @@ const TypeBadge = ({ type }) => {
         color: c.color,
       }}
     >
-      {type}
+      <Abbr underline={false}>{type}</Abbr>
     </span>
   );
 };

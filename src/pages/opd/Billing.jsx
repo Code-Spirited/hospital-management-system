@@ -24,6 +24,7 @@ import {
   FormInput as Input,
   DrawerSelect,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { usePatients } from "../../context/PatientsContext";
 import { billingSchema } from "./opdSchema";
@@ -430,7 +431,14 @@ const Billing = () => {
                 error={errors.discountPercent}
               />
             </Field>
-            <Field label="Tax / GST (%)" error={errors.taxPercent?.message}>
+            <Field
+              label={
+                <>
+                  Tax / <Abbr underline={false}>GST</Abbr> (%)
+                </>
+              }
+              error={errors.taxPercent?.message}
+            >
               <Input
                 {...register("taxPercent")}
                 type="number"

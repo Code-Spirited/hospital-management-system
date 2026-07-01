@@ -31,6 +31,7 @@ import {
   FileText,
 } from "lucide-react";
 import { DataTable, multiSelectFilter } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { usePatients } from "../../context/PatientsContext";
 import { useIPD } from "../../context/IPDContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
@@ -73,7 +74,7 @@ const WardPill = ({ type }) => {
         color: cfg.color,
       }}
     >
-      {type}
+      <Abbr underline={false}>{type}</Abbr>
     </span>
   );
 };
@@ -475,68 +476,96 @@ const ViewDrawer = ({ admission, patient, open, onOpenChange, navigate }) => (
   </Drawer.Root>
 );
 
-const RowActions = ({ admission, navigate, onView }) => (
-  <Popover.Root>
-    <Popover.Trigger asChild>
-      <button className="ipd-row-action-trigger" title="Actions">
-        <MoreVertical size={15} />
-      </button>
-    </Popover.Trigger>
-    <Popover.Portal>
-      <Popover.Content
-        align="end"
-        sideOffset={6}
-        className="hms-popover-content"
-        style={{
-          background: "#fff",
-          borderRadius: 12,
-          border: "1px solid var(--hms-border)",
-          boxShadow: "var(--shadow-lg)",
-          padding: "0.375rem",
-          minWidth: 190,
-          zIndex: 50,
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        <button
-          className="ipd-row-action-btn"
-          onClick={() => onView(admission)}
-        >
-          <Eye size={14} /> View Details
-        </button>
+const RowActions = ({ admission, navigate, onView }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {open && (
         <div
-          style={{
-            height: 1,
-            background: "var(--hms-border)",
-            margin: "0.3rem 0",
-          }}
+          style={{ position: "fixed", inset: 0, zIndex: 49 }}
+          onPointerDown={() => setOpen(false)}
+          aria-hidden="true"
         />
-        <button
-          className="ipd-row-action-btn"
-          onClick={() => navigate(`/ipd/treatment/${admission.id}`)}
-        >
-          <ClipboardList size={14} /> Treatment Records
-        </button>
-        <button
-          className="ipd-row-action-btn"
-          onClick={() => navigate(`/ipd/discharge/${admission.id}`)}
-        >
-          <LogOut size={14} />{" "}
-          {admission.status === "Discharged"
-            ? "View Discharge Summary"
-            : "Discharge Patient"}
-        </button>
-        <button
-          className="ipd-row-action-btn"
-          onClick={() => navigate(`/ipd/billing/${admission.id}`)}
-        >
-          <Receipt size={14} />{" "}
-          {admission.billing ? "Edit Bill" : "Generate Bill"}
-        </button>
-      </Popover.Content>
-    </Popover.Portal>
-  </Popover.Root>
-);
+      )}
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger asChild>
+          <button
+            className="ipd-row-action-trigger"
+            style={{ position: "relative", zIndex: 50 }}
+            title="Actions"
+          >
+            <MoreVertical size={15} />
+          </button>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            align="end"
+            sideOffset={6}
+            className="hms-popover-content"
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              border: "1px solid var(--hms-border)",
+              boxShadow: "var(--shadow-lg)",
+              padding: "0.375rem",
+              minWidth: 190,
+              zIndex: 50,
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            <button
+              className="ipd-row-action-btn"
+              onClick={() => {
+                setOpen(false);
+                onView(admission);
+              }}
+            >
+              <Eye size={14} /> View Details
+            </button>
+            <div
+              style={{
+                height: 1,
+                background: "var(--hms-border)",
+                margin: "0.3rem 0",
+              }}
+            />
+            <button
+              className="ipd-row-action-btn"
+              onClick={() => {
+                setOpen(false);
+                navigate(`/ipd/treatment/${admission.id}`);
+              }}
+            >
+              <ClipboardList size={14} /> Treatment Records
+            </button>
+            <button
+              className="ipd-row-action-btn"
+              onClick={() => {
+                setOpen(false);
+                navigate(`/ipd/discharge/${admission.id}`);
+              }}
+            >
+              <LogOut size={14} />{" "}
+              {admission.status === "Discharged"
+                ? "View Discharge Summary"
+                : "Discharge Patient"}
+            </button>
+            <button
+              className="ipd-row-action-btn"
+              onClick={() => {
+                setOpen(false);
+                navigate(`/ipd/billing/${admission.id}`);
+              }}
+            >
+              <Receipt size={14} />{" "}
+              {admission.billing ? "Edit Bill" : "Generate Bill"}
+            </button>
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+    </>
+  );
+};
 
 const IPDHome = () => {
   const navigate = useNavigate();

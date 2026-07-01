@@ -25,6 +25,7 @@ import {
   FormTextarea as Textarea,
   DrawerSelect,
 } from "../../components/common";
+import Abbr from "../../components/common/Abbr/Abbr";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { usePatients } from "../../context/PatientsContext";
 import { prescriptionSchema } from "./opdSchema";
@@ -265,10 +266,18 @@ const Prescription = () => {
                     margin: "4px 0 0",
                   }}
                 >
-                  BP {appt.vitals.bloodPressure} · Temp{" "}
-                  {appt.vitals.temperature}°F · Pulse {appt.vitals.pulse} bpm
+                  <Abbr underline={false}>BP</Abbr> {appt.vitals.bloodPressure}{" "}
+                  · Temp {appt.vitals.temperature}°F · Pulse {appt.vitals.pulse}{" "}
+                  bpm
                   {appt.vitals.weight ? ` · ${appt.vitals.weight} kg` : ""}
-                  {appt.vitals.spo2 ? ` · SpO2 ${appt.vitals.spo2}%` : ""}
+                  {appt.vitals.spo2 ? (
+                    <>
+                      {" · "}
+                      <Abbr underline={false}>SpO2</Abbr> {appt.vitals.spo2}%
+                    </>
+                  ) : (
+                    ""
+                  )}
                 </p>
               )}
               {appt.notes && (
