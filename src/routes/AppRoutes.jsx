@@ -25,6 +25,7 @@ import IPDBilling from "../pages/ipd/IPDBilling";
 
 import Pharmacy from "../pages/pharmacy/Pharmacy";
 import MedicineInventory from "../pages/pharmacy/MedicineInventory";
+import AddMedicine from "../pages/pharmacy/AddMedicine";
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -70,6 +71,7 @@ const AppRoutes = () => {
         </Route>{" "}
         <Route path="/pharmacy" element={<Pharmacy />}>
           <Route index element={<MedicineInventory />} />
+          <Route path="add" element={<AddMedicine />} />
         </Route>
         <Route
           path="/users"

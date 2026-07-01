@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import * as Popover from "@radix-ui/react-popover";
@@ -23,6 +23,14 @@ const Header = ({
   onPaletteOpenChange,
 }) => {
   const [showProfile, setShowProfile] = useState(false);
+  const profileCloseTimer = useRef(null);
+  const cancelProfileClose = () => {
+    if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
+  };
+  const scheduleProfileClose = () => {
+    cancelProfileClose();
+    profileCloseTimer.current = setTimeout(() => setShowProfile(false), 150);
+  };
   const navigate = useNavigate();
   const { unreadCount } = useNotifications();
 
@@ -218,14 +226,11 @@ const Header = ({
             <CalendarDays size={18} />
           </button>
 
-          <div style={{ position: "relative" }}>
-            {showProfile && (
-              <div
-                style={{ position: "fixed", inset: 0, zIndex: 998 }}
-                onPointerDown={() => setShowProfile(false)}
-                aria-hidden="true"
-              />
-            )}
+          <div
+            style={{ position: "relative" }}
+            onMouseEnter={cancelProfileClose}
+            onMouseLeave={scheduleProfileClose}
+          >
             <button
               className="hdr-profile"
               onClick={() => setShowProfile((s) => !s)}

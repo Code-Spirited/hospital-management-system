@@ -23,7 +23,7 @@
 //   <DataTable columns={columns} data={patients} title="Recent Patients" />
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -58,218 +58,225 @@ const SKELETON_ROW_COUNT = 8;
 // badge count; clicking it reveals all groups together in one dropdown.
 const FilterMenu = ({ filters, table }) => {
   const [filterOpen, setFilterOpen] = useState(false);
+  const closeTimer = useRef(null);
   const totalActive = filters.reduce(
     (sum, f) =>
       sum + (table.getColumn(f.columnId)?.getFilterValue()?.length ?? 0),
     0,
   );
 
-  return (
-    <>
-      {filterOpen && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 49 }}
-          onPointerDown={() => setFilterOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      <Popover.Root open={filterOpen} onOpenChange={setFilterOpen}>
-        <Popover.Trigger asChild>
-          <button
-            title="Filter"
-            style={{
-              position: "relative",
-              zIndex: 50,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              height: 36,
-              padding: totalActive > 0 ? "0 0.75rem" : "0 0.625rem",
-              border: `1.5px solid ${totalActive ? "var(--hms-blue)" : "var(--hms-border)"}`,
-              borderRadius: 9,
-              background: totalActive ? "var(--hms-blue-light)" : "#fff",
-              color: totalActive ? "var(--hms-blue)" : "#64748b",
-              cursor: "pointer",
-              flexShrink: 0,
-              transition: "all 0.15s",
-            }}
-          >
-            <Filter size={15} />
-            {totalActive > 0 && (
-              <span
-                style={{
-                  background: "var(--hms-blue)",
-                  color: "#fff",
-                  borderRadius: 20,
-                  fontSize: "0.65rem",
-                  fontWeight: 700,
-                  padding: "1px 6px",
-                  minWidth: 16,
-                  textAlign: "center",
-                }}
-              >
-                {totalActive}
-              </span>
-            )}
-          </button>
-        </Popover.Trigger>
+  // Hover-to-close: a short delay bridges the pixel gap and any brief
+  // cursor flicker between the trigger and the portaled menu content
+  // (they're in different DOM subtrees, so a naive mouseleave-only
+  // trigger would close the instant the cursor crosses the gap between
+  // them). Whichever element the cursor lands on next cancels the
+  // pending close. Click still opens/toggles exactly as before — this
+  // only ever CLOSES on hover-out, never opens on hover-in.
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setFilterOpen(false), 150);
+  };
 
-        <Popover.Portal>
-          <Popover.Content
-            align="end"
-            sideOffset={8}
-            className="hms-popover-content"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              background: "#fff",
-              borderRadius: 14,
-              border: "1px solid var(--hms-border)",
-              boxShadow: "var(--shadow-lg)",
-              minWidth: 220,
-              maxWidth: 280,
-              // Caps height so a long filter group (Pharmacy's Category
-              // list alone has 13 options) can never push the popover
-              // taller than the viewport. Uses Radix's own live-computed
-              // available-space variable — the same technique already used
-              // for DrawerSelect's dropdown — so it adapts to wherever the
-              // Filter button actually sits on screen, with a flat 70vh as
-              // a safe fallback if that variable isn't set.
-              maxHeight:
-                "min(420px, var(--radix-popover-content-available-height, 70vh))",
-              zIndex: 50,
-              fontFamily: "var(--font-body)",
-              overflow: "hidden",
-            }}
-          >
-            <div
+  return (
+    <Popover.Root open={filterOpen} onOpenChange={setFilterOpen}>
+      <Popover.Trigger asChild>
+        <button
+          title="Filter"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            height: 36,
+            padding: totalActive > 0 ? "0 0.75rem" : "0 0.625rem",
+            border: `1.5px solid ${totalActive ? "var(--hms-blue)" : "var(--hms-border)"}`,
+            borderRadius: 9,
+            background: totalActive ? "var(--hms-blue-light)" : "#fff",
+            color: totalActive ? "var(--hms-blue)" : "#64748b",
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "all 0.15s",
+          }}
+        >
+          <Filter size={15} />
+          {totalActive > 0 && (
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.875rem 0.875rem 0.625rem",
-                flexShrink: 0,
+                background: "var(--hms-blue)",
+                color: "#fff",
+                borderRadius: 20,
+                fontSize: "0.65rem",
+                fontWeight: 700,
+                padding: "1px 6px",
+                minWidth: 16,
+                textAlign: "center",
               }}
             >
-              <span
+              {totalActive}
+            </span>
+          )}
+        </button>
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={8}
+          className="hms-popover-content"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            background: "#fff",
+            borderRadius: 14,
+            border: "1px solid var(--hms-border)",
+            boxShadow: "var(--shadow-lg)",
+            minWidth: 220,
+            maxWidth: 280,
+            // Caps height so a long filter group (Pharmacy's Category
+            // list alone has 13 options) can never push the popover
+            // taller than the viewport. Uses Radix's own live-computed
+            // available-space variable — the same technique already used
+            // for DrawerSelect's dropdown — so it adapts to wherever the
+            // Filter button actually sits on screen, with a flat 70vh as
+            // a safe fallback if that variable isn't set.
+            maxHeight:
+              "min(420px, var(--radix-popover-content-available-height, 70vh))",
+            zIndex: 50,
+            fontFamily: "var(--font-body)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.875rem 0.875rem 0.625rem",
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.8rem",
+                fontWeight: 800,
+                color: "var(--hms-navy)",
+              }}
+            >
+              Filters
+            </span>
+            {totalActive > 0 && (
+              <button
+                onClick={() =>
+                  filters.forEach((f) =>
+                    table.getColumn(f.columnId)?.setFilterValue(undefined),
+                  )
+                }
                 style={{
-                  fontSize: "0.8rem",
-                  fontWeight: 800,
-                  color: "var(--hms-navy)",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  color: "#ef4444",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-body)",
                 }}
               >
-                Filters
-              </span>
-              {totalActive > 0 && (
-                <button
-                  onClick={() =>
-                    filters.forEach((f) =>
-                      table.getColumn(f.columnId)?.setFilterValue(undefined),
-                    )
-                  }
-                  style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    color: "#ef4444",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
+                Clear all
+              </button>
+            )}
+          </div>
 
-            {/* Scrollable body. data-lenis-prevent stops the page's global
+          {/* Scrollable body. data-lenis-prevent stops the page's global
               smooth-scroll from hijacking wheel scrolling meant for this
               list — same fix already used for every other independently
               -scrollable panel in this app. */}
-            <div
-              data-lenis-prevent
-              style={{ overflowY: "auto", padding: "0 0.875rem 0.875rem" }}
-            >
-              {filters.map((f, i) => {
-                const selected =
-                  table.getColumn(f.columnId)?.getFilterValue() ?? [];
-                return (
-                  <div
-                    key={f.columnId}
+          <div
+            data-lenis-prevent
+            style={{ overflowY: "auto", padding: "0 0.875rem 0.875rem" }}
+          >
+            {filters.map((f, i) => {
+              const selected =
+                table.getColumn(f.columnId)?.getFilterValue() ?? [];
+              return (
+                <div
+                  key={f.columnId}
+                  style={{
+                    marginBottom: i < filters.length - 1 ? "0.75rem" : 0,
+                  }}
+                >
+                  <p
                     style={{
-                      marginBottom: i < filters.length - 1 ? "0.75rem" : 0,
+                      fontSize: "0.68rem",
+                      fontWeight: 700,
+                      color: "#94a3b8",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                      margin: "0 0 0.375rem",
                     }}
                   >
-                    <p
-                      style={{
-                        fontSize: "0.68rem",
-                        fontWeight: 700,
-                        color: "#94a3b8",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        margin: "0 0 0.375rem",
-                      }}
-                    >
-                      {f.label}
-                    </p>
-                    {f.options.map((opt) => {
-                      const checked = selected.includes(opt);
-                      return (
-                        <label
-                          key={opt}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 9,
-                            padding: "0.4rem 0.5rem",
-                            borderRadius: 8,
-                            cursor: "pointer",
-                            fontSize: "0.8rem",
-                            fontWeight: 500,
-                            color: "var(--hms-navy)",
+                    {f.label}
+                  </p>
+                  {f.options.map((opt) => {
+                    const checked = selected.includes(opt);
+                    return (
+                      <label
+                        key={opt}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 9,
+                          padding: "0.4rem 0.5rem",
+                          borderRadius: 8,
+                          cursor: "pointer",
+                          fontSize: "0.8rem",
+                          fontWeight: 500,
+                          color: "var(--hms-navy)",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--hms-surface)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const next = checked
+                              ? selected.filter((v) => v !== opt)
+                              : [...selected, opt];
+                            table
+                              .getColumn(f.columnId)
+                              ?.setFilterValue(next.length ? next : undefined);
+                            table.setPageIndex(0);
                           }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.background =
-                              "var(--hms-surface)")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.background = "transparent")
-                          }
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              const next = checked
-                                ? selected.filter((v) => v !== opt)
-                                : [...selected, opt];
-                              table
-                                .getColumn(f.columnId)
-                                ?.setFilterValue(
-                                  next.length ? next : undefined,
-                                );
-                              table.setPageIndex(0);
-                            }}
-                            style={{
-                              width: 14,
-                              height: 14,
-                              accentColor: "var(--hms-blue)",
-                              cursor: "pointer",
-                            }}
-                          />
-                          <Abbr underline={false}>{opt}</Abbr>
-                        </label>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    </>
+                          style={{
+                            width: 14,
+                            height: 14,
+                            accentColor: "var(--hms-blue)",
+                            cursor: "pointer",
+                          }}
+                        />
+                        <Abbr underline={false}>{opt}</Abbr>
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 };
 

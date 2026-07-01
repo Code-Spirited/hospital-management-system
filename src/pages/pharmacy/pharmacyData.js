@@ -79,6 +79,8 @@ export const STORAGE_CONDITIONS = [
   "Cool & Dry, Secure Storage",
 ];
 
+export const GST_SLABS = [0, 5, 12, 18, 28];
+
 export const initialMedicines = [
   {
     id: "MED-001",

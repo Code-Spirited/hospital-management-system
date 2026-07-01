@@ -14,7 +14,7 @@
 // structure.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -96,79 +96,82 @@ const StatusPill = ({ status }) => {
 // ── Row action menu (View / Edit / Delete) ────────────────────────────────────
 const RowActions = ({ patient, onView, onEdit, onDelete }) => {
   const [open, setOpen] = useState(false);
+  const closeTimer = useRef(null);
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  };
+
   return (
-    <>
-      {open && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 49 }}
-          onPointerDown={() => setOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Trigger asChild>
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          className="opd-row-action-trigger"
+          title="Actions"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
+          <MoreVertical size={15} />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={6}
+          className="hms-popover-content"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            border: "1px solid var(--hms-border)",
+            boxShadow: "var(--shadow-lg)",
+            padding: "0.375rem",
+            minWidth: 170,
+            zIndex: 50,
+            fontFamily: "var(--font-body)",
+          }}
+        >
           <button
-            className="opd-row-action-trigger"
-            style={{ position: "relative", zIndex: 50 }}
-            title="Actions"
-          >
-            <MoreVertical size={15} />
-          </button>
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            align="end"
-            sideOffset={6}
-            className="hms-popover-content"
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              border: "1px solid var(--hms-border)",
-              boxShadow: "var(--shadow-lg)",
-              padding: "0.375rem",
-              minWidth: 170,
-              zIndex: 50,
-              fontFamily: "var(--font-body)",
+            className="opd-row-action-btn"
+            onClick={() => {
+              setOpen(false);
+              onView(patient);
             }}
           >
-            <button
-              className="opd-row-action-btn"
-              onClick={() => {
-                setOpen(false);
-                onView(patient);
-              }}
-            >
-              <Eye size={14} /> View Details
-            </button>
-            <button
-              className="opd-row-action-btn"
-              onClick={() => {
-                setOpen(false);
-                onEdit(patient);
-              }}
-            >
-              <Pencil size={14} /> Edit Patient
-            </button>
-            <div
-              style={{
-                height: 1,
-                background: "var(--hms-border)",
-                margin: "0.3rem 0",
-              }}
-            />
-            <button
-              className="opd-row-action-btn opd-row-action-danger"
-              onClick={() => {
-                setOpen(false);
-                onDelete(patient);
-              }}
-            >
-              <Trash2 size={14} /> Delete Patient
-            </button>
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    </>
+            <Eye size={14} /> View Details
+          </button>
+          <button
+            className="opd-row-action-btn"
+            onClick={() => {
+              setOpen(false);
+              onEdit(patient);
+            }}
+          >
+            <Pencil size={14} /> Edit Patient
+          </button>
+          <div
+            style={{
+              height: 1,
+              background: "var(--hms-border)",
+              margin: "0.3rem 0",
+            }}
+          />
+          <button
+            className="opd-row-action-btn opd-row-action-danger"
+            onClick={() => {
+              setOpen(false);
+              onDelete(patient);
+            }}
+          >
+            <Trash2 size={14} /> Delete Patient
+          </button>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 };
 

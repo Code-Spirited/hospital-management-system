@@ -17,7 +17,7 @@
 // this page exists to resolve, not a bug.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import * as Popover from "@radix-ui/react-popover";
 import {
@@ -47,6 +47,96 @@ const getInitials = (name) =>
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+// Extracted so the hover-close timer (via useRef) is scoped to ONE bed
+// cell — each occupied bed needs its own independent open/close state
+// and timer, not one shared across the whole ward grid.
+const BedPopoverCell = ({ occupant, ward, color, bedNum, onRelease }) => {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef(null);
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          className="bed-cell-occupied"
+          style={{ background: color }}
+          title={`Bed ${bedNum} · ${occupant.patientName}`}
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
+          {getInitials(occupant.patientName)}
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="center"
+          sideOffset={6}
+          className="hms-popover-content"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            border: "1px solid var(--hms-border)",
+            boxShadow: "var(--shadow-lg)",
+            padding: "0.875rem",
+            minWidth: 190,
+            zIndex: 50,
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 2px",
+              fontSize: "0.85rem",
+              fontWeight: 700,
+              color: "var(--hms-navy)",
+            }}
+          >
+            {occupant.patientName}
+          </p>
+          <p
+            style={{
+              margin: "0 0 0.75rem",
+              fontSize: "0.72rem",
+              color: "#94a3b8",
+            }}
+          >
+            {ward} · Bed {bedNum}
+          </p>
+          <button
+            onClick={() => {
+              setOpen(false);
+              onRelease(occupant, ward);
+            }}
+            style={{
+              width: "100%",
+              padding: "0.45rem 0.7rem",
+              border: "1.5px solid var(--hms-border)",
+              borderRadius: 8,
+              background: "#fff",
+              color: "#dc2626",
+              cursor: "pointer",
+              fontFamily: "var(--font-body)",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+            }}
+          >
+            Release Bed
+          </button>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
 
 const BedAllocation = () => {
   const { admissions, updateAdmission } = useIPD();
@@ -473,71 +563,14 @@ const BedAllocation = () => {
 
                   if (occupant) {
                     return (
-                      <Popover.Root key={bedNum}>
-                        <Popover.Trigger asChild>
-                          <button
-                            className="bed-cell-occupied"
-                            style={{ background: w.color }}
-                            title={`Bed ${bedNum} · ${occupant.patientName}`}
-                          >
-                            {getInitials(occupant.patientName)}
-                          </button>
-                        </Popover.Trigger>
-                        <Popover.Portal>
-                          <Popover.Content
-                            align="center"
-                            sideOffset={6}
-                            className="hms-popover-content"
-                            style={{
-                              background: "#fff",
-                              borderRadius: 12,
-                              border: "1px solid var(--hms-border)",
-                              boxShadow: "var(--shadow-lg)",
-                              padding: "0.875rem",
-                              minWidth: 190,
-                              zIndex: 50,
-                              fontFamily: "var(--font-body)",
-                            }}
-                          >
-                            <p
-                              style={{
-                                margin: "0 0 2px",
-                                fontSize: "0.85rem",
-                                fontWeight: 700,
-                                color: "var(--hms-navy)",
-                              }}
-                            >
-                              {occupant.patientName}
-                            </p>
-                            <p
-                              style={{
-                                margin: "0 0 0.75rem",
-                                fontSize: "0.72rem",
-                                color: "#94a3b8",
-                              }}
-                            >
-                              {w.ward} · Bed {bedNum}
-                            </p>
-                            <button
-                              onClick={() => handleRelease(occupant, w.ward)}
-                              style={{
-                                width: "100%",
-                                padding: "0.45rem 0.7rem",
-                                border: "1.5px solid var(--hms-border)",
-                                borderRadius: 8,
-                                background: "#fff",
-                                color: "#dc2626",
-                                cursor: "pointer",
-                                fontFamily: "var(--font-body)",
-                                fontSize: "0.78rem",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Release Bed
-                            </button>
-                          </Popover.Content>
-                        </Popover.Portal>
-                      </Popover.Root>
+                      <BedPopoverCell
+                        key={bedNum}
+                        occupant={occupant}
+                        ward={w.ward}
+                        color={w.color}
+                        bedNum={bedNum}
+                        onRelease={handleRelease}
+                      />
                     );
                   }
 

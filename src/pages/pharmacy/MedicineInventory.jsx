@@ -15,6 +15,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Drawer } from "vaul";
 import dayjs from "dayjs";
@@ -32,6 +33,7 @@ import {
   ShieldAlert,
   Thermometer,
   IndianRupee,
+  PlusCircle,
 } from "lucide-react";
 import { DataTable, multiSelectFilter } from "../../components/common";
 import Abbr from "../../components/common/Abbr/Abbr";
@@ -374,6 +376,7 @@ const fmtCurrency = (n) =>
   `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
 const MedicineInventory = () => {
+  const navigate = useNavigate();
   const { medicines } = usePharmacy();
   const { getPageIndex, setPageIndex } = useTablePagination();
   const [viewing, setViewing] = useState(null);
@@ -621,6 +624,35 @@ const MedicineInventory = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "1rem",
+        }}
+      >
+        <button
+          onClick={() => navigate("/pharmacy/add")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "0.625rem 1.25rem",
+            border: "none",
+            borderRadius: 10,
+            background: "var(--hms-blue)",
+            color: "#fff",
+            cursor: "pointer",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.875rem",
+            fontWeight: 700,
+            boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+          }}
+        >
+          <PlusCircle size={16} /> Add Medicine
+        </button>
       </div>
 
       <DataTable

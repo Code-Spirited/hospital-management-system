@@ -25,20 +25,20 @@ function App() {
           font-family: var(--font-body) !important;
         }
         [data-sonner-toaster] [data-sonner-toast][data-type="success"] {
-          border: 1.5px solid #22c55e !important;
-          box-shadow: 0 0 14px 2px rgba(34,197,94,0.28), 0 4px 16px rgba(15,23,42,0.08) !important;
+          border: 2.5px solid #22c55e !important;
+          box-shadow: 0 4px 16px rgba(15,23,42,0.08) !important;
         }
         [data-sonner-toaster] [data-sonner-toast][data-type="error"] {
-          border: 1.5px solid #ef4444 !important;
-          box-shadow: 0 0 14px 2px rgba(239,68,68,0.28), 0 4px 16px rgba(15,23,42,0.08) !important;
+          border: 2.5px solid #ef4444 !important;
+          box-shadow: 0 4px 16px rgba(15,23,42,0.08) !important;
         }
         [data-sonner-toaster] [data-sonner-toast][data-type="info"] {
-          border: 1.5px solid #2563eb !important;
-          box-shadow: 0 0 14px 2px rgba(37,99,235,0.28), 0 4px 16px rgba(15,23,42,0.08) !important;
+          border: 2.5px solid #2563eb !important;
+          box-shadow: 0 4px 16px rgba(15,23,42,0.08) !important;
         }
         [data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
-          border: 1.5px solid #d97706 !important;
-          box-shadow: 0 0 14px 2px rgba(217,119,6,0.28), 0 4px 16px rgba(15,23,42,0.08) !important;
+          border: 2.5px solid #d97706 !important;
+          box-shadow: 0 4px 16px rgba(15,23,42,0.08) !important;
         }
         [data-sonner-toaster] [data-sonner-toast] [data-icon] {
           width: 36px !important; height: 36px !important;
