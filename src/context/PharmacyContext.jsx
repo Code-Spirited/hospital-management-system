@@ -23,6 +23,13 @@ const PharmacyContext = createContext(null);
 export const PharmacyProvider = ({ children }) => {
   const [medicines, setMedicines] = useState(initialMedicines);
   const [batches, setBatches] = useState(initialBatches);
+  // Audit trail for MANUAL stock adjustments made via Stock Management
+  // (damage, loss, correction, transfer) — auditable by design, per both
+  // reference documents. Purchase/Sale movements are NOT retroactively
+  // logged here; they remain visible in their own existing records
+  // (a Batch's purchaseDate/invoiceNumber, and each sale's own record) —
+  // a deliberate scope boundary, not an oversight.
+  const [stockMovements, setStockMovements] = useState([]);
 
   // ── Medicine (Product tier) ──────────────────────────────────────────────
   const addMedicine = useCallback((medicine) => {
@@ -59,6 +66,44 @@ export const PharmacyProvider = ({ children }) => {
   const addBatch = useCallback((batch) => {
     setBatches((prev) => [batch, ...prev]);
   }, []);
+
+  // Records a manual stock adjustment: Damage, Loss, Correction, or
+  // Transfer. Always writes an audit entry (before/after quantity,
+  // reason, timestamp) alongside the actual quantity change — the two
+  // happen together, atomically, so it's structurally impossible to
+  // change a batch's quantity through this path without a matching
+  // audit record being created.
+  const adjustStock = useCallback(
+    ({ batchId, type, quantityChange, reason }) => {
+      setBatches((prev) => {
+        const batch = prev.find((b) => b.id === batchId);
+        if (!batch) return prev;
+        const before = batch.quantity;
+        const after = Math.max(0, before + quantityChange);
+
+        setStockMovements((movements) => [
+          {
+            id: `MOV-${Date.now()}`,
+            batchId,
+            medicineId: batch.medicineId,
+            batchNumber: batch.batchNumber,
+            type,
+            quantityBefore: before,
+            quantityAfter: after,
+            quantityChange: after - before,
+            reason,
+            timestamp: new Date().toISOString(),
+          },
+          ...movements,
+        ]);
+
+        return prev.map((b) =>
+          b.id === batchId ? { ...b, quantity: after } : b,
+        );
+      });
+    },
+    [],
+  );
 
   // Records one Sales Billing transaction: decrements quantity from
   // specific batches (never from Medicine directly — there's nothing to
@@ -138,8 +183,10 @@ export const PharmacyProvider = ({ children }) => {
         deleteMedicine,
         addBatch,
         adjustBatchQuantity,
+        adjustStock,
         recordPurchase,
         recordSale,
+        stockMovements,
       }}
     >
       {children}

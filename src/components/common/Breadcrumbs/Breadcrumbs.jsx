@@ -153,6 +153,13 @@ const ROUTES = [
     ],
   },
   {
+    pattern: "/pharmacy/stock",
+    trail: () => [
+      { label: "Pharmacy", to: "/pharmacy" },
+      { label: "Stock Management" },
+    ],
+  },
+  {
     pattern: "/pharmacy/medicine/:medicineId",
     trail: (params, _appts, _admissions, medicines) => {
       const medicine = medicines?.find((m) => m.id === params.medicineId);

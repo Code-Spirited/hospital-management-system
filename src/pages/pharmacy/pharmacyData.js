@@ -48,6 +48,23 @@ export const BATCH_STATUS_CONFIG = {
   Disposed: { color: "#dc2626", bg: "#fef2f2" },
 };
 
+// Manual adjustment types — all DECREASE stock except Correction, which
+// can go either direction (a physical recount might find MORE stock
+// than recorded, e.g. a prior miscount, not just less).
+//
+//   Damage      — physically broken/contaminated, unsellable.
+//   Loss        — missing with no known cause (theft, misplacement).
+//   Correction  — reconciling recorded quantity against a physical count.
+//   Transfer    — moved to a different pharmacy location/branch, leaving
+//                 this one's stock (recorded as a decrease here; the
+//                 receiving location is outside this project's scope).
+export const ADJUSTMENT_TYPE_CONFIG = {
+  Damage: { color: "#dc2626", bg: "#fef2f2", direction: "decrease" },
+  Loss: { color: "#dc2626", bg: "#fef2f2", direction: "decrease" },
+  Correction: { color: "#2563eb", bg: "#eff6ff", direction: "either" },
+  Transfer: { color: "#d97706", bg: "#fffbeb", direction: "decrease" },
+};
+
 export const CATEGORIES = [
   "Analgesic",
   "Antibiotic",

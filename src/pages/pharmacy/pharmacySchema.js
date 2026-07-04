@@ -53,6 +53,19 @@ const purchaseLineSchema = z
     path: ["mrp"],
   });
 
+// ── Stock Management ──────────────────────────────────────────────────────────
+export const stockAdjustmentSchema = z.object({
+  batchId: z.string().min(1, "Please select a batch"),
+  adjustmentType: z.string().min(1, "Please select an adjustment type"),
+  quantity: z.coerce.number().min(1, "Enter a quantity greater than zero"),
+  reason: z
+    .string()
+    .min(
+      10,
+      "Please provide a detailed reason (at least 10 characters) — mandatory for audit purposes",
+    ),
+});
+
 // ── Sales Billing ──────────────────────────────────────────────────────────────
 // Cart items themselves aren't user-typed form fields (they're built by
 // clicking search results), so the schema here validates the checkout
