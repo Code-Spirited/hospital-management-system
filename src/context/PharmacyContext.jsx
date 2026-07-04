@@ -60,6 +60,26 @@ export const PharmacyProvider = ({ children }) => {
     setBatches((prev) => [batch, ...prev]);
   }, []);
 
+  // Records one Sales Billing transaction: decrements quantity from
+  // specific batches (never from Medicine directly — there's nothing to
+  // decrement there) and returns the finished sale record so the
+  // billing page can show a receipt/confirmation. Each cart line already
+  // carries the exact batchId it was assigned to (either FEFO-auto or
+  // manually overridden), so this function does no batch-selection
+  // logic itself — that decision was already made in the UI, with the
+  // person able to see and change it before confirming.
+  const recordSale = useCallback((sale) => {
+    setBatches((prev) =>
+      prev.map((b) => {
+        const line = sale.items.find((item) => item.batchId === b.id);
+        return line
+          ? { ...b, quantity: Math.max(0, b.quantity - line.quantity) }
+          : b;
+      }),
+    );
+    return { id: `SALE-${Date.now()}`, ...sale };
+  }, []);
+
   // Records one full Purchase Entry invoice: a header (supplier/invoice/
   // date, applied identically to every line) plus one or more line
   // items. Each line independently decides restock-existing-batch vs.
@@ -119,6 +139,7 @@ export const PharmacyProvider = ({ children }) => {
         addBatch,
         adjustBatchQuantity,
         recordPurchase,
+        recordSale,
       }}
     >
       {children}

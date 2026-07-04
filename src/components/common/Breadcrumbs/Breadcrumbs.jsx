@@ -51,8 +51,7 @@ const patientCrumbFromAdmission = (admissionId, admissions) => {
 };
 
 // One explicit trail per leaf route in AppRoutes.jsx. Extend this array
-// whenever a new page is added (e.g. once Pharmacy/Users/Reports grow
-// real sub-pages beyond their current single placeholder route).
+// whenever a new page is added.
 const ROUTES = [
   { pattern: "/dashboard", trail: () => [{ label: "Dashboard" }] },
 
@@ -147,6 +146,13 @@ const ROUTES = [
     ],
   },
   {
+    pattern: "/pharmacy/sell",
+    trail: () => [
+      { label: "Pharmacy", to: "/pharmacy" },
+      { label: "Sales Billing" },
+    ],
+  },
+  {
     pattern: "/pharmacy/medicine/:medicineId",
     trail: (params, _appts, _admissions, medicines) => {
       const medicine = medicines?.find((m) => m.id === params.medicineId);
@@ -186,7 +192,7 @@ const Breadcrumbs = () => {
 
   const renderCrumbContent = (crumb, isLast) => {
     if (crumb.idLabel) {
-      // Patient-identifying crumb: name + ID badge together, always.
+      // Patient/medicine-identifying crumb: name + ID badge together, always.
       return (
         <span className="hms-bc-patient">
           <span className="hms-bc-patient-name">{crumb.label}</span>
@@ -226,9 +232,6 @@ const Breadcrumbs = () => {
 
   trail.forEach((crumb, i) => {
     const isLast = i === n - 1;
-    // The chevron right after Home, and the chevron right before the
-    // current page, are always visible — everything strictly between
-    // them collapses to "…" on narrow screens.
     const chevronAlwaysVisible = i === 0 || isLast;
 
     items.push(
@@ -307,10 +310,6 @@ const Breadcrumbs = () => {
           font-size: 0.85rem; font-weight: 700; color: #cbd5e1; padding: 0 2px;
         }
 
-        /* Collapses every crumb/chevron strictly between Home and the
-           current page on narrow containers — the breadcrumb's own width,
-           not the viewport, since available space here also depends on
-           whether the sidebar is open or collapsed. */
         .hms-bc-collapsible { display: none !important; }
         @container hms-breadcrumb (min-width: 480px) {
           .hms-bc-collapsible { display: flex !important; }

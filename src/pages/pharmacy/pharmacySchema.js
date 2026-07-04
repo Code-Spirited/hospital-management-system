@@ -53,6 +53,50 @@ const purchaseLineSchema = z
     path: ["mrp"],
   });
 
+// ── Sales Billing ──────────────────────────────────────────────────────────────
+// Cart items themselves aren't user-typed form fields (they're built by
+// clicking search results), so the schema here validates the checkout
+// details only — payment and customer identification. The cart's own
+// integrity (enough stock, a real batch assigned) is enforced directly
+// in the billing page's logic, not through Zod, since it's driven by
+// live inventory state rather than form input.
+export const salesBillingSchema = z
+  .object({
+    customerType: z.string().min(1, "Please select who this sale is for"),
+    patientId: z.string().optional().or(z.literal("")),
+    walkInName: z.string().optional().or(z.literal("")),
+    walkInPhone: z.string().optional().or(z.literal("")),
+    discountPercent: z.coerce
+      .number()
+      .min(0, "Cannot be negative")
+      .max(100, "Cannot exceed 100%"),
+    paymentMethod: z.string().min(1, "Select a payment method"),
+    paymentStatus: z.string().min(1, "Select a payment status"),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.customerType === "OPD Patient" ||
+      data.customerType === "IPD Patient"
+    ) {
+      if (!data.patientId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Please select a patient",
+          path: ["patientId"],
+        });
+      }
+    }
+    if (data.customerType === "Walk-in") {
+      if (!data.walkInName || data.walkInName.trim().length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Name is required for a walk-in sale",
+          path: ["walkInName"],
+        });
+      }
+    }
+  });
+
 // ── Purchase Entry — full invoice ─────────────────────────────────────────────
 export const purchaseEntrySchema = z.object({
   supplier: z.string().min(1, "Please select a supplier"),

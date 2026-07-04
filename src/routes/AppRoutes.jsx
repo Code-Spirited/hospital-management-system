@@ -28,6 +28,7 @@ import MedicineInventory from "../pages/pharmacy/MedicineInventory";
 import AddMedicine from "../pages/pharmacy/AddMedicine";
 import PurchaseEntry from "../pages/pharmacy/PurchaseEntry";
 import MedicineDetails from "../pages/pharmacy/MedicineDetails";
+import SalesBilling from "../pages/pharmacy/SalesBilling";
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -76,6 +77,7 @@ const AppRoutes = () => {
           <Route path="add" element={<AddMedicine />} />
           <Route path="purchase" element={<PurchaseEntry />} />
           <Route path="medicine/:medicineId" element={<MedicineDetails />} />
+          <Route path="sell" element={<SalesBilling />} />
         </Route>
         <Route
           path="/users"
