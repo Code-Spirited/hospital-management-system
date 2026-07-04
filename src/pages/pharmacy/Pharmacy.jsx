@@ -14,6 +14,7 @@ import {
   Truck,
   ShoppingCart,
   ClipboardEdit,
+  AlertTriangle,
 } from "lucide-react";
 
 const TABS = [
@@ -36,6 +37,12 @@ const TABS = [
     to: "/pharmacy/stock",
     end: false,
     Icon: ClipboardEdit,
+  },
+  {
+    label: "Expiry Alerts",
+    to: "/pharmacy/expiry",
+    end: false,
+    Icon: AlertTriangle,
   },
 ];
 

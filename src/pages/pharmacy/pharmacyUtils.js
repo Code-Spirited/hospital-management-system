@@ -73,3 +73,19 @@ export const getTotalInventoryValue = (batches) =>
   batches
     .filter((b) => b.status === "Active")
     .reduce((sum, b) => sum + b.quantity * b.unitCost, 0);
+
+// ── Finer-grained urgency tiering for the dedicated Expiry Alerts page ──────
+// Deliberately separate from getExpiryStatus above, which already drives
+// Inventory/Medicine Details with a simpler 3-state model — modifying
+// that function would change behavior on screens that already work
+// correctly. This adds a new, more granular view on the same underlying
+// batch data without touching anything already relied upon.
+export const EXPIRY_CRITICAL_DAYS = 30;
+
+export const getBatchExpiryTier = (batch) => {
+  const daysRemaining = dayjs(batch.expiryDate).diff(dayjs(), "day");
+  if (daysRemaining < 0) return "Expired";
+  if (daysRemaining <= EXPIRY_CRITICAL_DAYS) return "Critical";
+  if (daysRemaining <= EXPIRY_WARNING_DAYS) return "Warning";
+  return "Good";
+};

@@ -30,6 +30,7 @@ import PurchaseEntry from "../pages/pharmacy/PurchaseEntry";
 import MedicineDetails from "../pages/pharmacy/MedicineDetails";
 import SalesBilling from "../pages/pharmacy/SalesBilling";
 import StockManagement from "../pages/pharmacy/StockManagement";
+import ExpiryAlerts from "../pages/pharmacy/ExpiryAlerts";
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -80,6 +81,7 @@ const AppRoutes = () => {
           <Route path="medicine/:medicineId" element={<MedicineDetails />} />
           <Route path="sell" element={<SalesBilling />} />
           <Route path="stock" element={<StockManagement />} />
+          <Route path="expiry" element={<ExpiryAlerts />} />
         </Route>
         <Route
           path="/users"

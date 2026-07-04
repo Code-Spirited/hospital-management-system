@@ -48,6 +48,16 @@ export const BATCH_STATUS_CONFIG = {
   Disposed: { color: "#dc2626", bg: "#fef2f2" },
 };
 
+// Urgency tiers for Expiry Alerts — "Critical" sits visually between
+// Expired (red) and Warning (amber) as a distinct orange, so all three
+// severities read as genuinely different at a glance, not shades of the
+// same color.
+export const EXPIRY_TIER_CONFIG = {
+  Expired: { color: "#dc2626", bg: "#fef2f2" },
+  Critical: { color: "#ea580c", bg: "#fff7ed" },
+  Warning: { color: "#d97706", bg: "#fffbeb" },
+};
+
 // Manual adjustment types — all DECREASE stock except Correction, which
 // can go either direction (a physical recount might find MORE stock
 // than recorded, e.g. a prior miscount, not just less).

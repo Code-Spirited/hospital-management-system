@@ -123,7 +123,7 @@ const StockManagement = () => {
     };
   }, [selectedBatch, quantity, effectiveDirection]);
 
-  const submit = (data) => {
+  const submit = () => {
     if (preview?.exceedsStock) {
       toast.error("Cannot proceed", {
         description: "This would reduce the batch below zero.",

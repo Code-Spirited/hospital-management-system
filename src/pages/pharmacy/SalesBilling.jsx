@@ -22,7 +22,6 @@
 import { useState, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import {
@@ -32,6 +31,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Info,
+  History,
 } from "lucide-react";
 import {
   FormField as Field,
@@ -59,8 +59,7 @@ const fmt = (n) =>
   `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 const SalesBilling = () => {
-  const navigate = useNavigate();
-  const { medicines, batches, recordSale } = usePharmacy();
+  const { medicines, batches, sales, recordSale } = usePharmacy();
   const { patients } = usePatients();
   const { admissions } = useIPD();
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +70,7 @@ const SalesBilling = () => {
     register,
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(salesBillingSchema),
@@ -218,7 +218,7 @@ const SalesBilling = () => {
       ? patients.find((p) => p.id === data.patientId) ||
         admissions.find((a) => a.patientId === data.patientId)
       : null;
-    recordSale({
+    const sale = recordSale({
       customerType: data.customerType,
       customerName:
         data.customerType === "Walk-in"
@@ -250,9 +250,27 @@ const SalesBilling = () => {
 
     setSubmitting(false);
     toast.success("Sale completed", {
-      description: `${fmt(grandTotal)} · ${cart.length} ${cart.length === 1 ? "item" : "items"}`,
+      description: `Receipt ${sale.id} · ${fmt(grandTotal)} · ${cart.length} ${cart.length === 1 ? "item" : "items"}`,
     });
-    navigate("/pharmacy");
+
+    // Deliberately stays on this page rather than navigating away — both
+    // source documents describe Sales Billing as the module's highest-
+    // frequency screen, serving patients continuously throughout the
+    // day. Redirecting after every single sale would force a pharmacist
+    // to re-navigate back here before ringing up the next customer,
+    // which is exactly the wrong kind of friction on a speed-critical
+    // screen. Cart and customer details reset instead, ready
+    // immediately for the next sale.
+    setCart([]);
+    reset({
+      customerType: "",
+      patientId: "",
+      walkInName: "",
+      walkInPhone: "",
+      discountPercent: 0,
+      paymentMethod: "",
+      paymentStatus: "Pending",
+    });
   };
 
   return (
@@ -973,6 +991,144 @@ const SalesBilling = () => {
           </>
         )}
       </form>
+
+      {/* ── Recent Sales — the visible confirmation that completed sales
+          are actually being recorded, now that this page stays open
+          across many consecutive sales instead of redirecting away
+          after each one. Newest first, capped at 10 so it stays a quick
+          glance rather than growing into its own full history page —
+          that's Reports' job later in the project. */}
+      <div style={{ marginTop: "2rem" }}>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "1rem",
+            fontWeight: 800,
+            color: "var(--hms-navy)",
+            margin: "0 0 0.875rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <History size={16} style={{ color: "var(--hms-blue)" }} /> Recent
+          Sales
+        </h2>
+        {sales.length === 0 ? (
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              border: "1px solid var(--hms-border)",
+              padding: "2rem",
+              textAlign: "center",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "#94a3b8",
+                margin: 0,
+                fontWeight: 500,
+              }}
+            >
+              No sales recorded yet this session.
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.625rem",
+            }}
+          >
+            {sales.slice(0, 10).map((s) => (
+              <div
+                key={s.id}
+                style={{
+                  background: "#fff",
+                  borderRadius: 12,
+                  border: "1px solid var(--hms-border)",
+                  padding: "0.875rem 1.125rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      color: "var(--hms-navy)",
+                    }}
+                  >
+                    {s.customerName}{" "}
+                    <span style={{ fontWeight: 500, color: "#94a3b8" }}>
+                      · {s.customerType}
+                    </span>
+                  </p>
+                  <p
+                    style={{
+                      margin: "3px 0 0",
+                      fontSize: "0.76rem",
+                      color: "#64748b",
+                    }}
+                  >
+                    {s.items
+                      .map((i) => `${i.brandName} ×${i.quantity}`)
+                      .join(", ")}
+                  </p>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    flexShrink: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 20,
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      background:
+                        s.paymentStatus === "Paid"
+                          ? "var(--hms-success-bg)"
+                          : s.paymentStatus === "Partial"
+                            ? "#fffbeb"
+                            : "var(--hms-danger-bg)",
+                      color:
+                        s.paymentStatus === "Paid"
+                          ? "var(--hms-success)"
+                          : s.paymentStatus === "Partial"
+                            ? "#d97706"
+                            : "#dc2626",
+                    }}
+                  >
+                    {s.paymentStatus}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.9rem",
+                      fontWeight: 800,
+                      color: "var(--hms-navy)",
+                    }}
+                  >
+                    {fmt(s.total)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -160,6 +160,13 @@ const ROUTES = [
     ],
   },
   {
+    pattern: "/pharmacy/expiry",
+    trail: () => [
+      { label: "Pharmacy", to: "/pharmacy" },
+      { label: "Expiry Alerts" },
+    ],
+  },
+  {
     pattern: "/pharmacy/medicine/:medicineId",
     trail: (params, _appts, _admissions, medicines) => {
       const medicine = medicines?.find((m) => m.id === params.medicineId);
