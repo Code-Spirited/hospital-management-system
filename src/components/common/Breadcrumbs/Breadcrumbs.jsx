@@ -27,6 +27,7 @@ import { Home, ChevronRight } from "lucide-react";
 import Abbr from "../Abbr/Abbr";
 import { useAppointments } from "../../../context/AppointmentsContext";
 import { useIPD } from "../../../context/IPDContext";
+import { usePharmacy } from "../../../context/PharmacyContext";
 
 // appt.patientId / admission.patientId are already the real, unique
 // Patient IDs (e.g. "P-1010") set at booking/admission time — no extra
@@ -131,6 +132,32 @@ const ROUTES = [
   },
 
   { pattern: "/pharmacy", trail: () => [{ label: "Pharmacy" }] },
+  {
+    pattern: "/pharmacy/add",
+    trail: () => [
+      { label: "Pharmacy", to: "/pharmacy" },
+      { label: "Add Medicine" },
+    ],
+  },
+  {
+    pattern: "/pharmacy/purchase",
+    trail: () => [
+      { label: "Pharmacy", to: "/pharmacy" },
+      { label: "Purchase Entry" },
+    ],
+  },
+  {
+    pattern: "/pharmacy/medicine/:medicineId",
+    trail: (params, _appts, _admissions, medicines) => {
+      const medicine = medicines?.find((m) => m.id === params.medicineId);
+      return [
+        { label: "Pharmacy", to: "/pharmacy" },
+        medicine
+          ? { label: medicine.brandName, idLabel: medicine.id }
+          : { label: "Medicine" },
+      ];
+    },
+  },
   { pattern: "/users", trail: () => [{ label: "User Management" }] },
   { pattern: "/reports", trail: () => [{ label: "Reports & Analytics" }] },
 ];
@@ -139,6 +166,7 @@ const Breadcrumbs = () => {
   const location = useLocation();
   const { appointments } = useAppointments();
   const { admissions } = useIPD();
+  const { medicines } = usePharmacy();
 
   let trail = null;
   for (const route of ROUTES) {
@@ -147,7 +175,7 @@ const Breadcrumbs = () => {
       location.pathname,
     );
     if (match) {
-      trail = route.trail(match.params, appointments, admissions);
+      trail = route.trail(match.params, appointments, admissions, medicines);
       break;
     }
   }

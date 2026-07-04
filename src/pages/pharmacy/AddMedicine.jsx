@@ -1,18 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// AddMedicine.jsx — Week 5, Tuesday
+// AddMedicine.jsx — rebuilt for the two-tier model
 //
-// Adds one new medicine (batch record) to the pharmacy register. A full
-// page, not a drawer, so it uses FormSelect (the portal-based dropdown)
-// rather than DrawerSelect — same reasoning as IPD's AdmissionForm.
-//
-// NOTE ON DATA MODEL: this form treats "add a medicine" as "add one
-// batch" — matching exactly how pharmacyData.js's seed records are
-// already structured (each has its own batchNumber + expiryDate). Real
-// pharmacy software usually separates a drug CATALOG from individual
-// stock BATCHES so the same drug arriving again later adds to existing
-// stock rather than creating a second row. That's a deliberate scope
-// boundary for today, flagged for a future Purchase/Stock-In flow —
-// not an oversight.
+// Now creates ONLY a Product-tier Medicine record — no quantity, batch
+// number, or expiry date anywhere on this form. A newly added medicine
+// starts with zero stock, which is correct: it now exists in the
+// catalog, but nothing has been received yet. Receiving its first
+// shipment is Purchase Entry's job, not this form's.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -20,13 +13,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import dayjs from "dayjs";
 import { Pill, CheckCircle2 } from "lucide-react";
 import {
   FormField as Field,
   FormInput as Input,
   FormSelect,
-  DateInput,
 } from "../../components/common";
 import Abbr from "../../components/common/Abbr/Abbr";
 import { usePharmacy } from "../../context/PharmacyContext";
@@ -69,36 +60,26 @@ const AddMedicine = () => {
       category: "",
       dosageForm: "",
       manufacturer: "",
-      batchNumber: "",
       schedule: "",
       storageCondition: "",
-      quantity: "",
-      reorderLevel: "",
-      unitPrice: "",
-      mrp: "",
+      reorderLevel: "150",
       gstPercent: "12",
-      expiryDate: "",
     },
   });
 
   const submit = async (data) => {
     setSubmitting(true);
-    const isoExpiry = dayjs(data.expiryDate, "DD-MM-YYYY").format("YYYY-MM-DD");
     await new Promise((r) => setTimeout(r, 500));
-    const newId = generateId("MED", 100, 900);
+    const newId = generateId("M", 100, 900);
     addMedicine({
       id: newId,
       ...data,
-      quantity: Number(data.quantity),
       reorderLevel: Number(data.reorderLevel),
-      unitPrice: Number(data.unitPrice),
-      mrp: Number(data.mrp),
       gstPercent: Number(data.gstPercent),
-      expiryDate: isoExpiry,
     });
     setSubmitting(false);
-    toast.success("Medicine added", {
-      description: `${data.brandName} · Batch ${data.batchNumber}`,
+    toast.success("Medicine added to catalog", {
+      description: `${data.brandName} is now catalogued — receive its first batch via Purchase Entry.`,
     });
     navigate("/pharmacy");
   };
@@ -157,10 +138,19 @@ const AddMedicine = () => {
         >
           Add Medicine
         </h1>
+        <p
+          style={{
+            fontSize: "0.85rem",
+            color: "#64748b",
+            margin: "0.4rem 0 0",
+          }}
+        >
+          This registers the medicine in the catalog only. Stock is received
+          separately via Purchase Entry.
+        </p>
       </div>
 
       <form onSubmit={(e) => e.preventDefault()}>
-        {/* ── Identification ── */}
         <div
           style={{
             background: "#fff",
@@ -168,7 +158,7 @@ const AddMedicine = () => {
             border: "1px solid var(--hms-border)",
             boxShadow: "var(--shadow-xs)",
             padding: "1.75rem",
-            marginBottom: "1rem",
+            marginBottom: "1.25rem",
           }}
         >
           <h2
@@ -190,7 +180,7 @@ const AddMedicine = () => {
             }}
           >
             <Field
-              label="Brand Name"
+              label="Medicine Name"
               required
               error={errors.brandName?.message}
             >
@@ -212,7 +202,12 @@ const AddMedicine = () => {
                 error={errors.genericName}
               />
             </Field>
-            <Field label="Strength" required error={errors.strength?.message}>
+            <Field
+              label="Strength"
+              required
+              error={errors.strength?.message}
+              hint="A different strength is a different medicine (e.g. Crocin 500 vs 650)"
+            >
               <Input
                 {...register("strength")}
                 placeholder="e.g. 500mg, or — if not applicable"
@@ -244,6 +239,17 @@ const AddMedicine = () => {
               />
             </Field>
             <Field
+              label="Manufacturer"
+              required
+              error={errors.manufacturer?.message}
+            >
+              <Input
+                {...register("manufacturer")}
+                placeholder="e.g. GSK, Cipla"
+                error={errors.manufacturer}
+              />
+            </Field>
+            <Field
               label="Drug Schedule"
               required
               error={errors.schedule?.message}
@@ -258,74 +264,11 @@ const AddMedicine = () => {
                 isSearchable={false}
               />
             </Field>
-          </div>
-        </div>
-
-        {/* ── Sourcing ── */}
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 16,
-            border: "1px solid var(--hms-border)",
-            boxShadow: "var(--shadow-xs)",
-            padding: "1.75rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1rem",
-              fontWeight: 800,
-              color: "var(--hms-navy)",
-              margin: "0 0 1.375rem",
-            }}
-          >
-            Sourcing & Storage
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
-            <Field
-              label="Manufacturer"
-              required
-              error={errors.manufacturer?.message}
-            >
-              <Input
-                {...register("manufacturer")}
-                placeholder="e.g. GSK, Cipla"
-                error={errors.manufacturer}
-              />
-            </Field>
-            <Field
-              label="Batch Number"
-              required
-              error={errors.batchNumber?.message}
-            >
-              <Input
-                {...register("batchNumber")}
-                placeholder="e.g. CR2547"
-                error={errors.batchNumber}
-              />
-            </Field>
-            <Field
-              label="Expiry Date"
-              required
-              error={errors.expiryDate?.message}
-            >
-              <DateInput
-                {...register("expiryDate")}
-                error={errors.expiryDate}
-              />
-            </Field>
             <Field
               label="Storage Condition"
               required
               error={errors.storageCondition?.message}
+              hint="This drug's required environment — not where it sits on a shelf"
             >
               <FormSelect
                 name="storageCondition"
@@ -334,98 +277,6 @@ const AddMedicine = () => {
                 error={errors.storageCondition}
                 placeholder="Select condition"
                 isSearchable={false}
-              />
-            </Field>
-          </div>
-        </div>
-
-        {/* ── Stock & Pricing ── */}
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 16,
-            border: "1px solid var(--hms-border)",
-            boxShadow: "var(--shadow-xs)",
-            padding: "1.75rem",
-            marginBottom: "1.25rem",
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1rem",
-              fontWeight: 800,
-              color: "var(--hms-navy)",
-              margin: "0 0 1.375rem",
-            }}
-          >
-            Stock & Pricing
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
-            <Field
-              label="Quantity in Stock"
-              required
-              error={errors.quantity?.message}
-            >
-              <Input
-                {...register("quantity")}
-                type="number"
-                min="0"
-                placeholder="e.g. 500"
-                error={errors.quantity}
-              />
-            </Field>
-            <Field
-              label="Reorder Level"
-              required
-              error={errors.reorderLevel?.message}
-              hint="Triggers a Low Stock flag at or below this count"
-            >
-              <Input
-                {...register("reorderLevel")}
-                type="number"
-                min="0"
-                placeholder="e.g. 150"
-                error={errors.reorderLevel}
-              />
-            </Field>
-            <Field
-              label="Unit Cost (₹)"
-              required
-              error={errors.unitPrice?.message}
-              hint="Acquisition price per unit"
-            >
-              <Input
-                {...register("unitPrice")}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="e.g. 1.20"
-                error={errors.unitPrice}
-              />
-            </Field>
-            <Field
-              label={
-                <>
-                  <Abbr underline={false}>MRP</Abbr> (₹)
-                </>
-              }
-              required
-              error={errors.mrp?.message}
-            >
-              <Input
-                {...register("mrp")}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="e.g. 1.80"
-                error={errors.mrp}
               />
             </Field>
             <Field
@@ -444,6 +295,20 @@ const AddMedicine = () => {
                 error={errors.gstPercent}
                 placeholder="Select GST %"
                 isSearchable={false}
+              />
+            </Field>
+            <Field
+              label="Reorder Level"
+              required
+              error={errors.reorderLevel?.message}
+              hint="Total stock across all batches at or below this triggers Low Stock"
+            >
+              <Input
+                {...register("reorderLevel")}
+                type="number"
+                min="0"
+                placeholder="e.g. 150"
+                error={errors.reorderLevel}
               />
             </Field>
           </div>
@@ -471,7 +336,8 @@ const AddMedicine = () => {
             boxShadow: submitting ? "none" : "0 4px 14px rgba(5,150,105,0.3)",
           }}
         >
-          <CheckCircle2 size={17} /> {submitting ? "Adding..." : "Add Medicine"}
+          <CheckCircle2 size={17} />{" "}
+          {submitting ? "Adding..." : "Add to Catalog"}
         </button>
       </form>
     </div>

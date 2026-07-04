@@ -328,6 +328,16 @@ const DataTable = ({
   searchPlaceholder = "Search...",
   emptyMessage = "No results found",
   rowNoun = "results",
+  // Optional custom logic for what the global search box matches
+  // against, per row. Defaults to undefined — every existing table
+  // keeps TanStack's default behavior (scan each column's own rendered
+  // value) with zero change. A parent opts in only when it needs the
+  // search to also reach data that isn't rendered as its own column at
+  // all — e.g. Medicine Inventory searching batch numbers, suppliers,
+  // and shelf locations that live one tier down and are never shown as
+  // inventory columns. Signature matches TanStack's own
+  // (row, columnId, filterValue) => boolean.
+  globalFilterFn,
 }) => {
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -360,6 +370,10 @@ const DataTable = ({
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
+    // Only overrides TanStack's default global-search behavior when a
+    // parent explicitly supplies one. Passing `undefined` here is safe —
+    // TanStack falls back to its own built-in matcher exactly as before.
+    globalFilterFn,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

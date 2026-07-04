@@ -8,11 +8,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { Pill, PlusCircle } from "lucide-react";
+import { Pill, PlusCircle, Truck } from "lucide-react";
 
 const TABS = [
   { label: "Inventory", to: "/pharmacy", end: true, Icon: Pill },
   { label: "Add Medicine", to: "/pharmacy/add", end: false, Icon: PlusCircle },
+  {
+    label: "Purchase Entry",
+    to: "/pharmacy/purchase",
+    end: false,
+    Icon: Truck,
+  },
 ];
 
 const Pharmacy = () => (

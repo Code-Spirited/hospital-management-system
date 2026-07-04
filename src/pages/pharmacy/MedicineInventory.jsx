@@ -1,24 +1,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// MedicineInventory.jsx — Week 5, Monday (polish pass)
+// MedicineInventory.jsx — polish pass
 //
-// StatusCell rebuilt to fix a real alignment bug: the previous version
-// rendered "needs attention" statuses as a padded pill and "normal"
-// statuses as plain, unpadded text — two different left starting
-// positions for the same column, which is what produced the zig-zag,
-// "skewed" look down the Stock/Expiry columns. Every status now uses the
-// identical [dot][label] structure regardless of severity, so the column
-// stays perfectly left-aligned row to row. The previous version also
-// hard-coded a flat gray (#94a3b8) for every "normal" status regardless
-// of its actual semantic color, which is the source of the "dull" look —
-// each status's real color (defined once in pharmacyData.js) is now
-// always used.
+// Search/filter now cover every meaningful attribute, not just the three
+// original filters. DataTable's own global search only scans visible
+// cell text by default, which would miss fields like manufacturer or
+// generic name that aren't rendered as their own column text — so a
+// dedicated searchable composite string is attached to each row instead,
+// and DataTable's built-in search naturally searches it since it's part
+// of the row object.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Drawer } from "vaul";
-import dayjs from "dayjs";
 import {
   Pill,
   AlertTriangle,
@@ -26,14 +19,8 @@ import {
   CalendarClock,
   Receipt,
   Eye,
-  X,
-  Package,
-  Factory,
-  Hash,
-  ShieldAlert,
-  Thermometer,
-  IndianRupee,
   PlusCircle,
+  Layers,
 } from "lucide-react";
 import { DataTable, multiSelectFilter } from "../../components/common";
 import Abbr from "../../components/common/Abbr/Abbr";
@@ -44,11 +31,15 @@ import {
   STOCK_STATUS_CONFIG,
   EXPIRY_STATUS_CONFIG,
   CATEGORIES,
+  DOSAGE_FORMS,
 } from "./pharmacyData";
 import {
   getStockStatus,
   getExpiryStatus,
-  getInventoryValue,
+  getTotalQuantity,
+  getBatchesForMedicine,
+  getNearestExpiryBatch,
+  getTotalInventoryValue,
 } from "./pharmacyUtils";
 
 const SCHEDULE_TERM_KEY = {
@@ -78,12 +69,6 @@ const SchedulePill = ({ schedule }) => {
   );
 };
 
-// A small colored dot + label, used identically for EVERY status —
-// "needs attention" states (config has a bg) get bold text and a soft
-// halo ring around the dot; calm states get medium-weight text and a
-// plain dot. Both share the exact same [dot][gap][text] structure, so
-// the column's left edge never shifts between rows regardless of which
-// status is showing — this is the structural fix for the alignment bug.
 const StatusCell = ({ status, config, dateText }) => {
   const cfg = config[status] || { color: "#94a3b8" };
   const needsAttention = !!cfg.bg;
@@ -127,280 +112,75 @@ const StatusCell = ({ status, config, dateText }) => {
   );
 };
 
-const DetailRow = ({ Icon, label, value }) => (
-  <div
-    style={{
-      display: "flex",
-      gap: 10,
-      alignItems: "flex-start",
-      padding: "0.7rem 0",
-      borderBottom: "1px solid #f1f5f9",
-    }}
-  >
-    <Icon size={16} style={{ color: "#94a3b8", flexShrink: 0, marginTop: 2 }} />
-    <div style={{ minWidth: 0 }}>
-      <p
-        style={{
-          fontSize: "0.7rem",
-          fontWeight: 700,
-          color: "#94a3b8",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          margin: 0,
-        }}
-      >
-        {label}
-      </p>
-      <p
-        style={{
-          fontSize: "0.92rem",
-          fontWeight: 600,
-          color: "var(--hms-navy)",
-          margin: "3px 0 0",
-          overflowWrap: "break-word",
-        }}
-      >
-        {value || "—"}
-      </p>
-    </div>
-  </div>
-);
-
-const ViewDrawer = ({ medicine, open, onOpenChange }) => (
-  <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
-    <Drawer.Portal>
-      <Drawer.Overlay
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 100,
-          background: "rgba(15,23,42,0.45)",
-          backdropFilter: "blur(4px)",
-        }}
-      />
-      <Drawer.Content
-        style={{
-          position: "fixed",
-          right: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 101,
-          width: "100%",
-          maxWidth: 440,
-          background: "#fff",
-          boxShadow: "-8px 0 40px rgba(15,23,42,0.18)",
-          display: "flex",
-          flexDirection: "column",
-          outline: "none",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {medicine && (
-          <>
-            <div
-              style={{
-                padding: "1.25rem 1.375rem",
-                borderBottom: "1px solid var(--hms-border)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div
-                  style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: 13,
-                    background:
-                      "linear-gradient(135deg, var(--hms-blue), #3b82f6)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Pill size={21} color="#fff" />
-                </div>
-                <div>
-                  <h2
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "1.08rem",
-                      fontWeight: 800,
-                      color: "#0f172a",
-                      margin: 0,
-                    }}
-                  >
-                    {medicine.brandName}
-                  </h2>
-                  <p
-                    style={{
-                      fontSize: "0.78rem",
-                      color: "#94a3b8",
-                      margin: "2px 0 0",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {medicine.genericName} · {medicine.strength}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => onOpenChange(false)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 9,
-                  border: "1.5px solid var(--hms-border)",
-                  background: "#fff",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#64748b",
-                }}
-              >
-                <X size={15} />
-              </button>
-            </div>
-
-            <div
-              data-lenis-prevent
-              style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "1.125rem 1.375rem",
-              }}
-            >
-              <div style={{ display: "flex", gap: 8, marginBottom: "1rem" }}>
-                <SchedulePill schedule={medicine.schedule} />
-              </div>
-
-              <p
-                style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 800,
-                  color: "var(--hms-blue)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                  margin: "0 0 0.25rem",
-                }}
-              >
-                Classification
-              </p>
-              <DetailRow
-                Icon={Package}
-                label="Category"
-                value={medicine.category}
-              />
-              <DetailRow
-                Icon={Pill}
-                label="Dosage Form"
-                value={medicine.dosageForm}
-              />
-
-              <p
-                style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 800,
-                  color: "var(--hms-blue)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                  margin: "1.125rem 0 0.25rem",
-                }}
-              >
-                Sourcing
-              </p>
-              <DetailRow
-                Icon={Factory}
-                label="Manufacturer"
-                value={medicine.manufacturer}
-              />
-              <DetailRow
-                Icon={Hash}
-                label="Batch Number"
-                value={medicine.batchNumber}
-              />
-              <DetailRow
-                Icon={ShieldAlert}
-                label="Expiry Date"
-                value={dayjs(medicine.expiryDate).format("D MMMM YYYY")}
-              />
-              <DetailRow
-                Icon={Thermometer}
-                label="Storage Condition"
-                value={medicine.storageCondition}
-              />
-
-              <p
-                style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 800,
-                  color: "var(--hms-blue)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                  margin: "1.125rem 0 0.25rem",
-                }}
-              >
-                Stock & Pricing
-              </p>
-              <DetailRow
-                Icon={Package}
-                label="Quantity in Stock"
-                value={`${medicine.quantity} units (reorder at ${medicine.reorderLevel})`}
-              />
-              <DetailRow
-                Icon={IndianRupee}
-                label={
-                  <>
-                    Unit Cost / <Abbr underline={false}>MRP</Abbr>
-                  </>
-                }
-                value={`₹${medicine.unitPrice.toFixed(2)} / ₹${medicine.mrp.toFixed(2)}`}
-              />
-              <DetailRow
-                Icon={Receipt}
-                label={<Abbr underline={false}>GST</Abbr>}
-                value={`${medicine.gstPercent}%`}
-              />
-            </div>
-          </>
-        )}
-      </Drawer.Content>
-    </Drawer.Portal>
-  </Drawer.Root>
-);
-
 const fmtCurrency = (n) =>
   `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
+// Matches the global search box against each row's searchIndex — which
+// covers batch-level facts (batch number, supplier, shelf location)
+// alongside Medicine-tier ones — instead of TanStack's default of only
+// scanning each column's own rendered value.
+const inventoryGlobalFilter = (row, _columnId, filterValue) => {
+  const query = String(filterValue ?? "")
+    .toLowerCase()
+    .trim();
+  if (!query) return true;
+  return row.original.searchIndex.includes(query);
+};
+
 const MedicineInventory = () => {
   const navigate = useNavigate();
-  const { medicines } = usePharmacy();
+  const { medicines, batches } = usePharmacy();
   const { getPageIndex, setPageIndex } = useTablePagination();
-  const [viewing, setViewing] = useState(null);
 
-  const medicinesForTable = medicines.map((m) => ({
-    ...m,
-    stockStatus: getStockStatus(m),
-    expiryStatus: getExpiryStatus(m),
-  }));
+  const medicinesForTable = medicines.map((m) => {
+    const nearest = getNearestExpiryBatch(m.id, batches);
+    const medicineBatches = getBatchesForMedicine(m.id, batches);
+    return {
+      ...m,
+      quantity: getTotalQuantity(m.id, batches),
+      batchCount: medicineBatches.filter((b) => b.status === "Active").length,
+      nearestExpiry: nearest?.expiryDate ?? null,
+      stockStatus: getStockStatus(m, batches),
+      expiryStatus: getExpiryStatus(m, batches),
+      // Composite field the global search box matches against (see
+      // globalFilterFn below) — covers every Medicine-tier attribute
+      // AND every Batch-tier attribute across all of this medicine's
+      // batches (batch number, supplier, shelf location, invoice
+      // number), even though none of the batch-level facts are
+      // rendered as their own inventory column.
+      searchIndex: [
+        m.brandName,
+        m.genericName,
+        m.strength,
+        m.category,
+        m.dosageForm,
+        m.manufacturer,
+        m.schedule,
+        m.storageCondition,
+        ...medicineBatches.flatMap((b) => [
+          b.batchNumber,
+          b.supplier,
+          b.shelfLocation,
+          b.invoiceNumber,
+        ]),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase(),
+    };
+  });
 
   const totalMedicines = medicines.length;
-  const lowStockCount = medicines.filter(
-    (m) => getStockStatus(m) === "Low Stock",
+  const lowStockCount = medicinesForTable.filter(
+    (m) => m.stockStatus === "Low Stock",
   ).length;
-  const outOfStockCount = medicines.filter(
-    (m) => getStockStatus(m) === "Out of Stock",
+  const outOfStockCount = medicinesForTable.filter(
+    (m) => m.stockStatus === "Out of Stock",
   ).length;
-  const expiringSoonCount = medicines.filter(
-    (m) => getExpiryStatus(m) === "Expiring Soon",
+  const expiringSoonCount = medicinesForTable.filter(
+    (m) => m.expiryStatus === "Expiring Soon",
   ).length;
-  const totalInventoryValue = medicines.reduce(
-    (sum, m) => sum + getInventoryValue(m),
-    0,
-  );
+  const totalInventoryValue = getTotalInventoryValue(batches);
 
   const columnHelper = createColumnHelper();
   const columns = [
@@ -428,6 +208,21 @@ const MedicineInventory = () => {
         );
       },
     }),
+    columnHelper.accessor("manufacturer", {
+      header: "Manufacturer",
+      filterFn: multiSelectFilter,
+      cell: (info) => (
+        <span
+          style={{
+            fontSize: "0.84rem",
+            color: "#64748b",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {info.getValue()}
+        </span>
+      ),
+    }),
     columnHelper.accessor("category", {
       header: "Category",
       filterFn: multiSelectFilter,
@@ -446,6 +241,7 @@ const MedicineInventory = () => {
     }),
     columnHelper.accessor("dosageForm", {
       header: "Form",
+      filterFn: multiSelectFilter,
       cell: (info) => (
         <span
           style={{
@@ -459,7 +255,7 @@ const MedicineInventory = () => {
       ),
     }),
     columnHelper.accessor("quantity", {
-      header: "Qty",
+      header: "Total Qty",
       cell: (info) => (
         <span
           style={{
@@ -472,6 +268,23 @@ const MedicineInventory = () => {
         </span>
       ),
     }),
+    columnHelper.accessor("batchCount", {
+      header: "Batches",
+      cell: (info) => (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            fontSize: "0.84rem",
+            color: "#64748b",
+            fontWeight: 600,
+          }}
+        >
+          <Layers size={13} style={{ color: "#94a3b8" }} /> {info.getValue()}
+        </span>
+      ),
+    }),
     columnHelper.accessor("stockStatus", {
       header: "Stock",
       filterFn: multiSelectFilter,
@@ -480,15 +293,26 @@ const MedicineInventory = () => {
       ),
     }),
     columnHelper.accessor("expiryStatus", {
-      header: "Expiry",
+      header: "Nearest Expiry",
       filterFn: multiSelectFilter,
-      cell: (info) => (
-        <StatusCell
-          status={info.getValue()}
-          config={EXPIRY_STATUS_CONFIG}
-          dateText={dayjs(info.row.original.expiryDate).format("D MMM YYYY")}
-        />
-      ),
+      cell: (info) => {
+        const m = info.row.original;
+        return (
+          <StatusCell
+            status={info.getValue()}
+            config={EXPIRY_STATUS_CONFIG}
+            dateText={
+              m.nearestExpiry
+                ? new Date(m.nearestExpiry).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : null
+            }
+          />
+        );
+      },
     }),
     columnHelper.accessor("schedule", {
       header: "Schedule",
@@ -500,7 +324,7 @@ const MedicineInventory = () => {
       header: "",
       cell: (info) => (
         <button
-          onClick={() => setViewing(info.row.original)}
+          onClick={() => navigate(`/pharmacy/medicine/${info.row.original.id}`)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -659,16 +483,35 @@ const MedicineInventory = () => {
         columns={columns}
         data={medicinesForTable}
         title="Medicine Inventory"
-        subtitle="Full pharmacy register · Click a row's View button for full details"
+        subtitle="Master catalog · Total Qty aggregated across all Active batches · Search also reaches batch number, supplier, and shelf location"
         pageSize={10}
         initialPageIndex={getPageIndex("pharmacy-inventory")}
         onPageIndexChange={(i) => setPageIndex("pharmacy-inventory", i)}
+        searchPlaceholder="Search name, generic, batch, supplier..."
+        emptyMessage="No medicines found"
+        rowNoun="medicines"
+        globalFilterFn={inventoryGlobalFilter}
         filters={[
           { columnId: "category", label: "Category", options: CATEGORIES },
+          {
+            columnId: "dosageForm",
+            label: "Dosage Form",
+            options: DOSAGE_FORMS,
+          },
+          {
+            columnId: "manufacturer",
+            label: "Manufacturer",
+            options: [...new Set(medicines.map((m) => m.manufacturer))].sort(),
+          },
           {
             columnId: "stockStatus",
             label: "Stock",
             options: Object.keys(STOCK_STATUS_CONFIG),
+          },
+          {
+            columnId: "expiryStatus",
+            label: "Expiry",
+            options: Object.keys(EXPIRY_STATUS_CONFIG),
           },
           {
             columnId: "schedule",
@@ -676,12 +519,6 @@ const MedicineInventory = () => {
             options: Object.keys(SCHEDULE_CONFIG),
           },
         ]}
-      />
-
-      <ViewDrawer
-        medicine={viewing}
-        open={!!viewing}
-        onOpenChange={(o) => !o && setViewing(null)}
       />
     </div>
   );
