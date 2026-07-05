@@ -6,9 +6,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { UserCog } from "lucide-react";
+import { UserCog, UserPlus } from "lucide-react";
 
-const TABS = [{ label: "Directory", to: "/users", end: true, Icon: UserCog }];
+const TABS = [
+  { label: "Directory", to: "/users", end: true, Icon: UserCog },
+  { label: "Add User", to: "/users/add", end: false, Icon: UserPlus },
+];
 
 const Users = () => (
   <div style={{ fontFamily: "var(--font-body)" }}>

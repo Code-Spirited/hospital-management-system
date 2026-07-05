@@ -1,17 +1,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// UserDirectory.jsx — Week 6, Monday
-// The master, read-oriented view of every system user — mirrors the
-// PatientList/MedicineInventory pattern exactly. Every searchable
-// attribute (name, email, role, department) is already a visible
-// rendered column, so TanStack's default global search works correctly
-// out of the box — unlike Pharmacy's Inventory, which needed a custom
-// globalFilterFn because batch-level facts weren't rendered as columns
-// at all. No such gap exists here, so the simpler default is used.
+// UserDirectory.jsx — Week 6, Monday (updated Tuesday: Edit, Add User button)
+//
+// Row actions are View Details + Edit User only — deliberately no
+// Delete. Removing a system user account would orphan every historical
+// record referencing them (who discharged a patient, who logged a
+// treatment, who processed a sale); the correct action for someone
+// leaving is changing Status to Inactive/Suspended via Edit, which stays
+// fully supported. lastLogin is null-checked everywhere it's displayed —
+// a brand-new user genuinely has never logged in, unlike every seeded
+// user from Monday which all carry a real timestamp.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createColumnHelper } from "@tanstack/react-table";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Drawer } from "vaul";
+import * as Popover from "@radix-ui/react-popover";
+import { toast } from "sonner";
 import dayjs from "dayjs";
 import {
   Users,
@@ -19,7 +26,10 @@ import {
   Stethoscope,
   UserX,
   ShieldOff,
+  UserPlus,
   Eye,
+  Pencil,
+  MoreVertical,
   X,
   Mail,
   Phone,
@@ -28,10 +38,17 @@ import {
   Clock,
   IdCard,
 } from "lucide-react";
-import { DataTable, multiSelectFilter } from "../../components/common";
+import {
+  DataTable,
+  multiSelectFilter,
+  FormField as Field,
+  FormInput as Input,
+  DrawerSelect,
+} from "../../components/common";
 import { useUsers } from "../../context/UsersContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
 import { ROLE_CONFIG, USER_STATUS_CONFIG, DEPARTMENTS } from "./userData";
+import { editUserSchema } from "./userSchema";
 
 const getInitials = (name) =>
   name
@@ -115,6 +132,72 @@ const DetailRow = ({ Icon, label, value }) => (
     </div>
   </div>
 );
+
+// ── Row action menu (View / Edit only — see file header for why no Delete) ──
+const RowActions = ({ user, onView, onEdit }) => {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef(null);
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          className="users-row-action-trigger"
+          title="Actions"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
+          <MoreVertical size={15} />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={6}
+          className="hms-popover-content"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+          style={{
+            background: "#fff",
+            borderRadius: 12,
+            border: "1px solid var(--hms-border)",
+            boxShadow: "var(--shadow-lg)",
+            padding: "0.375rem",
+            minWidth: 170,
+            zIndex: 50,
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          <button
+            className="users-row-action-btn"
+            onClick={() => {
+              setOpen(false);
+              onView(user);
+            }}
+          >
+            <Eye size={14} /> View Details
+          </button>
+          <button
+            className="users-row-action-btn"
+            onClick={() => {
+              setOpen(false);
+              onEdit(user);
+            }}
+          >
+            <Pencil size={14} /> Edit User
+          </button>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
 
 const ViewDrawer = ({ user, open, onOpenChange }) => (
   <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
@@ -290,7 +373,11 @@ const ViewDrawer = ({ user, open, onOpenChange }) => (
               <DetailRow
                 Icon={Clock}
                 label="Last Login"
-                value={`${dayjs(user.lastLogin).format("D MMM YYYY, h:mm A")} · ${dayjs(user.lastLogin).fromNow()}`}
+                value={
+                  user.lastLogin
+                    ? `${dayjs(user.lastLogin).format("D MMM YYYY, h:mm A")} · ${dayjs(user.lastLogin).fromNow()}`
+                    : "Never logged in"
+                }
               />
             </div>
           </>
@@ -300,10 +387,284 @@ const ViewDrawer = ({ user, open, onOpenChange }) => (
   </Drawer.Root>
 );
 
+// ── Edit drawer — Full Name/Email/Phone/Role/Department/Status only.
+// Gender and Joined-On are NOT editable here — same immutable-identity
+// principle already used for editPatientSchema's exclusion of DOB. Uses
+// DrawerSelect (not FormSelect) for every dropdown — permanent
+// architectural rule: native controls only inside vaul Drawers, since a
+// portaled react-select menu conflicts with vaul's own outside-click
+// detection.
+const EditDrawer = ({ user, open, onOpenChange, onSave, users }) => {
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: async (values, context, options) => {
+      const result = await zodResolver(editUserSchema)(
+        values,
+        context,
+        options,
+      );
+      if (Object.keys(result.errors).length === 0 && user) {
+        const emailTaken = users.some(
+          (u) =>
+            u.id !== user.id &&
+            u.email.trim().toLowerCase() === values.email.trim().toLowerCase(),
+        );
+        if (emailTaken) {
+          return {
+            values: {},
+            errors: {
+              email: {
+                type: "manual",
+                message: "This email is already registered to another user",
+              },
+            },
+          };
+        }
+      }
+      return result;
+    },
+  });
+
+  useEffect(() => {
+    if (user && open) {
+      reset({
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        department: user.department,
+        status: user.status,
+      });
+    }
+  }, [user, open, reset]);
+
+  const submit = (data) => {
+    onSave({ ...user, ...data });
+    onOpenChange(false);
+  };
+
+  const ROLE_OPTIONS = Object.keys(ROLE_CONFIG).map((v) => ({
+    value: v,
+    label: v,
+  }));
+  const DEPARTMENT_OPTIONS = DEPARTMENTS.map((v) => ({ value: v, label: v }));
+  const STATUS_OPTIONS = Object.keys(USER_STATUS_CONFIG).map((v) => ({
+    value: v,
+    label: v,
+  }));
+
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
+      <Drawer.Portal>
+        <Drawer.Overlay
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            background: "rgba(15,23,42,0.45)",
+            backdropFilter: "blur(4px)",
+          }}
+        />
+        <Drawer.Content
+          style={{
+            position: "fixed",
+            right: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 101,
+            width: "100%",
+            maxWidth: 440,
+            background: "#fff",
+            boxShadow: "-8px 0 40px rgba(15,23,42,0.18)",
+            display: "flex",
+            flexDirection: "column",
+            outline: "none",
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          {user && (
+            <>
+              <div
+                style={{
+                  padding: "1.25rem 1.375rem",
+                  borderBottom: "1px solid var(--hms-border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "1rem",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                      margin: 0,
+                    }}
+                  >
+                    Edit User
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "#94a3b8",
+                      margin: "2px 0 0",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {user.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onOpenChange(false)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 9,
+                    border: "1.5px solid var(--hms-border)",
+                    background: "#fff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b",
+                  }}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              <form
+                onSubmit={(e) => e.preventDefault()}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
+              >
+                <div
+                  data-lenis-prevent
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    padding: "1.125rem 1.375rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1rem",
+                  }}
+                >
+                  <Field
+                    label="Full Name"
+                    required
+                    error={errors.fullName?.message}
+                  >
+                    <Input {...register("fullName")} error={errors.fullName} />
+                  </Field>
+                  <Field label="Email" required error={errors.email?.message}>
+                    <Input
+                      {...register("email")}
+                      type="email"
+                      error={errors.email}
+                    />
+                  </Field>
+                  <Field label="Phone" required error={errors.phone?.message}>
+                    <Input
+                      {...register("phone")}
+                      type="tel"
+                      maxLength={10}
+                      error={errors.phone}
+                    />
+                  </Field>
+                  <Field label="Role" required error={errors.role?.message}>
+                    <DrawerSelect
+                      name="role"
+                      control={control}
+                      options={ROLE_OPTIONS}
+                      error={errors.role}
+                      placeholder="Select role"
+                    />
+                  </Field>
+                  <Field
+                    label="Department"
+                    required
+                    error={errors.department?.message}
+                  >
+                    <DrawerSelect
+                      name="department"
+                      control={control}
+                      options={DEPARTMENT_OPTIONS}
+                      error={errors.department}
+                      placeholder="Select department"
+                      searchable
+                    />
+                  </Field>
+                  <Field label="Status" required error={errors.status?.message}>
+                    <DrawerSelect
+                      name="status"
+                      control={control}
+                      options={STATUS_OPTIONS}
+                      error={errors.status}
+                      placeholder="Select status"
+                    />
+                  </Field>
+                </div>
+
+                <div
+                  style={{
+                    padding: "1rem 1.375rem",
+                    borderTop: "1px solid var(--hms-border)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleSubmit(submit)}
+                    style={{
+                      width: "100%",
+                      padding: "0.625rem 1rem",
+                      border: "none",
+                      borderRadius: 10,
+                      background: "var(--hms-blue)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "0.875rem",
+                      fontWeight: 700,
+                      boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+};
+
 const UserDirectory = () => {
-  const { users } = useUsers();
+  const navigate = useNavigate();
+  const { users, updateUser } = useUsers();
   const { getPageIndex, setPageIndex } = useTablePagination();
   const [viewing, setViewing] = useState(null);
+  const [editing, setEditing] = useState(null);
+
+  const handleSaveEdit = (updated) => {
+    updateUser(updated);
+    toast.success("User updated", {
+      description: `${updated.fullName}'s details have been saved.`,
+    });
+  };
 
   const totalUsers = users.length;
   const activeCount = users.filter((u) => u.status === "Active").length;
@@ -401,42 +762,31 @@ const UserDirectory = () => {
     }),
     columnHelper.accessor("lastLogin", {
       header: "Last Login",
-      cell: (info) => (
-        <span
-          style={{
-            fontSize: "0.78rem",
-            color: "#94a3b8",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {dayjs(info.getValue()).fromNow()}
-        </span>
-      ),
+      cell: (info) => {
+        const v = info.getValue();
+        return (
+          <span
+            style={{
+              fontSize: "0.78rem",
+              color: v ? "#94a3b8" : "#cbd5e1",
+              whiteSpace: "nowrap",
+              fontStyle: v ? "normal" : "italic",
+            }}
+          >
+            {v ? dayjs(v).fromNow() : "Never logged in"}
+          </span>
+        );
+      },
     }),
     columnHelper.display({
       id: "actions",
       header: "",
       cell: (info) => (
-        <button
-          onClick={() => setViewing(info.row.original)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "0.4rem 0.75rem",
-            borderRadius: 8,
-            border: "1.5px solid var(--hms-border)",
-            background: "#fff",
-            color: "#64748b",
-            cursor: "pointer",
-            fontFamily: "var(--font-body)",
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            whiteSpace: "nowrap",
-          }}
-        >
-          <Eye size={13} /> View
-        </button>
+        <RowActions
+          user={info.row.original}
+          onView={setViewing}
+          onEdit={setEditing}
+        />
       ),
     }),
   ];
@@ -449,6 +799,21 @@ const UserDirectory = () => {
           display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
           gap: 0.875rem; margin-bottom: 1.25rem;
         }
+        .users-row-action-trigger {
+          width: 32px; height: 32px; border-radius: 8px;
+          border: 1.5px solid var(--hms-border); background: #fff;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; color: #64748b; transition: all 0.15s;
+        }
+        .users-row-action-trigger:hover { border-color: var(--hms-blue); color: var(--hms-blue); }
+        .users-row-action-btn {
+          width: 100%; display: flex; align-items: center; gap: 9px;
+          padding: 0.55rem 0.7rem; border-radius: 9px; border: none;
+          background: transparent; cursor: pointer; font-family: var(--font-body);
+          font-size: 0.85rem; font-weight: 500; color: var(--hms-navy);
+          transition: background 0.15s;
+        }
+        .users-row-action-btn:hover { background: var(--hms-surface); }
       `}</style>
 
       <div className="users-stats-grid">
@@ -543,11 +908,40 @@ const UserDirectory = () => {
         ))}
       </div>
 
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "1rem",
+        }}
+      >
+        <button
+          onClick={() => navigate("/users/add")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "0.625rem 1.25rem",
+            border: "none",
+            borderRadius: 10,
+            background: "var(--hms-blue)",
+            color: "#fff",
+            cursor: "pointer",
+            fontFamily: "var(--font-body)",
+            fontSize: "0.875rem",
+            fontWeight: 700,
+            boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+          }}
+        >
+          <UserPlus size={16} /> Add User
+        </button>
+      </div>
+
       <DataTable
         columns={columns}
         data={users}
         title="User Directory"
-        subtitle="All system users · Click a row's View button for full details"
+        subtitle="All system users · Click a row's ⋮ menu for actions"
         pageSize={10}
         initialPageIndex={getPageIndex("users-directory")}
         onPageIndexChange={(i) => setPageIndex("users-directory", i)}
@@ -573,6 +967,13 @@ const UserDirectory = () => {
         user={viewing}
         open={!!viewing}
         onOpenChange={(o) => !o && setViewing(null)}
+      />
+      <EditDrawer
+        user={editing}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        onSave={handleSaveEdit}
+        users={users}
       />
     </div>
   );

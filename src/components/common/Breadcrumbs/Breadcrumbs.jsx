@@ -166,7 +166,10 @@ const ROUTES = [
   },
 
   { pattern: "/users", trail: () => [{ label: "Users" }] },
-
+  {
+    pattern: "/users/add",
+    trail: () => [{ label: "Users", to: "/users" }, { label: "Add User" }],
+  },
   { pattern: "/reports", trail: () => [{ label: "Reports & Analytics" }] },
 ];
 
