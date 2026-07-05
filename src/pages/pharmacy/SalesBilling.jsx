@@ -19,7 +19,7 @@
 // selection for OPD/IPD patients and walk-in customers.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -32,6 +32,9 @@ import {
   AlertTriangle,
   Info,
   History,
+  Receipt as ReceiptIcon,
+  CalendarSearch,
+  ChevronDown,
 } from "lucide-react";
 import {
   FormField as Field,
@@ -992,143 +995,427 @@ const SalesBilling = () => {
         )}
       </form>
 
-      {/* ── Recent Sales — the visible confirmation that completed sales
-          are actually being recorded, now that this page stays open
-          across many consecutive sales instead of redirecting away
-          after each one. Newest first, capped at 10 so it stays a quick
-          glance rather than growing into its own full history page —
-          that's Reports' job later in the project. */}
-      <div style={{ marginTop: "2rem" }}>
+      <SalesHistory sales={sales} />
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SalesHistory — redesigned Recent Sales section
+//
+// Grouped by calendar date, newest date first, newest sale within each
+// date first — the same mental model as browser history. Search filters
+// across customer name, receipt ID, and every medicine name in the cart.
+// Groups render 5 at a time via "Load More" rather than the whole
+// history at once. A date-jump button scrolls straight to a specific
+// day's group if a matching one exists.
+// ─────────────────────────────────────────────────────────────────────────────
+const SalesHistory = ({ sales }) => {
+  const [query, setQuery] = useState("");
+  const [visibleGroups, setVisibleGroups] = useState(5);
+  const [jumpDate, setJumpDate] = useState("");
+  const groupRefs = useRef({});
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return sales;
+    return sales.filter((s) => {
+      const haystack = [
+        s.customerName,
+        s.id,
+        ...s.items.map((i) => i.brandName),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [sales, query]);
+
+  // Groups sales by calendar day (using the record's own timestamp,
+  // encoded in its id — SALE-<epoch ms> — rather than soldOn, since
+  // soldOn only carries date granularity and grouping needs the exact
+  // day boundary). Falls back to soldOn if id parsing ever fails.
+  const grouped = useMemo(() => {
+    const map = new Map();
+    filtered.forEach((s) => {
+      const epochMs = Number(s.id.replace("SALE-", ""));
+      const day = Number.isFinite(epochMs) ? dayjs(epochMs) : dayjs(s.soldOn);
+      const key = day.format("YYYY-MM-DD");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push({ ...s, _time: day });
+    });
+    // Newest date first; within a date, newest sale first.
+    return [...map.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([dateKey, records]) => ({
+        dateKey,
+        records: records.sort((a, b) => b._time.valueOf() - a._time.valueOf()),
+      }));
+  }, [filtered]);
+
+  const formatDateHeader = (dateKey) => {
+    const d = dayjs(dateKey);
+    if (d.isSame(dayjs(), "day")) return "Today";
+    if (d.isSame(dayjs().subtract(1, "day"), "day")) return "Yesterday";
+    return d.format("dddd, D MMMM YYYY");
+  };
+
+  const handleJump = () => {
+    if (!jumpDate) return;
+    const el = groupRefs.current[jumpDate];
+    if (el) {
+      // Make sure the target group is actually rendered before scrolling
+      // to it — if it's beyond the current Load More cutoff, expand
+      // enough groups first.
+      const idx = grouped.findIndex((g) => g.dateKey === jumpDate);
+      if (idx >= visibleGroups) setVisibleGroups(idx + 1);
+      requestAnimationFrame(() =>
+        el.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    } else {
+      toast.error("No sales found", {
+        description: `No records exist for ${dayjs(jumpDate).format("D MMMM YYYY")}.`,
+      });
+    }
+  };
+
+  const visible = grouped.slice(0, visibleGroups);
+  const hasMore = grouped.length > visibleGroups;
+
+  return (
+    <div style={{ marginTop: "2rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+          marginBottom: "1rem",
+        }}
+      >
         <h2
           style={{
             fontFamily: "var(--font-display)",
             fontSize: "1rem",
             fontWeight: 800,
             color: "var(--hms-navy)",
-            margin: "0 0 0.875rem",
+            margin: 0,
             display: "flex",
             alignItems: "center",
             gap: 8,
           }}
         >
-          <History size={16} style={{ color: "var(--hms-blue)" }} /> Recent
-          Sales
+          <History size={16} style={{ color: "var(--hms-blue)" }} /> Sales
+          History
         </h2>
-        {sales.length === 0 ? (
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              border: "1px solid var(--hms-border)",
-              padding: "2rem",
-              textAlign: "center",
-            }}
-          >
-            <p
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ position: "relative" }}>
+            <Search
+              size={13}
               style={{
-                fontSize: "0.85rem",
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
                 color: "#94a3b8",
-                margin: 0,
-                fontWeight: 500,
+              }}
+            />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search customer, medicine, receipt..."
+              style={{
+                padding: "0.5rem 0.75rem 0.5rem 2rem",
+                border: "1.5px solid var(--hms-border)",
+                borderRadius: 9,
+                fontSize: "0.8rem",
+                fontFamily: "var(--font-body)",
+                outline: "none",
+                width: 230,
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input
+              type="date"
+              value={jumpDate}
+              onChange={(e) => setJumpDate(e.target.value)}
+              max={dayjs().format("YYYY-MM-DD")}
+              style={{
+                padding: "0.5rem 0.625rem",
+                border: "1.5px solid var(--hms-border)",
+                borderRadius: 9,
+                fontSize: "0.8rem",
+                fontFamily: "var(--font-body)",
+                color: "#475569",
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleJump}
+              title="Jump to date"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "0.5rem 0.75rem",
+                border: "1.5px solid var(--hms-blue)",
+                borderRadius: 9,
+                background: "var(--hms-blue-light)",
+                color: "var(--hms-blue)",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.78rem",
+                fontWeight: 700,
               }}
             >
-              No sales recorded yet this session.
-            </p>
+              <CalendarSearch size={14} /> Jump
+            </button>
           </div>
-        ) : (
-          <div
+        </div>
+      </div>
+
+      {grouped.length === 0 ? (
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 16,
+            border: "1px solid var(--hms-border)",
+            padding: "2.5rem",
+            textAlign: "center",
+          }}
+        >
+          <ReceiptIcon
+            size={28}
+            style={{ color: "#cbd5e1", marginBottom: 10 }}
+          />
+          <p
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.625rem",
+              fontSize: "0.85rem",
+              color: "#94a3b8",
+              margin: 0,
+              fontWeight: 500,
             }}
           >
-            {sales.slice(0, 10).map((s) => (
+            {sales.length === 0
+              ? "No sales recorded yet this session."
+              : `No sales match "${query}".`}
+          </p>
+        </div>
+      ) : (
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+        >
+          {visible.map(({ dateKey, records }) => (
+            <div
+              key={dateKey}
+              ref={(el) => {
+                groupRefs.current[dateKey] = el;
+              }}
+            >
+              {/* Sticky-feeling date header — same visual language as a
+                  browser history list grouping entries by day. */}
               <div
-                key={s.id}
                 style={{
-                  background: "#fff",
-                  borderRadius: 12,
-                  border: "1px solid var(--hms-border)",
-                  padding: "0.875rem 1.125rem",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
                   gap: 10,
-                  flexWrap: "wrap",
+                  marginBottom: "0.75rem",
                 }}
               >
-                <div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                      color: "var(--hms-navy)",
-                    }}
-                  >
-                    {s.customerName}{" "}
-                    <span style={{ fontWeight: 500, color: "#94a3b8" }}>
-                      · {s.customerType}
-                    </span>
-                  </p>
-                  <p
-                    style={{
-                      margin: "3px 0 0",
-                      fontSize: "0.76rem",
-                      color: "#64748b",
-                    }}
-                  >
-                    {s.items
-                      .map((i) => `${i.brandName} ×${i.quantity}`)
-                      .join(", ")}
-                  </p>
-                </div>
-                <div
+                <h3
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    flexShrink: 0,
+                    fontFamily: "var(--font-display)",
+                    fontSize: "0.85rem",
+                    fontWeight: 800,
+                    color: "var(--hms-navy)",
+                    margin: 0,
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  <span
-                    style={{
-                      padding: "3px 10px",
-                      borderRadius: 20,
-                      fontSize: "0.72rem",
-                      fontWeight: 700,
-                      background:
-                        s.paymentStatus === "Paid"
-                          ? "var(--hms-success-bg)"
-                          : s.paymentStatus === "Partial"
-                            ? "#fffbeb"
-                            : "var(--hms-danger-bg)",
-                      color:
-                        s.paymentStatus === "Paid"
-                          ? "var(--hms-success)"
-                          : s.paymentStatus === "Partial"
-                            ? "#d97706"
-                            : "#dc2626",
-                    }}
-                  >
-                    {s.paymentStatus}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "0.9rem",
-                      fontWeight: 800,
-                      color: "var(--hms-navy)",
-                    }}
-                  >
-                    {fmt(s.total)}
-                  </span>
-                </div>
+                  {formatDateHeader(dateKey)}
+                </h3>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: "var(--hms-border)",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "#94a3b8",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {records.length} {records.length === 1 ? "sale" : "sales"}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.625rem",
+                }}
+              >
+                {records.map((s) => {
+                  const statusColor =
+                    s.paymentStatus === "Paid"
+                      ? "var(--hms-success)"
+                      : s.paymentStatus === "Partial"
+                        ? "#d97706"
+                        : "#dc2626";
+                  const statusBg =
+                    s.paymentStatus === "Paid"
+                      ? "var(--hms-success-bg)"
+                      : s.paymentStatus === "Partial"
+                        ? "#fffbeb"
+                        : "var(--hms-danger-bg)";
+                  return (
+                    <div
+                      key={s.id}
+                      style={{
+                        background: "#fff",
+                        borderRadius: 13,
+                        border: "1px solid var(--hms-border)",
+                        borderLeft: `4px solid ${statusColor}`,
+                        padding: "1rem 1.25rem",
+                        boxShadow: "var(--shadow-xs)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                              marginBottom: 4,
+                            }}
+                          >
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: "0.9rem",
+                                fontWeight: 700,
+                                color: "var(--hms-navy)",
+                              }}
+                            >
+                              {s.customerName}
+                            </p>
+                            <span
+                              style={{
+                                fontSize: "0.7rem",
+                                fontWeight: 600,
+                                color: "#94a3b8",
+                              }}
+                            >
+                              · {s.customerType}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "0.68rem",
+                                fontWeight: 700,
+                                color: "#cbd5e1",
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {s.id}
+                            </span>
+                          </div>
+                          <p
+                            style={{
+                              margin: 0,
+                              fontSize: "0.8rem",
+                              color: "#64748b",
+                            }}
+                          >
+                            {s.items
+                              .map((i) => `${i.brandName} ×${i.quantity}`)
+                              .join(" · ")}
+                          </p>
+                          <p
+                            style={{
+                              margin: "4px 0 0",
+                              fontSize: "0.72rem",
+                              color: "#94a3b8",
+                            }}
+                          >
+                            {s._time.format("h:mm A")} · {s.paymentMethod}
+                          </p>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <p
+                            style={{
+                              margin: "0 0 6px",
+                              fontSize: "1.05rem",
+                              fontWeight: 800,
+                              color: "var(--hms-navy)",
+                            }}
+                          >
+                            {fmt(s.total)}
+                          </p>
+                          <span
+                            style={{
+                              padding: "3px 10px",
+                              borderRadius: 20,
+                              fontSize: "0.7rem",
+                              fontWeight: 700,
+                              background: statusBg,
+                              color: statusColor,
+                            }}
+                          >
+                            {s.paymentStatus}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setVisibleGroups((v) => v + 5)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                padding: "0.7rem 1rem",
+                border: "1.5px dashed var(--hms-border-2)",
+                borderRadius: 11,
+                background: "var(--hms-surface)",
+                color: "var(--hms-blue)",
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+              }}
+            >
+              <ChevronDown size={15} /> Load More Days (
+              {grouped.length - visibleGroups} remaining)
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

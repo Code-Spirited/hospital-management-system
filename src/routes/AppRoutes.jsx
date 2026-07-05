@@ -1,3 +1,4 @@
+//src/routes/AppRoutes.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import Dashboard from "../pages/dashboard/Dashboard";
@@ -31,6 +32,10 @@ import MedicineDetails from "../pages/pharmacy/MedicineDetails";
 import SalesBilling from "../pages/pharmacy/SalesBilling";
 import StockManagement from "../pages/pharmacy/StockManagement";
 import ExpiryAlerts from "../pages/pharmacy/ExpiryAlerts";
+
+import Users from "../pages/users/Users";
+import UserDirectory from "../pages/users/UserDirectory";
+
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -73,7 +78,7 @@ const AppRoutes = () => {
           <Route path="treatment/:admissionId" element={<TreatmentRecords />} />
           <Route path="discharge/:admissionId" element={<DischargeSummary />} />
           <Route path="billing/:admissionId" element={<IPDBilling />} />
-        </Route>{" "}
+        </Route>
         <Route path="/pharmacy" element={<Pharmacy />}>
           <Route index element={<MedicineInventory />} />
           <Route path="add" element={<AddMedicine />} />
@@ -83,10 +88,9 @@ const AppRoutes = () => {
           <Route path="stock" element={<StockManagement />} />
           <Route path="expiry" element={<ExpiryAlerts />} />
         </Route>
-        <Route
-          path="/users"
-          element={<PlaceholderPage title="User Management" />}
-        />
+        <Route path="/users" element={<Users />}>
+          <Route index element={<UserDirectory />} />
+        </Route>
         <Route
           path="/reports"
           element={<PlaceholderPage title="Reports & Analytics" />}

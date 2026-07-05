@@ -10,6 +10,7 @@ import { PatientsProvider } from "../context/PatientsContext";
 import { AppointmentsProvider } from "../context/AppointmentsContext";
 import { IPDProvider } from "../context/IPDContext";
 import { PharmacyProvider } from "../context/PharmacyContext";
+import { UsersProvider } from "../context/UsersContext";
 import { TablePaginationProvider } from "../context/TablePaginationContext";
 import NotificationsDrawer from "../components/common/Drawer/NotificationsDrawer";
 import CalendarDrawer from "../components/common/Drawer/CalendarDrawer";
@@ -58,73 +59,75 @@ const MainLayout = () => {
         <AppointmentsProvider>
           <IPDProvider>
             <PharmacyProvider>
-              <TablePaginationProvider>
-                <div
-                  data-sidebar={sidebarOpen ? "open" : "closed"}
-                  style={{
-                    minHeight: "100vh",
-                    background: "var(--hms-surface)",
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  <style>{`
+              <UsersProvider>
+                <TablePaginationProvider>
+                  <div
+                    data-sidebar={sidebarOpen ? "open" : "closed"}
+                    style={{
+                      minHeight: "100vh",
+                      background: "var(--hms-surface)",
+                      fontFamily: "var(--font-body)",
+                    }}
+                  >
+                    <style>{`
             .hms-page-content { padding: 1.5rem; }
             @media (max-width: 767px) { .hms-page-content { padding: 0.875rem; } }
             @media (max-width: 479px) { .hms-page-content { padding: 0.625rem; } }
           `}</style>
 
-                  <Sidebar
-                    isOpen={sidebarOpen}
-                    onToggle={() => setSidebarOpen((s) => !s)}
-                    mobileOpen={mobileMenuOpen}
-                    onMobileClose={() => setMobileMenuOpen(false)}
-                  />
+                    <Sidebar
+                      isOpen={sidebarOpen}
+                      onToggle={() => setSidebarOpen((s) => !s)}
+                      mobileOpen={mobileMenuOpen}
+                      onMobileClose={() => setMobileMenuOpen(false)}
+                    />
 
-                  <Header
-                    onMobileMenuClick={() => setMobileMenuOpen(true)}
-                    onOpenNotifications={() => setNotifOpen(true)}
-                    onOpenCalendar={() => setCalendarOpen(true)}
-                    paletteOpen={paletteOpen}
-                    onPaletteOpenChange={setPaletteOpen}
-                  />
+                    <Header
+                      onMobileMenuClick={() => setMobileMenuOpen(true)}
+                      onOpenNotifications={() => setNotifOpen(true)}
+                      onOpenCalendar={() => setCalendarOpen(true)}
+                      paletteOpen={paletteOpen}
+                      onPaletteOpenChange={setPaletteOpen}
+                    />
 
-                  <div
-                    className="hms-main"
-                    style={{
-                      paddingTop: 64,
-                      minHeight: "100vh",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <Breadcrumbs />
+                    <div
+                      className="hms-main"
+                      style={{
+                        paddingTop: 64,
+                        minHeight: "100vh",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <Breadcrumbs />
 
-                    <AnimatePresence mode="wait">
-                      <motion.main
-                        key={location.pathname}
-                        className="hms-page-content"
-                        style={{ flex: 1 }}
-                        variants={pageVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                      >
-                        <Outlet />
-                      </motion.main>
-                    </AnimatePresence>
-                    <Footer />
+                      <AnimatePresence mode="wait">
+                        <motion.main
+                          key={location.pathname}
+                          className="hms-page-content"
+                          style={{ flex: 1 }}
+                          variants={pageVariants}
+                          initial="initial"
+                          animate="animate"
+                          exit="exit"
+                        >
+                          <Outlet />
+                        </motion.main>
+                      </AnimatePresence>
+                      <Footer />
+                    </div>
+
+                    <NotificationsDrawer
+                      open={notifOpen}
+                      onOpenChange={setNotifOpen}
+                    />
+                    <CalendarDrawer
+                      open={calendarOpen}
+                      onOpenChange={setCalendarOpen}
+                    />
                   </div>
-
-                  <NotificationsDrawer
-                    open={notifOpen}
-                    onOpenChange={setNotifOpen}
-                  />
-                  <CalendarDrawer
-                    open={calendarOpen}
-                    onOpenChange={setCalendarOpen}
-                  />
-                </div>
-              </TablePaginationProvider>
+                </TablePaginationProvider>
+              </UsersProvider>
             </PharmacyProvider>
           </IPDProvider>
         </AppointmentsProvider>

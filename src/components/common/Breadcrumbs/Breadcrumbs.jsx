@@ -5,21 +5,12 @@
 // automatically across the whole app with no per-page wiring.
 //
 // Built as an explicit per-route trail map (below), NOT by splitting the
-// URL into segments. Several pages — OPD's Consultation/Prescription/
-// Billing, IPD's Treatment/Discharge/Billing — are reached from a list
-// page that doesn't appear anywhere in their own URL (e.g.
-// /opd/consultation/:appointmentId has no "appointments" segment at all).
-// A naive segment-splitter would silently drop or misplace that crumb.
+// URL into segments. Several pages are reached from a list page that
+// doesn't appear anywhere in their own URL, which a naive segment-
+// splitter would silently drop or misplace.
 //
-// PATIENT-SAFETY NOTE: any crumb identifying a specific patient (reached
-// via an appointment or admission ID) shows their NAME together with their
-// unique Patient ID, always — never the name alone. Two patients can
-// share an identical name; a screen that identifies someone by name only,
-// in the middle of a consultation, prescription, or discharge workflow,
-// creates a real opening for a wrong-patient mix-up. Pairing name + ID
-// here mirrors the "two-identifier" check real hospitals require before
-// any treatment step (name + a second unique identifier) — it costs
-// nothing to show both, and it removes that ambiguity outright.
+// PATIENT-SAFETY NOTE: any crumb identifying a specific patient shows
+// their NAME together with their unique Patient ID, always.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Link, useLocation, matchPath } from "react-router-dom";
@@ -29,9 +20,6 @@ import { useAppointments } from "../../../context/AppointmentsContext";
 import { useIPD } from "../../../context/IPDContext";
 import { usePharmacy } from "../../../context/PharmacyContext";
 
-// appt.patientId / admission.patientId are already the real, unique
-// Patient IDs (e.g. "P-1010") set at booking/admission time — no extra
-// lookup needed, just read them straight off the record.
 const patientCrumbFromAppointment = (appointmentId, appointments) => {
   const appt = appointments.find((a) => a.id === appointmentId);
   if (!appt) return { label: "Patient" };
@@ -50,8 +38,6 @@ const patientCrumbFromAdmission = (admissionId, admissions) => {
   };
 };
 
-// One explicit trail per leaf route in AppRoutes.jsx. Extend this array
-// whenever a new page is added.
 const ROUTES = [
   { pattern: "/dashboard", trail: () => [{ label: "Dashboard" }] },
 
@@ -178,7 +164,9 @@ const ROUTES = [
       ];
     },
   },
-  { pattern: "/users", trail: () => [{ label: "User Management" }] },
+
+  { pattern: "/users", trail: () => [{ label: "Users" }] },
+
   { pattern: "/reports", trail: () => [{ label: "Reports & Analytics" }] },
 ];
 
@@ -200,13 +188,10 @@ const Breadcrumbs = () => {
     }
   }
 
-  // Auth pages and the 404 page sit outside MainLayout entirely, so this
-  // never actually renders for them — this is just a defensive fallback.
   if (!trail) return null;
 
   const renderCrumbContent = (crumb, isLast) => {
     if (crumb.idLabel) {
-      // Patient/medicine-identifying crumb: name + ID badge together, always.
       return (
         <span className="hms-bc-patient">
           <span className="hms-bc-patient-name">{crumb.label}</span>
