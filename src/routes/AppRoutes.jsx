@@ -37,7 +37,7 @@ import Users from "../pages/users/Users";
 import UserDirectory from "../pages/users/UserDirectory";
 import AddUser from "../pages/users/AddUser";
 import RolesPermissions from "../pages/users/RolesPermissions";
-
+import UserPermissions from "../pages/users/UserPermissions";
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -94,6 +94,7 @@ const AppRoutes = () => {
           <Route index element={<UserDirectory />} />
           <Route path="add" element={<AddUser />} />
           <Route path="roles" element={<RolesPermissions />} />
+          <Route path="permissions" element={<UserPermissions />} />
         </Route>
         <Route
           path="/reports"

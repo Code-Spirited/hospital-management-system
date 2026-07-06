@@ -177,6 +177,13 @@ const ROUTES = [
       { label: "Roles & Permissions" },
     ],
   },
+  {
+    pattern: "/users/permissions",
+    trail: () => [
+      { label: "Users", to: "/users" },
+      { label: "User Permissions" },
+    ],
+  },
   { pattern: "/reports", trail: () => [{ label: "Reports & Analytics" }] },
 ];
 

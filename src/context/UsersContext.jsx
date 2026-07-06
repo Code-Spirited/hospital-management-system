@@ -23,6 +23,12 @@ export const UsersProvider = ({ children }) => {
   // future work (e.g. actually gating Sidebar links by a logged-in
   // user's role) would read from.
   const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS);
+  // Sparse per-user EXCEPTIONS layered on top of the role-level defaults
+  // above — e.g. one specific Nurse granted View Only on Pharmacy,
+  // without changing the Nurse role's default for everyone else. Only
+  // users who actually have at least one override appear as keys here;
+  // a user with no entry simply inherits their role's default everywhere.
+  const [permissionOverrides, setPermissionOverrides] = useState({});
 
   const addUser = useCallback((user) => {
     setUsers((prev) => [user, ...prev]);
@@ -40,6 +46,23 @@ export const UsersProvider = ({ children }) => {
     setPermissions(newMatrix);
   }, []);
 
+  // Replaces one user's ENTIRE override set at once (called on Save,
+  // after edits are staged locally on the page) — same deliberate-commit
+  // pattern as updatePermissions above. Passing an empty object removes
+  // the user's entry entirely, keeping this map sparse — a user with
+  // zero actual overrides should never linger as an empty {} key.
+  const setUserOverrides = useCallback((userId, moduleOverrides) => {
+    setPermissionOverrides((prev) => {
+      const next = { ...prev };
+      if (!moduleOverrides || Object.keys(moduleOverrides).length === 0) {
+        delete next[userId];
+      } else {
+        next[userId] = moduleOverrides;
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <UsersContext.Provider
       value={{
@@ -49,6 +72,8 @@ export const UsersProvider = ({ children }) => {
         deleteUser,
         permissions,
         updatePermissions,
+        permissionOverrides,
+        setUserOverrides,
       }}
     >
       {children}
