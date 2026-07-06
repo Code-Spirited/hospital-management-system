@@ -132,6 +132,55 @@ export const DEFAULT_PERMISSIONS = {
   },
 };
 
+// Categories of system events a user can choose to be notified about,
+// and through which channel — used by Settings.jsx. A preference center
+// in its own right: storing the choice here is legitimate even before
+// any backend service exists to actually dispatch a matching email.
+export const NOTIFICATION_CATEGORIES = [
+  {
+    key: "appointments",
+    label: "Appointment Bookings & Reschedules",
+    description: "New OPD appointments, reschedules, and cancellations",
+  },
+  {
+    key: "admissions",
+    label: "IPD Admissions & Discharges",
+    description: "Patient admissions, ward transfers, and discharge summaries",
+  },
+  {
+    key: "pharmacyAlerts",
+    label: "Pharmacy Stock & Expiry Alerts",
+    description: "Low stock warnings and medicines nearing expiry",
+  },
+  {
+    key: "systemAnnouncements",
+    label: "System Announcements",
+    description: "Maintenance windows, policy updates, and general notices",
+  },
+];
+
+export const SESSION_TIMEOUT_OPTIONS = [15, 30, 60, 120]; // minutes
+
+// Default preference set for a user with no saved Settings yet.
+// Display/Security fields are stored preferences only — flagged
+// explicitly in Settings.jsx as not yet read by any other page.
+export const DEFAULT_USER_SETTINGS = {
+  notifications: {
+    appointments: { inApp: true, email: true },
+    admissions: { inApp: true, email: false },
+    pharmacyAlerts: { inApp: true, email: false },
+    systemAnnouncements: { inApp: true, email: true },
+  },
+  display: {
+    defaultPageSize: 10,
+    compactDensity: false,
+  },
+  security: {
+    twoFactorEnabled: false,
+    sessionTimeoutMinutes: 30,
+  },
+};
+
 export const DEPARTMENTS = [
   "General Medicine",
   "Cardiology",

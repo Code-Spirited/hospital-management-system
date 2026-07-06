@@ -11,7 +11,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createContext, useContext, useState, useCallback } from "react";
-import { initialUsers, DEFAULT_PERMISSIONS } from "../pages/users/userData";
+import {
+  initialUsers,
+  DEFAULT_PERMISSIONS,
+  DEFAULT_USER_SETTINGS,
+} from "../pages/users/userData";
 
 const UsersContext = createContext(null);
 
@@ -29,6 +33,10 @@ export const UsersProvider = ({ children }) => {
   // users who actually have at least one override appear as keys here;
   // a user with no entry simply inherits their role's default everywhere.
   const [permissionOverrides, setPermissionOverrides] = useState({});
+  // Preferences (notifications/display/security) per user — Settings.jsx.
+  // Sparse, same pattern as permissionOverrides: a user with no entry
+  // simply gets DEFAULT_USER_SETTINGS via the getter below.
+  const [userSettingsMap, setUserSettingsMap] = useState({});
 
   const addUser = useCallback((user) => {
     setUsers((prev) => [user, ...prev]);
@@ -63,6 +71,15 @@ export const UsersProvider = ({ children }) => {
     });
   }, []);
 
+  const getUserSettings = useCallback(
+    (userId) => userSettingsMap[userId] ?? DEFAULT_USER_SETTINGS,
+    [userSettingsMap],
+  );
+
+  const updateUserSettings = useCallback((userId, settings) => {
+    setUserSettingsMap((prev) => ({ ...prev, [userId]: settings }));
+  }, []);
+
   return (
     <UsersContext.Provider
       value={{
@@ -74,6 +91,8 @@ export const UsersProvider = ({ children }) => {
         updatePermissions,
         permissionOverrides,
         setUserOverrides,
+        getUserSettings,
+        updateUserSettings,
       }}
     >
       {children}

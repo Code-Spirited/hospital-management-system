@@ -25,8 +25,6 @@ import { toast } from "sonner";
 import dayjs from "dayjs";
 import {
   UserCircle2,
-  Mail,
-  Phone,
   Building2,
   Calendar,
   Clock,
@@ -65,7 +63,34 @@ const Profile = () => {
     handleSubmit: handleProfileSubmit,
     formState: { errors: profileErrors },
   } = useForm({
-    resolver: zodResolver(profileSchema),
+    // Same duplicate-email guard already used in AddUser.jsx and
+    // UserDirectory.jsx's EditDrawer — missing here until now, a real,
+    // inconsistent gap: editing your own profile to an email already
+    // used by someone else went completely unvalidated. Self-excluded
+    // via `u.id !== currentUser.id`, or saving your OWN unchanged email
+    // would falsely flag itself as "already taken."
+    resolver: async (values, context, options) => {
+      const result = await zodResolver(profileSchema)(values, context, options);
+      if (Object.keys(result.errors).length === 0) {
+        const emailTaken = users.some(
+          (u) =>
+            u.id !== currentUser.id &&
+            u.email.trim().toLowerCase() === values.email.trim().toLowerCase(),
+        );
+        if (emailTaken) {
+          return {
+            values: {},
+            errors: {
+              email: {
+                type: "manual",
+                message: "This email is already registered to another user",
+              },
+            },
+          };
+        }
+      }
+      return result;
+    },
     defaultValues: {
       fullName: currentUser.fullName,
       email: currentUser.email,

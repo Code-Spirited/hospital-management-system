@@ -6,7 +6,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { UserCog, UserPlus, ShieldCheck, KeyRound } from "lucide-react";
+import {
+  UserCog,
+  UserPlus,
+  ShieldCheck,
+  KeyRound,
+  UserCircle2,
+  Settings,
+} from "lucide-react";
 
 const TABS = [
   { label: "Directory", to: "/users", end: true, Icon: UserCog },
@@ -23,6 +30,8 @@ const TABS = [
     end: false,
     Icon: KeyRound,
   },
+  { label: "My Profile", to: "/users/profile", end: false, Icon: UserCircle2 },
+  { label: "Settings", to: "/users/settings", end: false, Icon: Settings },
 ];
 
 const Users = () => (
