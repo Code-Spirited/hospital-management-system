@@ -38,6 +38,100 @@ export const USER_STATUS_CONFIG = {
   Suspended: { color: "#dc2626", bg: "#fef2f2" },
 };
 
+// Shown on the Roles & Permissions reference page, alongside a live
+// count of Active users currently holding each role.
+export const ROLE_DESCRIPTIONS = {
+  Doctor:
+    "Diagnoses and treats patients; manages consultations, prescriptions, and inpatient care.",
+  Nurse:
+    "Provides direct patient care; manages ward operations and treatment administration.",
+  Pharmacist:
+    "Manages the medicine inventory and dispenses prescriptions to patients.",
+  Receptionist:
+    "Handles patient registration, appointment scheduling, and OPD billing.",
+  "Lab Technician":
+    "Processes diagnostic tests and records results for patient care.",
+  Administrator:
+    "Oversees system configuration, staff accounts, and hospital-wide operations.",
+};
+
+// Modules a role's permission can be scoped to — matches the app's real
+// top-level sections (Sidebar's own menu list) exactly.
+export const MODULES = [
+  "Dashboard",
+  "OPD",
+  "IPD",
+  "Pharmacy",
+  "Users",
+  "Reports",
+];
+
+export const PERMISSION_LEVELS = ["No Access", "View Only", "Full Access"];
+
+export const PERMISSION_LEVEL_CONFIG = {
+  "No Access": { color: "#64748b", bg: "#f1f5f9" },
+  "View Only": { color: "#2563eb", bg: "#eff6ff" },
+  "Full Access": { color: "#059669", bg: "#ecfdf5" },
+};
+
+// Default role → module → access-level matrix, reflecting real hospital
+// role scopes (e.g. a Pharmacist needs to VIEW OPD/IPD prescriptions to
+// fill them, but only needs Full Access within Pharmacy itself).
+// Administrator is intentionally fixed at Full Access everywhere and
+// excluded from the editable matrix on the Roles & Permissions page — a
+// real safeguard against ever accidentally locking out the one role
+// capable of fixing a misconfigured permission set.
+export const DEFAULT_PERMISSIONS = {
+  Doctor: {
+    Dashboard: "View Only",
+    OPD: "Full Access",
+    IPD: "Full Access",
+    Pharmacy: "View Only",
+    Users: "No Access",
+    Reports: "View Only",
+  },
+  Nurse: {
+    Dashboard: "View Only",
+    OPD: "View Only",
+    IPD: "Full Access",
+    Pharmacy: "View Only",
+    Users: "No Access",
+    Reports: "No Access",
+  },
+  Pharmacist: {
+    Dashboard: "View Only",
+    OPD: "View Only",
+    IPD: "View Only",
+    Pharmacy: "Full Access",
+    Users: "No Access",
+    Reports: "View Only",
+  },
+  Receptionist: {
+    Dashboard: "View Only",
+    OPD: "Full Access",
+    IPD: "View Only",
+    Pharmacy: "No Access",
+    Users: "No Access",
+    Reports: "No Access",
+  },
+  "Lab Technician": {
+    Dashboard: "View Only",
+    OPD: "View Only",
+    IPD: "View Only",
+    Pharmacy: "No Access",
+    Users: "No Access",
+    Reports: "No Access",
+  },
+  Administrator: {
+    Dashboard: "Full Access",
+    OPD: "Full Access",
+    IPD: "Full Access",
+    Pharmacy: "Full Access",
+    Users: "Full Access",
+    Reports: "Full Access",
+  },
+};
+
 export const DEPARTMENTS = [
   "General Medicine",
   "Cardiology",

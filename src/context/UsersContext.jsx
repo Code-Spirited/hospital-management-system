@@ -11,12 +11,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createContext, useContext, useState, useCallback } from "react";
-import { initialUsers } from "../pages/users/userData";
+import { initialUsers, DEFAULT_PERMISSIONS } from "../pages/users/userData";
 
 const UsersContext = createContext(null);
 
 export const UsersProvider = ({ children }) => {
   const [users, setUsers] = useState(initialUsers);
+  // Role → module → access-level matrix, edited on the Roles &
+  // Permissions page. Lives here rather than as local page state since
+  // it's conceptually tied to Users/Roles, and is the natural place
+  // future work (e.g. actually gating Sidebar links by a logged-in
+  // user's role) would read from.
+  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS);
 
   const addUser = useCallback((user) => {
     setUsers((prev) => [user, ...prev]);
@@ -30,8 +36,21 @@ export const UsersProvider = ({ children }) => {
     setUsers((prev) => prev.filter((u) => u.id !== id));
   }, []);
 
+  const updatePermissions = useCallback((newMatrix) => {
+    setPermissions(newMatrix);
+  }, []);
+
   return (
-    <UsersContext.Provider value={{ users, addUser, updateUser, deleteUser }}>
+    <UsersContext.Provider
+      value={{
+        users,
+        addUser,
+        updateUser,
+        deleteUser,
+        permissions,
+        updatePermissions,
+      }}
+    >
       {children}
     </UsersContext.Provider>
   );

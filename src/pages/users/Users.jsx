@@ -6,11 +6,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { UserCog, UserPlus } from "lucide-react";
+import { UserCog, UserPlus, ShieldCheck } from "lucide-react";
 
 const TABS = [
   { label: "Directory", to: "/users", end: true, Icon: UserCog },
   { label: "Add User", to: "/users/add", end: false, Icon: UserPlus },
+  {
+    label: "Roles & Permissions",
+    to: "/users/roles",
+    end: false,
+    Icon: ShieldCheck,
+  },
 ];
 
 const Users = () => (

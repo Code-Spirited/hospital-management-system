@@ -36,6 +36,7 @@ import ExpiryAlerts from "../pages/pharmacy/ExpiryAlerts";
 import Users from "../pages/users/Users";
 import UserDirectory from "../pages/users/UserDirectory";
 import AddUser from "../pages/users/AddUser";
+import RolesPermissions from "../pages/users/RolesPermissions";
 
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
@@ -92,6 +93,7 @@ const AppRoutes = () => {
         <Route path="/users" element={<Users />}>
           <Route index element={<UserDirectory />} />
           <Route path="add" element={<AddUser />} />
+          <Route path="roles" element={<RolesPermissions />} />
         </Route>
         <Route
           path="/reports"
