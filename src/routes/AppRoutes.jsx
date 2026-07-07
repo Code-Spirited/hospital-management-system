@@ -41,6 +41,9 @@ import UserPermissions from "../pages/users/UserPermissions";
 import Profile from "../pages/users/Profile";
 import Settings from "../pages/users/Settings";
 
+import Reports from "../pages/reports/Reports";
+import OPDReports from "../pages/reports/OPDReports";
+
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
   <div className="flex items-center justify-center h-64">
@@ -101,10 +104,9 @@ const AppRoutes = () => {
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
         </Route>
-        <Route
-          path="/reports"
-          element={<PlaceholderPage title="Reports & Analytics" />}
-        />
+        <Route path="/reports" element={<Reports />}>
+          <Route index element={<OPDReports />} />
+        </Route>
       </Route>
 
       <Route
