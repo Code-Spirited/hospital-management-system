@@ -193,6 +193,13 @@ const ROUTES = [
     trail: () => [{ label: "Users", to: "/users" }, { label: "Settings" }],
   },
   { pattern: "/reports", trail: () => [{ label: "Reports & Analytics" }] },
+  {
+    pattern: "/reports/ipd",
+    trail: () => [
+      { label: "Reports & Analytics", to: "/reports" },
+      { label: "IPD Reports" },
+    ],
+  },
 ];
 
 const Breadcrumbs = () => {

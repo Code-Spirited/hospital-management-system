@@ -94,3 +94,35 @@ export const buildTrend = (records, dateField, start, end) => {
 
 export const fmtCurrency = (n) =>
   `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+
+// ── Shared Recharts style constants ──────────────────────────────────────────
+// Moved here from ReportComponents.jsx: that file exports two actual
+// COMPONENTS (ChartCard, EmptyChartNote) plus these four plain style
+// objects — mixing component and non-component exports in one file
+// breaks Vite's react-refresh/only-export-components rule, since Fast
+// Refresh can only preserve component state across a hot-reload when a
+// module exports exclusively components. This is the correct home for
+// plain constants regardless, not just a lint workaround.
+export const TICK_STYLE = {
+  fontFamily: "var(--font-body)",
+  fontSize: 11,
+  fill: "#94a3b8",
+};
+export const TOOLTIP_STYLE = {
+  backgroundColor: "#0f172a",
+  border: "none",
+  borderRadius: 10,
+  padding: "10px 14px",
+};
+export const TOOLTIP_LABEL_STYLE = {
+  color: "#e2e8f0",
+  fontFamily: "var(--font-body)",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  marginBottom: 4,
+};
+export const TOOLTIP_ITEM_STYLE = {
+  color: "#94a3b8",
+  fontFamily: "var(--font-body)",
+  fontSize: "0.72rem",
+};

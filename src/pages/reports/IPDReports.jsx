@@ -1,22 +1,28 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// OPDReports.jsx — Week 7, Monday
+// IPDReports.jsx — Week 7, Tuesday
 //
-// Distinct from Dashboard's Appointment Analytics (Week 2): that section
-// is an ambient, always-visible operational snapshot on fixed windows
-// (this week / 30 days / today). This is a genuine, standalone REPORT —
-// a real user-selectable date range (including Custom From/To), scoped
-// only to OPD, shaped for Saturday's planned Export task.
+// IPD introduces a THIRD independent date dimension beyond OPD's two:
+// New Admissions (admissionDate), Discharges (dischargeDate), and
+// Revenue (billing.billedOn) are three separately-dated facts. A patient
+// discharged this period may have been admitted well before it — so a
+// doctor's Admissions/Discharges/Revenue in the table below are three
+// independent tallies, never assumed to reference the same patients.
 //
-// DOMAIN NOTE: appointment counts/status figures are filtered by
-// appt.date (the visit itself). Revenue figures are filtered by
-// billing.billedOn (when the bill was actually raised) — these are
-// legitimately different facts, not the same field filtered twice. A
-// visit near a period boundary can be billed slightly after it happened,
-// so "visits in June" and "revenue billed in June" aren't always the
-// identical set of appointments.
+// SCOPE NOTE: no "average occupancy over the range" metric here — this
+// app has only point-in-time admission/discharge records, not a
+// continuous bed-day ledger, so a true occupancy-over-time figure can't
+// be computed honestly. Live current occupancy already lives at
+// IPD → Ward Management; today's ward metric is New Admissions by Ward
+// instead — a real, correctly range-filtered fact, not a duplicate of
+// that operational page.
+//
+// Avg Length of Stay only counts admissions actually DISCHARGED within
+// the selected range — a currently-admitted patient has no final LOS
+// yet, and including them would understate every ongoing long stay.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
+import dayjs from "dayjs";
 import {
   BarChart,
   Bar,
@@ -33,15 +39,18 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import {
-  ClipboardList,
-  CalendarCheck,
-  XCircle,
+  BedDouble,
+  LogOut,
   Users,
+  Clock,
   IndianRupee,
   FileBarChart,
 } from "lucide-react";
-import { useAppointments } from "../../context/AppointmentsContext";
-import { STATUS_CONFIG, VISIT_TYPE_CONFIG } from "../opd/appointmentsData";
+import { useIPD } from "../../context/IPDContext";
+import {
+  WARD_TYPE_CONFIG,
+  CONDITION_AT_DISCHARGE_CONFIG,
+} from "../ipd/ipdData";
 import DateRangeFilter from "./DateRangeFilter";
 import Abbr from "../../components/common/Abbr/Abbr";
 import {
@@ -56,87 +65,117 @@ import {
 } from "./reportUtils";
 import { ChartCard, EmptyChartNote } from "./ReportComponents";
 
-const OPDReports = () => {
-  const { appointments } = useAppointments();
+const IPDReports = () => {
+  const { admissions } = useIPD();
   const [preset, setPreset] = useState("This Month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
   const { start, end } = getPresetRange(preset, customStart, customEnd);
 
-  const appointmentsInRange = useMemo(
-    () => appointments.filter((a) => isWithinRange(a.date, start, end)),
-    [appointments, start, end],
+  const admissionsInRange = useMemo(
+    () => admissions.filter((a) => isWithinRange(a.admissionDate, start, end)),
+    [admissions, start, end],
+  );
+  const dischargesInRange = useMemo(
+    () =>
+      admissions.filter(
+        (a) =>
+          a.status === "Discharged" &&
+          a.dischargeDate &&
+          isWithinRange(a.dischargeDate, start, end),
+      ),
+    [admissions, start, end],
   );
   const billedInRange = useMemo(
     () =>
-      appointments.filter(
+      admissions.filter(
         (a) => a.billing && isWithinRange(a.billing.billedOn, start, end),
       ),
-    [appointments, start, end],
+    [admissions, start, end],
   );
 
-  const totalAppointments = appointmentsInRange.length;
-  const completedCount = appointmentsInRange.filter(
-    (a) => a.status === "Completed",
+  const currentlyAdmitted = admissions.filter(
+    (a) => a.status === "Admitted",
   ).length;
-  const cancelledNoShowCount = appointmentsInRange.filter(
-    (a) => a.status === "Cancelled" || a.status === "No-Show",
-  ).length;
-  const uniquePatients = new Set(
-    appointmentsInRange.map((a) => a.patientId).filter(Boolean),
-  ).size;
+
   const totalRevenue = billedInRange.reduce(
     (sum, a) => sum + (a.billing?.total || 0),
     0,
   );
 
+  const avgLOS = useMemo(() => {
+    if (dischargesInRange.length === 0) return null;
+    const totalDays = dischargesInRange.reduce(
+      (sum, a) =>
+        sum + dayjs(a.dischargeDate).diff(dayjs(a.admissionDate), "day"),
+      0,
+    );
+    return totalDays / dischargesInRange.length;
+  }, [dischargesInRange]);
+
   const trendData = useMemo(
-    () => buildTrend(appointmentsInRange, "date"),
-    [appointmentsInRange],
+    () => buildTrend(admissionsInRange, "admissionDate"),
+    [admissionsInRange],
   );
 
-  const statusData = useMemo(
+  const wardData = useMemo(
     () =>
-      Object.keys(STATUS_CONFIG)
-        .map((s) => ({
-          name: s,
-          value: appointmentsInRange.filter((a) => a.status === s).length,
-          color: STATUS_CONFIG[s].color,
+      Object.keys(WARD_TYPE_CONFIG)
+        .map((w) => ({
+          name: w,
+          value: admissionsInRange.filter((a) => a.wardType === w).length,
+          color: WARD_TYPE_CONFIG[w].color,
         }))
         .filter((d) => d.value > 0),
-    [appointmentsInRange],
+    [admissionsInRange],
   );
 
-  const visitTypeData = useMemo(
-    () =>
-      Object.keys(VISIT_TYPE_CONFIG)
-        .map((t) => ({
-          name: t,
-          value: appointmentsInRange.filter((a) => a.visitType === t).length,
-          color: VISIT_TYPE_CONFIG[t].color,
-        }))
-        .filter((d) => d.value > 0),
-    [appointmentsInRange],
-  );
+  // Only counts discharges that actually recorded an outcome — reuses
+  // CONDITION_AT_DISCHARGE_CONFIG exactly as-is, including its already-
+  // neutral gray for Deceased. No re-coloring or extra emphasis added.
+  const outcomeData = useMemo(() => {
+    const counts = {};
+    dischargesInRange.forEach((a) => {
+      const condition = a.dischargeSummary?.conditionAtDischarge;
+      if (!condition) return;
+      counts[condition] = (counts[condition] || 0) + 1;
+    });
+    return Object.keys(CONDITION_AT_DISCHARGE_CONFIG)
+      .map((c) => ({
+        name: c,
+        value: counts[c] || 0,
+        color: CONDITION_AT_DISCHARGE_CONFIG[c].color,
+      }))
+      .filter((d) => d.value > 0);
+  }, [dischargesInRange]);
 
+  // Doctor-wise: THREE independently-built tallies, never assumed to
+  // reference the same underlying admissions. Discharges are attributed
+  // to dischargeSummary.dischargedBy when recorded (may differ from the
+  // admitting doctor — a different physician can sign off a discharge).
   const doctorStats = useMemo(() => {
     const map = new Map();
-    appointmentsInRange.forEach((a) => {
-      if (!map.has(a.doctor))
-        map.set(a.doctor, {
-          doctor: a.doctor,
-          appointments: 0,
-          completed: 0,
-          revenue: 0,
-        });
-      const entry = map.get(a.doctor);
-      entry.appointments += 1;
-      if (a.status === "Completed") entry.completed += 1;
-      if (a.billing) entry.revenue += a.billing.total;
+    const ensure = (doc) => {
+      if (!map.has(doc))
+        map.set(doc, { doctor: doc, admissions: 0, discharges: 0, revenue: 0 });
+      return map.get(doc);
+    };
+    admissionsInRange.forEach((a) => {
+      ensure(a.admittingDoctor).admissions += 1;
     });
-    return [...map.values()].sort((a, b) => b.appointments - a.appointments);
-  }, [appointmentsInRange]);
+    dischargesInRange.forEach((a) => {
+      ensure(
+        a.dischargeSummary?.dischargedBy || a.admittingDoctor,
+      ).discharges += 1;
+    });
+    billedInRange.forEach((a) => {
+      ensure(a.admittingDoctor).revenue += a.billing.total;
+    });
+    return [...map.values()].sort(
+      (a, b) => b.admissions + b.discharges - (a.admissions + a.discharges),
+    );
+  }, [admissionsInRange, dischargesInRange, billedInRange]);
 
   return (
     <div style={{ fontFamily: "var(--font-body)" }}>
@@ -184,7 +223,7 @@ const OPDReports = () => {
             letterSpacing: "-0.02em",
           }}
         >
-          <Abbr underline={false}>OPD</Abbr> Reports
+          <Abbr underline={false}>IPD</Abbr> Reports
         </h1>
       </div>
 
@@ -197,7 +236,6 @@ const OPDReports = () => {
         onCustomEndChange={setCustomEnd}
       />
 
-      {/* ── Summary stat cards ── */}
       <div
         style={{
           display: "grid",
@@ -208,39 +246,40 @@ const OPDReports = () => {
       >
         {[
           {
-            label: "Total Appointments",
-            value: totalAppointments,
-            Icon: ClipboardList,
+            label: "Currently Admitted",
+            note: "(live, not range-filtered)",
+            value: currentlyAdmitted,
+            Icon: BedDouble,
             color: "var(--hms-blue)",
             bg: "var(--hms-blue-light)",
           },
           {
-            label: "Completed",
-            value: completedCount,
-            Icon: CalendarCheck,
-            color: "var(--hms-success)",
-            bg: "var(--hms-success-bg)",
-          },
-          {
-            label: "Cancelled / No-Show",
-            value: cancelledNoShowCount,
-            Icon: XCircle,
-            color: "#dc2626",
-            bg: "#fef2f2",
-          },
-          {
-            label: "Unique Patients Seen",
-            value: uniquePatients,
+            label: "New Admissions",
+            value: admissionsInRange.length,
             Icon: Users,
             color: "#7c3aed",
             bg: "#f5f3ff",
           },
           {
+            label: "Discharges",
+            value: dischargesInRange.length,
+            Icon: LogOut,
+            color: "var(--hms-success)",
+            bg: "var(--hms-success-bg)",
+          },
+          {
+            label: "Avg. Length of Stay",
+            value: avgLOS === null ? "—" : `${avgLOS.toFixed(1)} days`,
+            Icon: Clock,
+            color: "#d97706",
+            bg: "#fffbeb",
+          },
+          {
             label: "Revenue Billed",
             value: fmtCurrency(totalRevenue),
             Icon: IndianRupee,
-            color: "#d97706",
-            bg: "#fffbeb",
+            color: "#dc2626",
+            bg: "#fef2f2",
           },
         ].map((s) => (
           <div
@@ -293,6 +332,18 @@ const OPDReports = () => {
               >
                 {s.label}
               </p>
+              {s.note && (
+                <p
+                  style={{
+                    fontSize: "0.66rem",
+                    color: "#cbd5e1",
+                    margin: "1px 0 0",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {s.note}
+                </p>
+              )}
             </div>
           </div>
         ))}
@@ -305,20 +356,22 @@ const OPDReports = () => {
           fontStyle: "italic",
         }}
       >
-        Appointment counts reflect visit dates within the selected range;
-        Revenue Billed reflects bills actually raised within it — a visit near
-        the range boundary may be billed slightly after it happened, so these
-        can reference slightly different sets of appointments.
+        New Admissions, Discharges, and Revenue Billed are three
+        independently-dated facts (admission date, discharge date, and billing
+        date respectively) — a patient discharged in this period may have been
+        admitted well before it, so these don't necessarily describe the same
+        set of people. Currently Admitted is today's live count and isn't
+        affected by the date range above; see IPD → Ward Management for
+        real-time occupancy detail.
       </p>
 
-      {/* ── Charts ── */}
       <div style={{ marginBottom: "1rem" }}>
         <ChartCard
-          title="Appointment Trend"
-          subtitle={`${totalAppointments} visits in the selected range`}
+          title="New Admissions Trend"
+          subtitle={`${admissionsInRange.length} admissions in the selected range`}
         >
           {trendData.length === 0 ? (
-            <EmptyChartNote label="No appointments in this range." />
+            <EmptyChartNote label="No admissions in this range." />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart
@@ -326,9 +379,9 @@ const OPDReports = () => {
                 margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
               >
                 <defs>
-                  <linearGradient id="opdTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                  <linearGradient id="ipdTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -353,15 +406,15 @@ const OPDReports = () => {
                   contentStyle={TOOLTIP_STYLE}
                   labelStyle={TOOLTIP_LABEL_STYLE}
                   itemStyle={TOOLTIP_ITEM_STYLE}
-                  formatter={(v) => [`${v} appointments`, ""]}
+                  formatter={(v) => [`${v} admissions`, ""]}
                 />
                 <Area
                   type="monotone"
                   dataKey="count"
-                  stroke="#2563eb"
+                  stroke="#7c3aed"
                   strokeWidth={2}
-                  fill="url(#opdTrendGrad)"
-                  dot={{ r: 3, fill: "#2563eb" }}
+                  fill="url(#ipdTrendGrad)"
+                  dot={{ r: 3, fill: "#7c3aed" }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -370,7 +423,7 @@ const OPDReports = () => {
       </div>
 
       <div
-        className="opd-reports-grid-2"
+        className="ipd-reports-grid-2"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr",
@@ -379,56 +432,18 @@ const OPDReports = () => {
         }}
       >
         <style>{`
-          @media (min-width: 760px) { .opd-reports-grid-2 { grid-template-columns: 1fr 1fr; } }
+          @media (min-width: 760px) { .ipd-reports-grid-2 { grid-template-columns: 1fr 1fr; } }
         `}</style>
         <ChartCard
-          title="Status Breakdown"
-          subtitle="Appointments by workflow stage"
+          title="New Admissions by Ward"
+          subtitle="Where new admissions were assigned in this range"
         >
-          {statusData.length === 0 ? (
-            <EmptyChartNote label="No data in this range." />
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={82}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {statusData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                />
-                <Legend
-                  wrapperStyle={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.72rem",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
-        <ChartCard
-          title="Visit Type Breakdown"
-          subtitle="OPD, Follow-up, Emergency"
-        >
-          {visitTypeData.length === 0 ? (
-            <EmptyChartNote label="No data in this range." />
+          {wardData.length === 0 ? (
+            <EmptyChartNote label="No admissions in this range." />
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
-                data={visitTypeData}
+                data={wardData}
                 layout="vertical"
                 margin={{ left: 8, right: 24 }}
               >
@@ -459,7 +474,7 @@ const OPDReports = () => {
                   cursor={{ fill: "#f8fafc" }}
                 />
                 <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                  {visitTypeData.map((d) => (
+                  {wardData.map((d) => (
                     <Cell key={d.name} fill={d.color} />
                   ))}
                 </Bar>
@@ -467,9 +482,46 @@ const OPDReports = () => {
             </ResponsiveContainer>
           )}
         </ChartCard>
+
+        <ChartCard
+          title="Discharge Outcomes"
+          subtitle="Condition at discharge, this range"
+        >
+          {outcomeData.length === 0 ? (
+            <EmptyChartNote label="No discharges recorded in this range." />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={outcomeData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={82}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {outcomeData.map((d) => (
+                    <Cell key={d.name} fill={d.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={TOOLTIP_STYLE}
+                  labelStyle={TOOLTIP_LABEL_STYLE}
+                  itemStyle={TOOLTIP_ITEM_STYLE}
+                />
+                <Legend
+                  wrapperStyle={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.72rem",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
       </div>
 
-      {/* ── Doctor-wise performance ── */}
       <div
         style={{
           background: "#fff",
@@ -485,11 +537,17 @@ const OPDReports = () => {
             fontSize: "0.95rem",
             fontWeight: 800,
             color: "var(--hms-navy)",
-            margin: "0 0 1rem",
+            margin: "0 0 0.375rem",
           }}
         >
           Doctor-wise Performance
         </h3>
+        <p
+          style={{ fontSize: "0.74rem", color: "#94a3b8", margin: "0 0 1rem" }}
+        >
+          Admissions, Discharges, and Revenue are independent tallies per doctor
+          — not derived from one shared set of patients.
+        </p>
         {doctorStats.length === 0 ? (
           <p
             style={{
@@ -500,7 +558,7 @@ const OPDReports = () => {
               margin: 0,
             }}
           >
-            No appointments in this range.
+            No activity in this range.
           </p>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -508,33 +566,29 @@ const OPDReports = () => {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: 520,
+                minWidth: 460,
               }}
             >
               <thead>
                 <tr style={{ borderBottom: "1.5px solid var(--hms-border)" }}>
-                  {[
-                    "Doctor",
-                    "Appointments",
-                    "Completed",
-                    "Completion Rate",
-                    "Revenue",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: h === "Doctor" ? "left" : "right",
-                        padding: "0.5rem 0.75rem",
-                        fontSize: "0.68rem",
-                        fontWeight: 700,
-                        color: "#94a3b8",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {["Doctor", "Admissions", "Discharges", "Revenue"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        style={{
+                          textAlign: h === "Doctor" ? "left" : "right",
+                          padding: "0.5rem 0.75rem",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          color: "#94a3b8",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -562,7 +616,7 @@ const OPDReports = () => {
                         textAlign: "right",
                       }}
                     >
-                      {d.appointments}
+                      {d.admissions}
                     </td>
                     <td
                       style={{
@@ -572,20 +626,7 @@ const OPDReports = () => {
                         textAlign: "right",
                       }}
                     >
-                      {d.completed}
-                    </td>
-                    <td
-                      style={{
-                        padding: "0.65rem 0.75rem",
-                        fontSize: "0.85rem",
-                        color: "var(--hms-success)",
-                        fontWeight: 700,
-                        textAlign: "right",
-                      }}
-                    >
-                      {d.appointments > 0
-                        ? `${Math.round((d.completed / d.appointments) * 100)}%`
-                        : "—"}
+                      {d.discharges}
                     </td>
                     <td
                       style={{
@@ -610,4 +651,4 @@ const OPDReports = () => {
   );
 };
 
-export default OPDReports;
+export default IPDReports;

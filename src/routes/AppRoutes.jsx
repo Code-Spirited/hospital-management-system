@@ -43,6 +43,7 @@ import Settings from "../pages/users/Settings";
 
 import Reports from "../pages/reports/Reports";
 import OPDReports from "../pages/reports/OPDReports";
+import IPDReports from "../pages/reports/IPDReports";
 
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
@@ -106,6 +107,7 @@ const AppRoutes = () => {
         </Route>
         <Route path="/reports" element={<Reports />}>
           <Route index element={<OPDReports />} />
+          <Route path="ipd" element={<IPDReports />} />
         </Route>
       </Route>
 
