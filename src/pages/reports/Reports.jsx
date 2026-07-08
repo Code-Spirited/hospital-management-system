@@ -8,11 +8,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { FileBarChart, BedDouble } from "lucide-react";
+import { FileBarChart, BedDouble, Pill } from "lucide-react";
 
 const TABS = [
   { label: "OPD Reports", to: "/reports", end: true, Icon: FileBarChart },
   { label: "IPD Reports", to: "/reports/ipd", end: false, Icon: BedDouble },
+  {
+    label: "Pharmacy Reports",
+    to: "/reports/pharmacy",
+    end: false,
+    Icon: Pill,
+  },
 ];
 
 const Reports = () => (

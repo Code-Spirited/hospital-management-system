@@ -200,6 +200,13 @@ const ROUTES = [
       { label: "IPD Reports" },
     ],
   },
+  {
+    pattern: "/reports/pharmacy",
+    trail: () => [
+      { label: "Reports & Analytics", to: "/reports" },
+      { label: "Pharmacy Reports" },
+    ],
+  },
 ];
 
 const Breadcrumbs = () => {
