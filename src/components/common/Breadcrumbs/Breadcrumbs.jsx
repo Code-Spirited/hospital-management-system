@@ -214,6 +214,13 @@ const ROUTES = [
       { label: "Revenue Reports" },
     ],
   },
+  {
+    pattern: "/reports/overview",
+    trail: () => [
+      { label: "Reports & Analytics", to: "/reports" },
+      { label: "Analytics Dashboard" },
+    ],
+  },
 ];
 
 const Breadcrumbs = () => {

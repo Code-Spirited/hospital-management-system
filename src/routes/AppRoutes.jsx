@@ -46,6 +46,7 @@ import OPDReports from "../pages/reports/OPDReports";
 import IPDReports from "../pages/reports/IPDReports";
 import PharmacyReports from "../pages/reports/PharmacyReports";
 import RevenueReports from "../pages/reports/RevenueReports";
+import AnalyticsDashboard from "../pages/reports/AnalyticsDashboard";
 
 // Placeholder for pages not yet built
 const PlaceholderPage = ({ title }) => (
@@ -112,6 +113,7 @@ const AppRoutes = () => {
           <Route path="ipd" element={<IPDReports />} />
           <Route path="pharmacy" element={<PharmacyReports />} />
           <Route path="revenue" element={<RevenueReports />} />
+          <Route path="overview" element={<AnalyticsDashboard />} />
         </Route>
       </Route>
 

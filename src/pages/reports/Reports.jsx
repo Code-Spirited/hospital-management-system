@@ -8,9 +8,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NavLink, Outlet } from "react-router-dom";
-import { FileBarChart, BedDouble, Pill, IndianRupee } from "lucide-react";
+import {
+  FileBarChart,
+  BedDouble,
+  Pill,
+  IndianRupee,
+  LayoutDashboard,
+} from "lucide-react";
 
 const TABS = [
+  {
+    label: "Analytics Dashboard",
+    to: "/reports/overview",
+    end: false,
+    Icon: LayoutDashboard,
+  },
   { label: "OPD Reports", to: "/reports", end: true, Icon: FileBarChart },
   { label: "IPD Reports", to: "/reports/ipd", end: false, Icon: BedDouble },
   {
