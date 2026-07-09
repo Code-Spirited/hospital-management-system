@@ -1,37 +1,29 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// OPDReports.jsx — Week 7, Monday
+// OPDReports.jsx — redesigned (chart.js)
 //
-// Distinct from Dashboard's Appointment Analytics (Week 2): that section
-// is an ambient, always-visible operational snapshot on fixed windows
-// (this week / 30 days / today). This is a genuine, standalone REPORT —
-// a real user-selectable date range (including Custom From/To), scoped
-// only to OPD, shaped for Saturday's planned Export task.
-//
-// DOMAIN NOTE: appointment counts/status figures are filtered by
-// appt.date (the visit itself). Revenue figures are filtered by
-// billing.billedOn (when the bill was actually raised) — these are
-// legitimately different facts, not the same field filtered twice. A
-// visit near a period boundary can be billed slightly after it happened,
-// so "visits in June" and "revenue billed in June" aren't always the
-// identical set of appointments.
+// Same underlying computation logic as before, unchanged — only the
+// RENDERING library changed. Recharts' AreaChart/PieChart/BarChart are
+// replaced with chart.js equivalents (Line with gradient fill, a
+// center-labeled Doughnut, a horizontal Bar), matching the visual
+// language established in Revenue Reports. Doctor-wise table gains small
+// avatar-initial circles, matching the pattern already used in User
+// Directory.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
 import {
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ArcElement,
+  BarElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from "chart.js";
+import { Line, Bar } from "react-chartjs-2";
 import {
   ClipboardList,
   CalendarCheck,
@@ -49,12 +41,37 @@ import {
   isWithinRange,
   buildTrend,
   fmtCurrency,
-  TICK_STYLE,
-  TOOLTIP_STYLE,
-  TOOLTIP_LABEL_STYLE,
-  TOOLTIP_ITEM_STYLE,
+  gradientFill,
+  CHART_TOOLTIP_BASE,
+  CHART_TICK_BASE,
 } from "./reportUtils";
-import { ChartCard, EmptyChartNote } from "./ReportComponents";
+import {
+  ChartCard,
+  EmptyChartNote,
+  DoughnutWithCenter,
+  ChartLegendRow,
+} from "./ReportComponents";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ArcElement,
+  BarElement,
+  ChartTooltip,
+  ChartLegend,
+);
+
+const getInitials = (name) =>
+  name
+    .replace(/^Dr\.\s*/, "")
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
 const OPDReports = () => {
   const { appointments } = useAppointments();
@@ -138,6 +155,87 @@ const OPDReports = () => {
     return [...map.values()].sort((a, b) => b.appointments - a.appointments);
   }, [appointmentsInRange]);
 
+  const trendChartData = {
+    labels: trendData.map((d) => d.label),
+    datasets: [
+      {
+        label: "Appointments",
+        data: trendData.map((d) => d.count),
+        borderColor: "#2563eb",
+        backgroundColor: gradientFill("#2563eb"),
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: "#2563eb",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1.5,
+        borderWidth: 2.5,
+      },
+    ],
+  };
+  const trendChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...CHART_TOOLTIP_BASE,
+        callbacks: { label: (ctx) => `${ctx.parsed.y} appointments` },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: CHART_TICK_BASE },
+      y: {
+        grid: { color: "#f1f5f9" },
+        ticks: { ...CHART_TICK_BASE, precision: 0 },
+      },
+    },
+  };
+
+  const statusDoughnutData = {
+    labels: statusData.map((d) => d.name),
+    datasets: [
+      {
+        data: statusData.map((d) => d.value),
+        backgroundColor: statusData.map((d) => d.color),
+        borderWidth: 0,
+      },
+    ],
+  };
+  const doughnutOptions = {
+    cutout: "68%",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...CHART_TOOLTIP_BASE } },
+  };
+
+  const visitTypeBarData = {
+    labels: visitTypeData.map((d) => d.name),
+    datasets: [
+      {
+        data: visitTypeData.map((d) => d.value),
+        backgroundColor: visitTypeData.map((d) => d.color),
+        borderRadius: 6,
+        barThickness: 26,
+      },
+    ],
+  };
+  const barOptions = {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...CHART_TOOLTIP_BASE } },
+    scales: {
+      x: {
+        grid: { color: "#f1f5f9" },
+        ticks: { ...CHART_TICK_BASE, precision: 0 },
+      },
+      y: { grid: { display: false }, ticks: CHART_TICK_BASE },
+    },
+  };
+
   return (
     <div style={{ fontFamily: "var(--font-body)" }}>
       <div style={{ marginBottom: "1.25rem" }}>
@@ -197,7 +295,6 @@ const OPDReports = () => {
         onCustomEndChange={setCustomEnd}
       />
 
-      {/* ── Summary stat cards ── */}
       <div
         style={{
           display: "grid",
@@ -311,7 +408,6 @@ const OPDReports = () => {
         can reference slightly different sets of appointments.
       </p>
 
-      {/* ── Charts ── */}
       <div style={{ marginBottom: "1rem" }}>
         <ChartCard
           title="Appointment Trend"
@@ -320,51 +416,9 @@ const OPDReports = () => {
           {trendData.length === 0 ? (
             <EmptyChartNote label="No appointments in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart
-                data={trendData}
-                margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="opdTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f1f5f9"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                  formatter={(v) => [`${v} appointments`, ""]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                  fill="url(#opdTrendGrad)"
-                  dot={{ r: 3, fill: "#2563eb" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220 }}>
+              <Line data={trendChartData} options={trendChartOptions} />
+            </div>
           )}
         </ChartCard>
       </div>
@@ -388,34 +442,22 @@ const OPDReports = () => {
           {statusData.length === 0 ? (
             <EmptyChartNote label="No data in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={82}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {statusData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                />
-                <Legend
-                  wrapperStyle={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.72rem",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <DoughnutWithCenter
+                data={statusDoughnutData}
+                options={doughnutOptions}
+                centerValue={totalAppointments}
+                centerLabel="Total"
+                height={200}
+              />
+              <ChartLegendRow
+                items={statusData.map((d) => ({
+                  label: d.name,
+                  color: d.color,
+                  value: d.value,
+                }))}
+              />
+            </>
           )}
         </ChartCard>
 
@@ -426,50 +468,13 @@ const OPDReports = () => {
           {visitTypeData.length === 0 ? (
             <EmptyChartNote label="No data in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={visitTypeData}
-                layout="vertical"
-                margin={{ left: 8, right: 24 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f1f5f9"
-                  horizontal={false}
-                />
-                <XAxis
-                  type="number"
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={80}
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                  cursor={{ fill: "#f8fafc" }}
-                />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                  {visitTypeData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220 }}>
+              <Bar data={visitTypeBarData} options={barOptions} />
+            </div>
           )}
         </ChartCard>
       </div>
 
-      {/* ── Doctor-wise performance ── */}
       <div
         style={{
           background: "#fff",
@@ -508,7 +513,7 @@ const OPDReports = () => {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: 520,
+                minWidth: 540,
               }}
             >
               <thead>
@@ -543,16 +548,48 @@ const OPDReports = () => {
                     key={d.doctor}
                     style={{ borderBottom: "1px solid #f1f5f9" }}
                   >
-                    <td
-                      style={{
-                        padding: "0.65rem 0.75rem",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                        color: "var(--hms-navy)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {d.doctor}
+                    <td style={{ padding: "0.65rem 0.75rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: 8,
+                            background:
+                              "linear-gradient(135deg, var(--hms-blue), #3b82f6)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                              color: "#fff",
+                            }}
+                          >
+                            {getInitials(d.doctor)}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            color: "var(--hms-navy)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {d.doctor}
+                        </span>
+                      </div>
                     </td>
                     <td
                       style={{

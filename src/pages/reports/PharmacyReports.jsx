@@ -1,51 +1,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// PharmacyReports.jsx — Week 7, Wednesday
+// PharmacyReports.jsx — redesigned (chart.js)
 //
-// Covers the three genuinely-timestamped Pharmacy events: Sales
-// (sale.soldOn), new Batch receipts (batch.purchaseDate), and Stock
-// Movements (movement.timestamp — manual adjustments from Stock
-// Management, plus Removed/Disposed status changes from Expiry Alerts).
-//
-// SCOPE NOTE — read before trusting "New Batches Received": a Batch
-// record's purchaseDate is set once, at creation, and is NEVER updated
-// when that same batch is later restocked (recordPurchase only
-// increments quantity on an existing batch — see PharmacyContext). So
-// filtering batches by purchaseDate correctly finds batches newly
-// CREATED in this range, but silently misses quantity added to an
-// already-existing batch via a later restock, since that event has no
-// timestamp of its own in the current data model. Purchase Cost below
-// is likewise an estimate using each new batch's CURRENTLY recorded
-// quantity (the app doesn't separately preserve "originally received
-// quantity" apart from "quantity on hand now") — very close to exact
-// for batches created recently, but can drift for one that's since been
-// heavily sold down. Flagged explicitly, the same honesty standard
-// applied to IPD's occupancy scope note yesterday.
-//
-// Gross Profit deliberately EXCLUDES GST — collected on behalf of the
-// government, not pharmacy income. Revenue for margin purposes is each
-// sale's subtotal minus its discount (net of discount, before tax); COGS
-// looks up each sold item's ORIGINAL batch unitCost, safe because a
-// batch's unitCost is immutable after creation (a restock never
-// overwrites it) and batches are never deleted, only status-changed —
-// this lookup always resolves even for old sales.
+// Same underlying computation logic as before, unchanged — including the
+// explicit purchaseDate/restock scope note, Gross Profit excluding GST,
+// and the quantityBefore-vs-quantityChange distinction for Stock Value
+// Lost. Only the RENDERING library changed.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
 import {
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ArcElement,
+  BarElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from "chart.js";
+import { Line, Bar } from "react-chartjs-2";
 import {
   IndianRupee,
   Receipt,
@@ -66,30 +41,35 @@ import {
   isWithinRange,
   buildTrend,
   fmtCurrency,
-  TICK_STYLE,
-  TOOLTIP_STYLE,
-  TOOLTIP_LABEL_STYLE,
-  TOOLTIP_ITEM_STYLE,
+  gradientFill,
+  CHART_TOOLTIP_BASE,
+  CHART_TICK_BASE,
 } from "./reportUtils";
-import { ChartCard, EmptyChartNote } from "./ReportComponents";
+import {
+  ChartCard,
+  EmptyChartNote,
+  DoughnutWithCenter,
+  ChartLegendRow,
+} from "./ReportComponents";
 
-// Reuses real, already-established colors rather than inventing new ones
-// for this chart — same precedent as IPD Reports reusing
-// CONDITION_AT_DISCHARGE_CONFIG unmodified.
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ArcElement,
+  BarElement,
+  ChartTooltip,
+  ChartLegend,
+);
+
 const MOVEMENT_TYPE_STYLES = {
   ...ADJUSTMENT_TYPE_CONFIG,
   Removed: BATCH_STATUS_CONFIG.Removed,
   Disposed: BATCH_STATUS_CONFIG.Disposed,
 };
 
-// How many units a single stock movement removed from active
-// circulation. Damage/Loss/Transfer are always decreases (quantityChange
-// is already negative). Correction can go either way — only a DECREASE
-// counts as "lost" (an increase found extra stock, not missing stock).
-// Removed/Disposed carry quantityChange: 0 by design (a status change,
-// not a quantity edit — see updateBatchStatus), so units actually pulled
-// from Active circulation is quantityBefore instead: the batch's full
-// quantity at the moment it left Active status.
 const unitsRemovedByMovement = (mv) => {
   if (mv.type === "Removed" || mv.type === "Disposed") return mv.quantityBefore;
   if (mv.quantityChange < 0) return Math.abs(mv.quantityChange);
@@ -108,7 +88,6 @@ const PharmacyReports = () => {
     () => sales.filter((s) => isWithinRange(s.soldOn, start, end)),
     [sales, start, end],
   );
-  // Only correctly captures NEWLY CREATED batches — see file header.
   const newBatchesInRange = useMemo(
     () => batches.filter((b) => isWithinRange(b.purchaseDate, start, end)),
     [batches, start, end],
@@ -151,10 +130,6 @@ const PharmacyReports = () => {
     [salesInRange],
   );
 
-  // Top-selling medicines by gross line revenue (quantity × unitPrice,
-  // before cart-level discount is allocated — discount applies to the
-  // whole cart, not per line, in this data model, so ranking pre-
-  // discount is the simplest honest measure).
   const topMedicines = useMemo(() => {
     const map = new Map();
     salesInRange.forEach((s) => {
@@ -181,9 +156,11 @@ const PharmacyReports = () => {
       .filter((d) => d.value > 0);
   }, [movementsInRange]);
 
-  // Supplier-wise: NEW batches only, matching the same purchaseDate
-  // caveat as the summary cards above — a supplier who only restocked
-  // existing batches in this range won't show additional cost here.
+  const adjustmentTotal = adjustmentTypeData.reduce(
+    (sum, d) => sum + d.value,
+    0,
+  );
+
   const supplierStats = useMemo(() => {
     const map = new Map();
     newBatchesInRange.forEach((b) => {
@@ -195,6 +172,93 @@ const PharmacyReports = () => {
     });
     return [...map.values()].sort((a, b) => b.cost - a.cost);
   }, [newBatchesInRange]);
+
+  const trendChartData = {
+    labels: trendData.map((d) => d.label),
+    datasets: [
+      {
+        label: "Sales",
+        data: trendData.map((d) => d.count),
+        borderColor: "#0d9488",
+        backgroundColor: gradientFill("#0d9488"),
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: "#0d9488",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1.5,
+        borderWidth: 2.5,
+      },
+    ],
+  };
+  const trendChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...CHART_TOOLTIP_BASE,
+        callbacks: { label: (ctx) => `${ctx.parsed.y} sales` },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: CHART_TICK_BASE },
+      y: {
+        grid: { color: "#f1f5f9" },
+        ticks: { ...CHART_TICK_BASE, precision: 0 },
+      },
+    },
+  };
+
+  const topMedicinesBarData = {
+    labels: topMedicines.map((d) => d.name),
+    datasets: [
+      {
+        data: topMedicines.map((d) => d.value),
+        backgroundColor: "#0d9488",
+        borderRadius: 6,
+        barThickness: 20,
+      },
+    ],
+  };
+  const topMedicinesBarOptions = {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...CHART_TOOLTIP_BASE,
+        callbacks: { label: (ctx) => fmtCurrency(ctx.parsed.x) },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: "#f1f5f9" },
+        ticks: { ...CHART_TICK_BASE, callback: (v) => fmtCurrency(v) },
+      },
+      y: { grid: { display: false }, ticks: CHART_TICK_BASE },
+    },
+  };
+
+  const adjustmentDoughnutData = {
+    labels: adjustmentTypeData.map((d) => d.name),
+    datasets: [
+      {
+        data: adjustmentTypeData.map((d) => d.value),
+        backgroundColor: adjustmentTypeData.map((d) => d.color),
+        borderWidth: 0,
+      },
+    ],
+  };
+  const doughnutOptions = {
+    cutout: "68%",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...CHART_TOOLTIP_BASE } },
+  };
 
   return (
     <div style={{ fontFamily: "var(--font-body)" }}>
@@ -399,57 +463,9 @@ const PharmacyReports = () => {
           {trendData.length === 0 ? (
             <EmptyChartNote label="No sales in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart
-                data={trendData}
-                margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient
-                    id="pharmTrendGrad"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f1f5f9"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                  formatter={(v) => [`${v} sales`, ""]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#0d9488"
-                  strokeWidth={2}
-                  fill="url(#pharmTrendGrad)"
-                  dot={{ r: 3, fill: "#0d9488" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220 }}>
+              <Line data={trendChartData} options={trendChartOptions} />
+            </div>
           )}
         </ChartCard>
       </div>
@@ -473,42 +489,12 @@ const PharmacyReports = () => {
           {topMedicines.length === 0 ? (
             <EmptyChartNote label="No sales in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={topMedicines}
-                layout="vertical"
-                margin={{ left: 8, right: 24 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f1f5f9"
-                  horizontal={false}
-                />
-                <XAxis
-                  type="number"
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => fmtCurrency(v)}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={110}
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                  cursor={{ fill: "#f8fafc" }}
-                  formatter={(v) => [fmtCurrency(v), "Revenue"]}
-                />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]} fill="#0d9488" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220 }}>
+              <Bar
+                data={topMedicinesBarData}
+                options={topMedicinesBarOptions}
+              />
+            </div>
           )}
         </ChartCard>
 
@@ -519,34 +505,22 @@ const PharmacyReports = () => {
           {adjustmentTypeData.length === 0 ? (
             <EmptyChartNote label="No stock adjustments in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={adjustmentTypeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={82}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {adjustmentTypeData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                />
-                <Legend
-                  wrapperStyle={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.72rem",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <DoughnutWithCenter
+                data={adjustmentDoughnutData}
+                options={doughnutOptions}
+                centerValue={adjustmentTotal}
+                centerLabel="Adjustments"
+                height={200}
+              />
+              <ChartLegendRow
+                items={adjustmentTypeData.map((d) => ({
+                  label: d.name,
+                  color: d.color,
+                  value: d.value,
+                }))}
+              />
+            </>
           )}
         </ChartCard>
       </div>

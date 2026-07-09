@@ -1,9 +1,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // reportUtils.js
 //
-// Shared across every Reports page this week — OPD today; IPD/Pharmacy/
-// Revenue Reports later this week reuse these same functions rather than
-// each reimplementing date-range filtering and trend-grouping logic.
+// Shared across every Reports page — date-range filtering/grouping,
+// currency formatting, period-over-period comparison, and chart.js
+// styling helpers used by every Reports chart.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import dayjs from "dayjs";
@@ -17,11 +17,6 @@ export const DATE_RANGE_PRESETS = [
   "Custom",
 ];
 
-// Returns { start, end } as dayjs objects, or { start: null, end: null }
-// for "All Time" (or an incomplete Custom range) — null bounds mean
-// "unbounded," which isWithinRange treats as always-matching. This is a
-// deliberate safe default: an incomplete custom range degrades to
-// "show everything," never to "show nothing."
 export const getPresetRange = (preset, customStart, customEnd) => {
   const now = dayjs();
   switch (preset) {
@@ -46,7 +41,6 @@ export const getPresetRange = (preset, customStart, customEnd) => {
   }
 };
 
-// Bounds are inclusive.
 export const isWithinRange = (dateValue, start, end) => {
   if (!dateValue) return false;
   if (!start || !end) return true;
@@ -54,12 +48,6 @@ export const isWithinRange = (dateValue, start, end) => {
   return t >= start.valueOf() && t <= end.valueOf();
 };
 
-// Groups records by day for short ranges, by month for ranges longer
-// than 60 days — so selecting "This Year" doesn't try to render 365
-// individual daily bars. Sorting happens on a lexicographically-sortable
-// key (YYYY-MM or YYYY-MM-DD), never on the human-readable display
-// label, since "Apr" < "Aug" < "Dec" < "Jan" alphabetically would
-// silently scramble a real chronological trend.
 export const buildTrend = (records, dateField, start, end) => {
   const filtered = records.filter((r) =>
     isWithinRange(r[dateField], start, end),
@@ -69,9 +57,7 @@ export const buildTrend = (records, dateField, start, end) => {
   const spanDays =
     start && end
       ? end.diff(start, "day")
-      : // Unbounded (All Time) — derive the span from how the data itself
-        // actually spreads out, rather than from a range that doesn't exist.
-        dayjs(
+      : dayjs(
           Math.max(...records.map((r) => dayjs(r[dateField]).valueOf())),
         ).diff(
           dayjs(Math.min(...records.map((r) => dayjs(r[dateField]).valueOf()))),
@@ -95,34 +81,61 @@ export const buildTrend = (records, dateField, start, end) => {
 export const fmtCurrency = (n) =>
   `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
-// ── Shared Recharts style constants ──────────────────────────────────────────
-// Moved here from ReportComponents.jsx: that file exports two actual
-// COMPONENTS (ChartCard, EmptyChartNote) plus these four plain style
-// objects — mixing component and non-component exports in one file
-// breaks Vite's react-refresh/only-export-components rule, since Fast
-// Refresh can only preserve component state across a hot-reload when a
-// module exports exclusively components. This is the correct home for
-// plain constants regardless, not just a lint workaround.
-export const TICK_STYLE = {
-  fontFamily: "var(--font-body)",
-  fontSize: 11,
-  fill: "#94a3b8",
+// Returns the immediately-preceding period of the SAME LENGTH as
+// [start, end] — powers Revenue Reports' "+X% vs last period" delta.
+// Returns nulls for an unbounded range (All Time, or an incomplete
+// Custom range). Shifts by equal DURATION, not necessarily the same
+// calendar unit — a standard, deliberate simplification most analytics
+// dashboards make.
+export const getPreviousRange = (start, end) => {
+  if (!start || !end) return { prevStart: null, prevEnd: null };
+  const durationMs = end.valueOf() - start.valueOf();
+  const prevEnd = start.subtract(1, "millisecond");
+  const prevStart = dayjs(prevEnd.valueOf() - durationMs);
+  return { prevStart, prevEnd };
 };
-export const TOOLTIP_STYLE = {
+
+// ── Shared chart.js styling helpers ──────────────────────────────────────────
+// Canvas text can't resolve CSS custom properties (var(--font-body)) —
+// chart.js draws directly to a <canvas>, which needs a real, resolved
+// font string, not a CSS variable. A safe generic sans-serif stack,
+// rather than guessing this project's exact installed font name.
+export const CHART_FONT = "'Segoe UI', system-ui, sans-serif";
+
+export const hexToRgb = (hex) => {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+};
+
+// Scriptable backgroundColor — chart.js calls this once the canvas/area
+// is known, letting us paint a real top-to-bottom fade under a line
+// rather than a flat translucent fill.
+export const gradientFill = (hex) => (context) => {
+  const { ctx, chartArea } = context.chart;
+  if (!chartArea) return `rgba(${hexToRgb(hex)}, 0.12)`;
+  const gradient = ctx.createLinearGradient(
+    0,
+    chartArea.top,
+    0,
+    chartArea.bottom,
+  );
+  gradient.addColorStop(0, `rgba(${hexToRgb(hex)}, 0.28)`);
+  gradient.addColorStop(1, `rgba(${hexToRgb(hex)}, 0)`);
+  return gradient;
+};
+
+// Spreadable base for any chart's plugins.tooltip options — keeps the
+// dark, rounded tooltip look consistent across every Reports chart.
+export const CHART_TOOLTIP_BASE = {
   backgroundColor: "#0f172a",
-  border: "none",
-  borderRadius: 10,
-  padding: "10px 14px",
+  padding: 11,
+  cornerRadius: 9,
+  titleFont: { family: CHART_FONT, size: 12, weight: "600" },
+  bodyFont: { family: CHART_FONT, size: 11.5 },
 };
-export const TOOLTIP_LABEL_STYLE = {
-  color: "#e2e8f0",
-  fontFamily: "var(--font-body)",
-  fontSize: "0.75rem",
-  fontWeight: 600,
-  marginBottom: 4,
-};
-export const TOOLTIP_ITEM_STYLE = {
+
+// Spreadable base for any chart's x/y scale ticks options.
+export const CHART_TICK_BASE = {
+  font: { family: CHART_FONT, size: 11 },
   color: "#94a3b8",
-  fontFamily: "var(--font-body)",
-  fontSize: "0.72rem",
 };

@@ -1,43 +1,29 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// IPDReports.jsx — Week 7, Tuesday
+// IPDReports.jsx — redesigned (chart.js)
 //
-// IPD introduces a THIRD independent date dimension beyond OPD's two:
-// New Admissions (admissionDate), Discharges (dischargeDate), and
-// Revenue (billing.billedOn) are three separately-dated facts. A patient
-// discharged this period may have been admitted well before it — so a
-// doctor's Admissions/Discharges/Revenue in the table below are three
-// independent tallies, never assumed to reference the same patients.
-//
-// SCOPE NOTE: no "average occupancy over the range" metric here — this
-// app has only point-in-time admission/discharge records, not a
-// continuous bed-day ledger, so a true occupancy-over-time figure can't
-// be computed honestly. Live current occupancy already lives at
-// IPD → Ward Management; today's ward metric is New Admissions by Ward
-// instead — a real, correctly range-filtered fact, not a duplicate of
-// that operational page.
-//
-// Avg Length of Stay only counts admissions actually DISCHARGED within
-// the selected range — a currently-admitted patient has no final LOS
-// yet, and including them would understate every ongoing long stay.
+// Same underlying computation logic as before, unchanged — including the
+// three-independent-date-dimension modeling and the deliberate exclusion
+// of a fabricated "average occupancy" metric. Only the RENDERING library
+// changed. Discharge Outcomes' doughnut still uses
+// CONDITION_AT_DISCHARGE_CONFIG's existing colors verbatim, including its
+// neutral Deceased gray — unchanged, no re-emphasis added.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
 import dayjs from "dayjs";
 import {
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ArcElement,
+  BarElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from "chart.js";
+import { Line, Bar } from "react-chartjs-2";
 import {
   BedDouble,
   LogOut,
@@ -58,12 +44,37 @@ import {
   isWithinRange,
   buildTrend,
   fmtCurrency,
-  TICK_STYLE,
-  TOOLTIP_STYLE,
-  TOOLTIP_LABEL_STYLE,
-  TOOLTIP_ITEM_STYLE,
+  gradientFill,
+  CHART_TOOLTIP_BASE,
+  CHART_TICK_BASE,
 } from "./reportUtils";
-import { ChartCard, EmptyChartNote } from "./ReportComponents";
+import {
+  ChartCard,
+  EmptyChartNote,
+  DoughnutWithCenter,
+  ChartLegendRow,
+} from "./ReportComponents";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ArcElement,
+  BarElement,
+  ChartTooltip,
+  ChartLegend,
+);
+
+const getInitials = (name) =>
+  name
+    .replace(/^Dr\.\s*/, "")
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
 const IPDReports = () => {
   const { admissions } = useIPD();
@@ -98,7 +109,6 @@ const IPDReports = () => {
   const currentlyAdmitted = admissions.filter(
     (a) => a.status === "Admitted",
   ).length;
-
   const totalRevenue = billedInRange.reduce(
     (sum, a) => sum + (a.billing?.total || 0),
     0,
@@ -131,9 +141,6 @@ const IPDReports = () => {
     [admissionsInRange],
   );
 
-  // Only counts discharges that actually recorded an outcome — reuses
-  // CONDITION_AT_DISCHARGE_CONFIG exactly as-is, including its already-
-  // neutral gray for Deceased. No re-coloring or extra emphasis added.
   const outcomeData = useMemo(() => {
     const counts = {};
     dischargesInRange.forEach((a) => {
@@ -150,10 +157,6 @@ const IPDReports = () => {
       .filter((d) => d.value > 0);
   }, [dischargesInRange]);
 
-  // Doctor-wise: THREE independently-built tallies, never assumed to
-  // reference the same underlying admissions. Discharges are attributed
-  // to dischargeSummary.dischargedBy when recorded (may differ from the
-  // admitting doctor — a different physician can sign off a discharge).
   const doctorStats = useMemo(() => {
     const map = new Map();
     const ensure = (doc) => {
@@ -176,6 +179,89 @@ const IPDReports = () => {
       (a, b) => b.admissions + b.discharges - (a.admissions + a.discharges),
     );
   }, [admissionsInRange, dischargesInRange, billedInRange]);
+
+  const outcomeTotal = outcomeData.reduce((sum, d) => sum + d.value, 0);
+
+  const trendChartData = {
+    labels: trendData.map((d) => d.label),
+    datasets: [
+      {
+        label: "Admissions",
+        data: trendData.map((d) => d.count),
+        borderColor: "#7c3aed",
+        backgroundColor: gradientFill("#7c3aed"),
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: "#7c3aed",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1.5,
+        borderWidth: 2.5,
+      },
+    ],
+  };
+  const trendChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...CHART_TOOLTIP_BASE,
+        callbacks: { label: (ctx) => `${ctx.parsed.y} admissions` },
+      },
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: CHART_TICK_BASE },
+      y: {
+        grid: { color: "#f1f5f9" },
+        ticks: { ...CHART_TICK_BASE, precision: 0 },
+      },
+    },
+  };
+
+  const wardBarData = {
+    labels: wardData.map((d) => d.name),
+    datasets: [
+      {
+        data: wardData.map((d) => d.value),
+        backgroundColor: wardData.map((d) => d.color),
+        borderRadius: 6,
+        barThickness: 26,
+      },
+    ],
+  };
+  const barOptions = {
+    indexAxis: "y",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...CHART_TOOLTIP_BASE } },
+    scales: {
+      x: {
+        grid: { color: "#f1f5f9" },
+        ticks: { ...CHART_TICK_BASE, precision: 0 },
+      },
+      y: { grid: { display: false }, ticks: CHART_TICK_BASE },
+    },
+  };
+
+  const outcomeDoughnutData = {
+    labels: outcomeData.map((d) => d.name),
+    datasets: [
+      {
+        data: outcomeData.map((d) => d.value),
+        backgroundColor: outcomeData.map((d) => d.color),
+        borderWidth: 0,
+      },
+    ],
+  };
+  const doughnutOptions = {
+    cutout: "68%",
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { ...CHART_TOOLTIP_BASE } },
+  };
 
   return (
     <div style={{ fontFamily: "var(--font-body)" }}>
@@ -373,51 +459,9 @@ const IPDReports = () => {
           {trendData.length === 0 ? (
             <EmptyChartNote label="No admissions in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart
-                data={trendData}
-                margin={{ left: 0, right: 8, top: 4, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="ipdTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f1f5f9"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                  formatter={(v) => [`${v} admissions`, ""]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#7c3aed"
-                  strokeWidth={2}
-                  fill="url(#ipdTrendGrad)"
-                  dot={{ r: 3, fill: "#7c3aed" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220 }}>
+              <Line data={trendChartData} options={trendChartOptions} />
+            </div>
           )}
         </ChartCard>
       </div>
@@ -441,45 +485,9 @@ const IPDReports = () => {
           {wardData.length === 0 ? (
             <EmptyChartNote label="No admissions in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={wardData}
-                layout="vertical"
-                margin={{ left: 8, right: 24 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#f1f5f9"
-                  horizontal={false}
-                />
-                <XAxis
-                  type="number"
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={80}
-                  tick={TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                  cursor={{ fill: "#f8fafc" }}
-                />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                  {wardData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ height: 220 }}>
+              <Bar data={wardBarData} options={barOptions} />
+            </div>
           )}
         </ChartCard>
 
@@ -490,34 +498,22 @@ const IPDReports = () => {
           {outcomeData.length === 0 ? (
             <EmptyChartNote label="No discharges recorded in this range." />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={outcomeData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={82}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {outcomeData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={TOOLTIP_STYLE}
-                  labelStyle={TOOLTIP_LABEL_STYLE}
-                  itemStyle={TOOLTIP_ITEM_STYLE}
-                />
-                <Legend
-                  wrapperStyle={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.72rem",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <DoughnutWithCenter
+                data={outcomeDoughnutData}
+                options={doughnutOptions}
+                centerValue={outcomeTotal}
+                centerLabel="Discharges"
+                height={200}
+              />
+              <ChartLegendRow
+                items={outcomeData.map((d) => ({
+                  label: d.name,
+                  color: d.color,
+                  value: d.value,
+                }))}
+              />
+            </>
           )}
         </ChartCard>
       </div>
@@ -566,7 +562,7 @@ const IPDReports = () => {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: 460,
+                minWidth: 480,
               }}
             >
               <thead>
@@ -597,16 +593,48 @@ const IPDReports = () => {
                     key={d.doctor}
                     style={{ borderBottom: "1px solid #f1f5f9" }}
                   >
-                    <td
-                      style={{
-                        padding: "0.65rem 0.75rem",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                        color: "var(--hms-navy)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {d.doctor}
+                    <td style={{ padding: "0.65rem 0.75rem" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: 8,
+                            background:
+                              "linear-gradient(135deg, var(--hms-blue), #3b82f6)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                              color: "#fff",
+                            }}
+                          >
+                            {getInitials(d.doctor)}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "0.85rem",
+                            fontWeight: 700,
+                            color: "var(--hms-navy)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {d.doctor}
+                        </span>
+                      </div>
                     </td>
                     <td
                       style={{

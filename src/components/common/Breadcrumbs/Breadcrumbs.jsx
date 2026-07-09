@@ -207,6 +207,13 @@ const ROUTES = [
       { label: "Pharmacy Reports" },
     ],
   },
+  {
+    pattern: "/reports/revenue",
+    trail: () => [
+      { label: "Reports & Analytics", to: "/reports" },
+      { label: "Revenue Reports" },
+    ],
+  },
 ];
 
 const Breadcrumbs = () => {
