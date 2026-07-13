@@ -221,6 +221,13 @@ const ROUTES = [
       { label: "Analytics Dashboard" },
     ],
   },
+  {
+    pattern: "/reports/export",
+    trail: () => [
+      { label: "Reports & Analytics", to: "/reports" },
+      { label: "Export Center" },
+    ],
+  },
 ];
 
 const Breadcrumbs = () => {

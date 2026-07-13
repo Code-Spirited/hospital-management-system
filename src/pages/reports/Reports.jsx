@@ -14,6 +14,7 @@ import {
   Pill,
   IndianRupee,
   LayoutDashboard,
+  Download,
 } from "lucide-react";
 
 const TABS = [
@@ -37,6 +38,7 @@ const TABS = [
     end: false,
     Icon: IndianRupee,
   },
+  { label: "Export Center", to: "/reports/export", end: false, Icon: Download },
 ];
 
 const Reports = () => (
