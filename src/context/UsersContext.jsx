@@ -2,15 +2,17 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // UsersContext.jsx
 //
-// Single source of truth for system users, mirroring the exact pattern
-// used by every other module's context. updateUser and deleteUser are
-// included now even though only "read" is exercised today — Tuesday's
-// Add/Edit User Form will call into this same context without its shape
-// needing to change, the same forward-looking approach used for
-// IPDContext's dischargeAdmission stub back in Week 4.
+// Week 8 update: users and permissions now route through usersService
+// via useAsyncData. isLoading/error are new, additive combined fields.
+// permissionOverrides and userSettingsMap stay plain useState — both are
+// sparse, session-derived state with no natural seed list to fetch (they
+// start empty {} by design), so routing them through the same "getAll"
+// service shape wouldn't make sense. All mutation functions are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createContext, useContext, useState, useCallback } from "react";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { usersService } from "../services/usersService";
 import {
   initialUsers,
   DEFAULT_PERMISSIONS,
@@ -20,45 +22,49 @@ import {
 const UsersContext = createContext(null);
 
 export const UsersProvider = ({ children }) => {
-  const [users, setUsers] = useState(initialUsers);
-  // Role → module → access-level matrix, edited on the Roles &
-  // Permissions page. Lives here rather than as local page state since
-  // it's conceptually tied to Users/Roles, and is the natural place
-  // future work (e.g. actually gating Sidebar links by a logged-in
-  // user's role) would read from.
-  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS);
-  // Sparse per-user EXCEPTIONS layered on top of the role-level defaults
-  // above — e.g. one specific Nurse granted View Only on Pharmacy,
-  // without changing the Nurse role's default for everyone else. Only
-  // users who actually have at least one override appear as keys here;
-  // a user with no entry simply inherits their role's default everywhere.
+  const {
+    data: users,
+    setData: setUsers,
+    isLoading: usersLoading,
+    error: usersError,
+  } = useAsyncData(usersService.getAll, initialUsers);
+  const {
+    data: permissions,
+    setData: setPermissions,
+    isLoading: permissionsLoading,
+  } = useAsyncData(usersService.getPermissions, DEFAULT_PERMISSIONS);
+
   const [permissionOverrides, setPermissionOverrides] = useState({});
-  // Preferences (notifications/display/security) per user — Settings.jsx.
-  // Sparse, same pattern as permissionOverrides: a user with no entry
-  // simply gets DEFAULT_USER_SETTINGS via the getter below.
   const [userSettingsMap, setUserSettingsMap] = useState({});
 
-  const addUser = useCallback((user) => {
-    setUsers((prev) => [user, ...prev]);
-  }, []);
+  const addUser = useCallback(
+    (user) => {
+      setUsers((prev) => [user, ...prev]);
+    },
+    [setUsers],
+  );
 
-  const updateUser = useCallback((updated) => {
-    setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-  }, []);
+  const updateUser = useCallback(
+    (updated) => {
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    },
+    [setUsers],
+  );
 
-  const deleteUser = useCallback((id) => {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-  }, []);
+  const deleteUser = useCallback(
+    (id) => {
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    },
+    [setUsers],
+  );
 
-  const updatePermissions = useCallback((newMatrix) => {
-    setPermissions(newMatrix);
-  }, []);
+  const updatePermissions = useCallback(
+    (newMatrix) => {
+      setPermissions(newMatrix);
+    },
+    [setPermissions],
+  );
 
-  // Replaces one user's ENTIRE override set at once (called on Save,
-  // after edits are staged locally on the page) — same deliberate-commit
-  // pattern as updatePermissions above. Passing an empty object removes
-  // the user's entry entirely, keeping this map sparse — a user with
-  // zero actual overrides should never linger as an empty {} key.
   const setUserOverrides = useCallback((userId, moduleOverrides) => {
     setPermissionOverrides((prev) => {
       const next = { ...prev };
@@ -84,6 +90,8 @@ export const UsersProvider = ({ children }) => {
     <UsersContext.Provider
       value={{
         users,
+        isLoading: usersLoading || permissionsLoading,
+        error: usersError || null,
         addUser,
         updateUser,
         deleteUser,

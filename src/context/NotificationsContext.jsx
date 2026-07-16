@@ -1,17 +1,15 @@
+/* eslint-disable react-refresh/only-export-components */
 // ─────────────────────────────────────────────────────────────────────────────
 // NotificationsContext.jsx
 //
-// Single source of truth for all notifications across the app.
-// Both the header bell (count indicator) and the dashboard panel
-// consume from this context — eliminating the previous redundancy
-// where two separate hardcoded lists existed independently.
-//
-// In Week 8, the initialNotifications array and the live simulation
-// will be replaced by a WebSocket connection that calls addNotification()
-// as the server pushes events. The components consuming this context
-// will not need to change.
+// Week 8 update: the initial notification list now routes through
+// notificationsService via useAsyncData. isLoading/error are new,
+// additive fields. The live-notification simulation below (setTimeout,
+// liveIndex) is completely unchanged — it's a genuinely different
+// transport concept (an ongoing feed, not a one-time fetch), already
+// correctly flagged for future WebSocket replacement.
 // ─────────────────────────────────────────────────────────────────────────────
-/* eslint-disable react-refresh/only-export-components */
+
 import {
   createContext,
   useContext,
@@ -20,8 +18,9 @@ import {
   useEffect,
 } from "react";
 import { toast } from "sonner";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { notificationsService } from "../services/notificationsService";
 import {
-  initialNotifications,
   liveNotificationQueue,
   NOTIFICATION_CONFIG,
 } from "../pages/dashboard/notificationsData";
@@ -29,31 +28,39 @@ import {
 const NotificationsContext = createContext(null);
 
 export const NotificationsProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const {
+    data: notifications,
+    setData: setNotifications,
+    isLoading,
+    error,
+  } = useAsyncData(notificationsService.getInitial, []);
   const [liveIndex, setLiveIndex] = useState(0);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsRead = useCallback((id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
-  }, []);
+  const markAsRead = useCallback(
+    (id) => {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+    },
+    [setNotifications],
+  );
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  }, []);
+  }, [setNotifications]);
 
-  const addNotification = useCallback((notif) => {
-    setNotifications((prev) => [
-      { ...notif, id: Date.now(), timestamp: new Date(), read: false },
-      ...prev,
-    ]);
-  }, []);
+  const addNotification = useCallback(
+    (notif) => {
+      setNotifications((prev) => [
+        { ...notif, id: Date.now(), timestamp: new Date(), read: false },
+        ...prev,
+      ]);
+    },
+    [setNotifications],
+  );
 
-  // Live notification simulation — fires every 40 seconds.
-  // Replaces the identical logic that previously lived inside NotificationsPanel,
-  // so the timer now runs at the app level regardless of which page is open.
   useEffect(() => {
     if (liveIndex >= liveNotificationQueue.length) return;
 
@@ -77,6 +84,8 @@ export const NotificationsProvider = ({ children }) => {
     <NotificationsContext.Provider
       value={{
         notifications,
+        isLoading,
+        error,
         unreadCount,
         markAsRead,
         markAllRead,

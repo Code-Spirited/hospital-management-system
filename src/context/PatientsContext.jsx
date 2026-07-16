@@ -2,47 +2,72 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // PatientsContext.jsx
 //
-// Single source of truth for the patient registry across the entire app.
-// Before this, the Dashboard and OPD module each had their own separate
-// mock dataset with different counts, field names, and status vocabularies —
-// editing a patient in one had no effect on the other. This context
-// replaces both with one shared list. OPD performs full CRUD against it;
-// the Dashboard reads the same list for its "recent activity" preview and
-// its total-patient KPI. In Week 8, the seed array below is replaced by a
-// real API fetch — every consumer of this context stays unchanged.
+// Week 8 update: the READ side now routes through patientsService via
+// the shared useAsyncData hook, rather than seeding state directly from
+// the static import. isLoading/error are new, ADDITIVE fields on the
+// context value — no existing consumer destructures them, so nothing
+// anywhere in the app changes behavior; a future component can opt into
+// showing a loading/error state simply by reading them.
+//
+// Every mutation function below (add/update/delete/restore) is
+// UNCHANGED — still synchronous, local-state-only. See patientsService.js
+// for why that's deliberately deferred, not an oversight.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useCallback } from "react";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { patientsService } from "../services/patientsService";
 import { initialPatients } from "../pages/opd/opdData";
 
 const PatientsContext = createContext(null);
 
 export const PatientsProvider = ({ children }) => {
-  const [patients, setPatients] = useState(initialPatients);
+  const {
+    data: patients,
+    setData: setPatients,
+    isLoading,
+    error,
+  } = useAsyncData(patientsService.getAll, initialPatients);
 
-  const addPatient = useCallback((patient) => {
-    setPatients((prev) => [patient, ...prev]);
-  }, []);
+  const addPatient = useCallback(
+    (patient) => {
+      setPatients((prev) => [patient, ...prev]);
+    },
+    [setPatients],
+  );
 
-  const updatePatient = useCallback((updated) => {
-    setPatients((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-  }, []);
+  const updatePatient = useCallback(
+    (updated) => {
+      setPatients((prev) =>
+        prev.map((p) => (p.id === updated.id ? updated : p)),
+      );
+    },
+    [setPatients],
+  );
 
-  const deletePatient = useCallback((id) => {
-    setPatients((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+  const deletePatient = useCallback(
+    (id) => {
+      setPatients((prev) => prev.filter((p) => p.id !== id));
+    },
+    [setPatients],
+  );
 
   // Used by the "Undo" toast action after a delete
-  const restorePatient = useCallback((patient) => {
-    setPatients((prev) =>
-      [patient, ...prev].sort((a, b) => a.id.localeCompare(b.id)),
-    );
-  }, []);
+  const restorePatient = useCallback(
+    (patient) => {
+      setPatients((prev) =>
+        [patient, ...prev].sort((a, b) => a.id.localeCompare(b.id)),
+      );
+    },
+    [setPatients],
+  );
 
   return (
     <PatientsContext.Provider
       value={{
         patients,
+        isLoading,
+        error,
         addPatient,
         updatePatient,
         deletePatient,

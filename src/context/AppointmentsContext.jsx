@@ -2,45 +2,64 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // AppointmentsContext.jsx
 //
-// Single source of truth for OPD appointments, mirroring PatientsContext's
-// pattern exactly. The OPD Appointment Module performs full CRUD against
-// this. In Week 8 the seed array is replaced by a real API fetch.
+// Week 8 update: read side now routes through appointmentsService via
+// useAsyncData — isLoading/error are new, additive fields. Mutation
+// functions (add/update/cancel) are unchanged, same deferral reasoning
+// as PatientsContext.
 //
 // Note: the Calendar drawer (header icon) currently still reads from its
 // own separate calendarData.js mock — that hasn't been unified with this
 // context yet. Flagged deliberately, not an oversight.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useCallback } from "react";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { appointmentsService } from "../services/appointmentsService";
 import { initialAppointments } from "../pages/opd/appointmentsData";
 
 const AppointmentsContext = createContext(null);
 
 export const AppointmentsProvider = ({ children }) => {
-  const [appointments, setAppointments] = useState(initialAppointments);
+  const {
+    data: appointments,
+    setData: setAppointments,
+    isLoading,
+    error,
+  } = useAsyncData(appointmentsService.getAll, initialAppointments);
 
-  const addAppointment = useCallback((appt) => {
-    setAppointments((prev) => [appt, ...prev]);
-  }, []);
+  const addAppointment = useCallback(
+    (appt) => {
+      setAppointments((prev) => [appt, ...prev]);
+    },
+    [setAppointments],
+  );
 
-  const updateAppointment = useCallback((updated) => {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === updated.id ? updated : a)),
-    );
-  }, []);
+  const updateAppointment = useCallback(
+    (updated) => {
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === updated.id ? updated : a)),
+      );
+    },
+    [setAppointments],
+  );
 
   // Cancelling sets status rather than deleting — appointment history
   // (including cancellations) is something a real hospital system keeps.
-  const cancelAppointment = useCallback((id) => {
-    setAppointments((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a)),
-    );
-  }, []);
+  const cancelAppointment = useCallback(
+    (id) => {
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, status: "Cancelled" } : a)),
+      );
+    },
+    [setAppointments],
+  );
 
   return (
     <AppointmentsContext.Provider
       value={{
         appointments,
+        isLoading,
+        error,
         addAppointment,
         updateAppointment,
         cancelAppointment,
