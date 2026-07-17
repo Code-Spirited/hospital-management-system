@@ -1,22 +1,34 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // userSchema.js
 //
-// addUserSchema covers everything set once at hiring (including the two
-// truly permanent facts — gender, joinedOn). editUserSchema deliberately
-// excludes both, mirroring editPatientSchema's exact same principle:
-// correctable details (name typo, contact info, role/department/status)
-// stay editable; immutable identity/historical facts don't.
+// addUserSchema covers everything set once at hiring. editUserSchema
+// deliberately excludes gender/joinedOn, mirroring editPatientSchema's
+// exact same immutable-identity principle.
+//
+// phone/email now import from utils/validators.js — previously
+// duplicated locally, and (for email) missing an explicit "required"
+// message on 3 separate schemas, meaning a blank email field showed the
+// more confusing "Enter a valid email address" instead of "Email
+// address is required." changePasswordSchema.newPassword now uses the
+// shared strongPasswordSchema — previously only checked min(8), weaker
+// than the 5 rules Login.jsx's checklist has always visually promised.
+// This is a real, disclosed strengthening of what passes validation
+// here, not a silent change: a password like "password123" that used to
+// pass changePasswordSchema will now correctly fail it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
 import { validDDMMYYYY, parseDDMMYYYY } from "../../utils/dateValidators";
-
-const phoneRegex = /^\d{10}$/;
+import {
+  requiredPhoneSchema,
+  requiredEmailSchema,
+  strongPasswordSchema,
+} from "../../utils/validators";
 
 export const addUserSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().regex(phoneRegex, "Enter a valid 10-digit mobile number"),
+  email: requiredEmailSchema,
+  phone: requiredPhoneSchema,
   gender: z.string().min(1, "Please select a gender"),
   role: z.string().min(1, "Please select a role"),
   department: z.string().min(1, "Please select a department"),
@@ -35,16 +47,14 @@ export const addUserSchema = z.object({
 // ABOUT a person, not decisions a person should make about themselves.
 export const profileSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().regex(phoneRegex, "Enter a valid 10-digit mobile number"),
+  email: requiredEmailSchema,
+  phone: requiredPhoneSchema,
 });
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "New password must be at least 8 characters"),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Please confirm your new password"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -54,8 +64,8 @@ export const changePasswordSchema = z
 
 export const editUserSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Enter a valid email address"),
-  phone: z.string().regex(phoneRegex, "Enter a valid 10-digit mobile number"),
+  email: requiredEmailSchema,
+  phone: requiredPhoneSchema,
   role: z.string().min(1, "Please select a role"),
   department: z.string().min(1, "Please select a department"),
   status: z.string().min(1, "Please select a status"),

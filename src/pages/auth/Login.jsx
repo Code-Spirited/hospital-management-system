@@ -3,6 +3,8 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import {
   Eye,
@@ -15,6 +17,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import loginImage from "../../assets/login-left-image.png";
+import { loginSchema } from "./authSchema";
+import { PASSWORD_RULES } from "../../utils/validators";
 
 // ── Stagger container + shared fade-up item ──────────────────────────────────
 const stagger = {
@@ -51,39 +55,19 @@ const PasswordRule = ({ valid, text }) => (
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  const rules = {
-    length: password.length >= 8,
-    uppercase: /[A-Z]/.test(password),
-    lowercase: /[a-z]/.test(password),
-    number: /\d/.test(password),
-    special: /[^A-Za-z0-9]/.test(password),
-  };
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(loginSchema) });
+  const password = useWatch({ control, name: "password", defaultValue: "" });
 
-  const validate = () => {
-    const e = {};
-    if (!email.trim()) e.email = "Email address is required";
-    else if (!/\S+@\S+\.\S+/.test(email))
-      e.email = "Enter a valid email address";
-    if (!password) e.password = "Password is required";
-    else if (!rules.length) e.password = "At least 8 characters required";
-    else if (!rules.uppercase) e.password = "Add one uppercase letter (A–Z)";
-    else if (!rules.lowercase) e.password = "Add one lowercase letter (a–z)";
-    else if (!rules.number) e.password = "Add one number (0–9)";
-    else if (!rules.special) e.password = "Add one special character";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const onSubmit = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -386,7 +370,7 @@ export default function Login() {
           </p>
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onSubmit)}
             style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}
           >
             {/* Email */}
@@ -420,11 +404,7 @@ export default function Login() {
                 <input
                   type="email"
                   placeholder="admin@hospital.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors((p) => ({ ...p, email: "" }));
-                  }}
+                  {...register("email")}
                   className={`lf-input ${errors.email ? "err" : ""}`}
                 />
               </div>
@@ -438,7 +418,7 @@ export default function Login() {
                     fontFamily: "'Inter', sans-serif",
                   }}
                 >
-                  {errors.email}
+                  {errors.email.message}
                 </p>
               )}
             </div>
@@ -496,12 +476,7 @@ export default function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password)
-                      setErrors((p) => ({ ...p, password: "" }));
-                  }}
+                  {...register("password")}
                   className={`lf-input ${errors.password ? "err" : ""}`}
                   style={{ paddingRight: "2.75rem" }}
                 />
@@ -534,7 +509,7 @@ export default function Login() {
                     fontFamily: "'Inter', sans-serif",
                   }}
                 >
-                  {errors.password}
+                  {errors.password.message}
                 </p>
               )}
               {password.length > 0 && (
@@ -565,23 +540,13 @@ export default function Login() {
                   >
                     Password Requirements
                   </p>
-                  <PasswordRule
-                    valid={rules.length}
-                    text="At least 8 characters"
-                  />
-                  <PasswordRule
-                    valid={rules.uppercase}
-                    text="One uppercase letter (A–Z)"
-                  />
-                  <PasswordRule
-                    valid={rules.lowercase}
-                    text="One lowercase letter (a–z)"
-                  />
-                  <PasswordRule valid={rules.number} text="One number (0–9)" />
-                  <PasswordRule
-                    valid={rules.special}
-                    text="One special character (!@#$…)"
-                  />
+                  {PASSWORD_RULES.map((rule) => (
+                    <PasswordRule
+                      key={rule.key}
+                      valid={rule.test(password)}
+                      text={rule.checklistLabel}
+                    />
+                  ))}
                 </motion.div>
               )}
             </div>

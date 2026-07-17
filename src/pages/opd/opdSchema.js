@@ -1,16 +1,25 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // opdSchema.js
 //
-// Zod validation schemas for every OPD form. Date validation now imports
-// from the shared utils/dateValidators.js instead of defining its own copy
-// (that duplication was removed once IPD needed the same logic — see
-// AdmissionForm/ipdSchema.js).
+// Zod validation schemas for every OPD form. Date validation imports from
+// utils/dateValidators.js. Phone/email/percent/billing-line-item patterns
+// now import from utils/validators.js — previously duplicated locally
+// (phoneRegex was independently declared here, in ipdSchema.js, and in
+// userSchema.js; the percent and billing-items patterns were repeated
+// byte-for-byte across this file and ipdSchema.js).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
 import { validDDMMYYYY, parseDDMMYYYY } from "../../utils/dateValidators";
+import {
+  requiredPhoneSchema,
+  optionalPhoneSchema,
+  optionalEmailSchema,
+  percentSchema,
+  nonNegativeAmountSchema,
+  billingLineItemsSchema,
+} from "../../utils/validators";
 
-const phoneRegex = /^\d{10}$/;
 const pincodeRegex = /^\d{6}$/;
 
 export const patientRegistrationSchema = z.object({
@@ -42,24 +51,11 @@ export const patientRegistrationSchema = z.object({
     .or(z.literal("")),
 
   // ── Step 2: Contact ───────────────────────────────────────────────────────
-  mobileNumber: z
-    .string()
-    .regex(phoneRegex, "Enter a valid 10-digit mobile number"),
-
-  alternatePhone: z
-    .string()
-    .regex(phoneRegex, "Enter a valid 10-digit number")
-    .optional()
-    .or(z.literal("")),
-
-  email: z
-    .string()
-    .email("Enter a valid email address")
-    .optional()
-    .or(z.literal("")),
+  mobileNumber: requiredPhoneSchema,
+  alternatePhone: optionalPhoneSchema,
+  email: optionalEmailSchema,
 
   addressLine1: z.string().min(5, "Address must be at least 5 characters"),
-
   addressLine2: z.string().optional().or(z.literal("")),
 
   city: z.string().min(2, "City is required"),
@@ -69,10 +65,8 @@ export const patientRegistrationSchema = z.object({
 
   // ── Step 3: Emergency + Medical ───────────────────────────────────────────
   emergencyName: z.string().min(2, "Emergency contact name is required"),
-
   emergencyRelation: z.string().min(1, "Relationship is required"),
-
-  emergencyPhone: z.string().regex(phoneRegex, "Enter a valid 10-digit number"),
+  emergencyPhone: requiredPhoneSchema,
 
   chiefComplaint: z
     .string()
@@ -100,12 +94,8 @@ export const STEP_FIELDS = {
 // ── Edit Patient schema — used by the quick-edit drawer in PatientList ───────
 export const editPatientSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  phone: z.string().regex(phoneRegex, "Enter a valid 10-digit mobile number"),
-  email: z
-    .string()
-    .email("Enter a valid email address")
-    .optional()
-    .or(z.literal("")),
+  phone: requiredPhoneSchema,
+  email: optionalEmailSchema,
   address: z.string().min(5, "Address must be at least 5 characters"),
   status: z.string().min(1, "Please select a status"),
 });
@@ -127,8 +117,6 @@ export const appointmentSchema = z.object({
 // Deliberately fully optional. Not every consultation needs a recorded
 // diagnosis or vitals to still be considered a valid, savable encounter —
 // e.g. a brief check-in that's marked complete with no further detail.
-// Required fields here would block exactly the kind of lightweight
-// consultation that should be easy to log.
 export const consultationSchema = z.object({
   bloodPressure: z.string().optional().or(z.literal("")),
   temperature: z.string().optional().or(z.literal("")),
@@ -158,21 +146,10 @@ export const prescriptionSchema = z.object({
 
 // ── Billing schema ─────────────────────────────────────────────────────────────
 export const billingSchema = z.object({
-  consultationFee: z.coerce.number().min(0, "Enter a valid amount"),
-  items: z.array(
-    z.object({
-      description: z.string().min(2, "Description required"),
-      amount: z.coerce.number().min(0, "Enter a valid amount"),
-    }),
-  ),
-  discountPercent: z.coerce
-    .number()
-    .min(0, "Cannot be negative")
-    .max(100, "Cannot exceed 100%"),
-  taxPercent: z.coerce
-    .number()
-    .min(0, "Cannot be negative")
-    .max(100, "Cannot exceed 100%"),
+  consultationFee: nonNegativeAmountSchema,
+  items: billingLineItemsSchema,
+  discountPercent: percentSchema,
+  taxPercent: percentSchema,
   paymentMethod: z.string().min(1, "Select a payment method"),
   paymentStatus: z.string().min(1, "Select a payment status"),
 });

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import {
   Mail,
@@ -11,6 +13,7 @@ import {
   MailCheck,
 } from "lucide-react";
 import loginImage from "../../assets/login-left-image.png";
+import { forgotPasswordSchema } from "./authSchema";
 
 const stagger = {
   hidden: {},
@@ -27,32 +30,29 @@ const fadeUp = {
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
 
-  const validate = () => {
-    if (!email.trim()) {
-      setError("Email address is required");
-      return false;
-    }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError("Enter a valid email address");
-      return false;
-    }
-    setError("");
-    return true;
-  };
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({ resolver: zodResolver(forgotPasswordSchema) });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const onSubmit = (data) => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      setSubmittedEmail(data.email);
       setSubmitted(true);
     }, 1800);
+  };
+
+  const tryDifferentEmail = () => {
+    setSubmitted(false);
+    reset();
   };
 
   return (
@@ -336,7 +336,7 @@ export default function ForgotPassword() {
               </p>
 
               <form
-                onSubmit={handleSubmit}
+                onSubmit={handleSubmit(onSubmit)}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -373,15 +373,11 @@ export default function ForgotPassword() {
                     <input
                       type="email"
                       placeholder="admin@hospital.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (error) setError("");
-                      }}
-                      className={`fp-input ${error ? "err" : ""}`}
+                      {...register("email")}
+                      className={`fp-input ${errors.email ? "err" : ""}`}
                     />
                   </div>
-                  {error && (
+                  {errors.email && (
                     <p
                       style={{
                         marginTop: ".3rem",
@@ -391,7 +387,7 @@ export default function ForgotPassword() {
                         fontFamily: "'Inter', sans-serif",
                       }}
                     >
-                      {error}
+                      {errors.email.message}
                     </p>
                   )}
                 </div>
@@ -498,7 +494,7 @@ export default function ForgotPassword() {
                   fontFamily: "'Inter', sans-serif",
                 }}
               >
-                {email}
+                {submittedEmail}
               </p>
               <p
                 style={{
@@ -526,13 +522,7 @@ export default function ForgotPassword() {
                 >
                   <ArrowLeft size={16} /> Back to Sign In
                 </button>
-                <button
-                  onClick={() => {
-                    setSubmitted(false);
-                    setEmail("");
-                  }}
-                  className="fp-btn-outline"
-                >
+                <button onClick={tryDifferentEmail} className="fp-btn-outline">
                   Try a different email
                 </button>
               </div>

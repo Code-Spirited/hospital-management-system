@@ -1,15 +1,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // pharmacySchema.js
 //
-// medicineSchema now covers ONLY Product-tier fields — no quantity,
-// batchNumber, or expiryDate, since those never belong on a Medicine
-// record in the two-tier model. purchaseEntrySchema covers a full
-// multi-line invoice: header fields once, then a repeatable array of
-// batch line items, each referencing an existing Medicine.
+// medicineSchema covers ONLY Product-tier fields. purchaseEntrySchema
+// covers a full multi-line invoice. discountPercent now imports the
+// shared percentSchema from utils/validators.js. GST's ceiling (28%,
+// not 100%) stays local and pharmacy-specific — it has only ever had
+// one call site, so extracting it wouldn't remove any real duplication.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
 import { validDDMMYYYY, parseDDMMYYYY } from "../../utils/dateValidators";
+import { percentSchema } from "../../utils/validators";
 
 // ── Add Medicine (Product tier only) ──────────────────────────────────────────
 export const medicineSchema = z.object({
@@ -67,22 +68,13 @@ export const stockAdjustmentSchema = z.object({
 });
 
 // ── Sales Billing ──────────────────────────────────────────────────────────────
-// Cart items themselves aren't user-typed form fields (they're built by
-// clicking search results), so the schema here validates the checkout
-// details only — payment and customer identification. The cart's own
-// integrity (enough stock, a real batch assigned) is enforced directly
-// in the billing page's logic, not through Zod, since it's driven by
-// live inventory state rather than form input.
 export const salesBillingSchema = z
   .object({
     customerType: z.string().min(1, "Please select who this sale is for"),
     patientId: z.string().optional().or(z.literal("")),
     walkInName: z.string().optional().or(z.literal("")),
     walkInPhone: z.string().optional().or(z.literal("")),
-    discountPercent: z.coerce
-      .number()
-      .min(0, "Cannot be negative")
-      .max(100, "Cannot exceed 100%"),
+    discountPercent: percentSchema,
     paymentMethod: z.string().min(1, "Select a payment method"),
     paymentStatus: z.string().min(1, "Select a payment status"),
   })
