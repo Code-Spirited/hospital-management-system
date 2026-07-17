@@ -1,13 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// pharmacyService.js
-//
-// stockMovements and sales have no seed data (both start empty in
-// PharmacyContext) — still routed through the service layer for
-// structural consistency, resolving an empty array until a backend
-// exists to actually persist and return this session's activity.
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { mockDelay } from "./mockDelay";
+import { mockDelay, shouldSimulateError } from "./mockDelay";
 import {
   initialMedicines,
   initialBatches,
@@ -16,27 +7,30 @@ import {
 export const pharmacyService = {
   getMedicines: async () => {
     await mockDelay();
+    if (shouldSimulateError("medicines")) {
+      throw new Error("Failed to load medicines. Please try again.");
+    }
     return initialMedicines;
-    // import apiClient from "./apiClient";
-    // const { data } = await apiClient.get("/pharmacy/medicines");
-    // return data;
   },
   getBatches: async () => {
     await mockDelay();
+    if (shouldSimulateError("batches")) {
+      throw new Error("Failed to load batches. Please try again.");
+    }
     return initialBatches;
-    // const { data } = await apiClient.get("/pharmacy/batches");
-    // return data;
   },
   getStockMovements: async () => {
     await mockDelay();
+    if (shouldSimulateError("stockMovements")) {
+      throw new Error("Failed to load stock movements. Please try again.");
+    }
     return [];
-    // const { data } = await apiClient.get("/pharmacy/stock-movements");
-    // return data;
   },
   getSales: async () => {
     await mockDelay();
+    if (shouldSimulateError("sales")) {
+      throw new Error("Failed to load sales. Please try again.");
+    }
     return [];
-    // const { data } = await apiClient.get("/pharmacy/sales");
-    // return data;
   },
 };

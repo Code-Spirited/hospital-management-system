@@ -33,6 +33,7 @@ export const NotificationsProvider = ({ children }) => {
     setData: setNotifications,
     isLoading,
     error,
+    refetch,
   } = useAsyncData(notificationsService.getInitial, []);
   const [liveIndex, setLiveIndex] = useState(0);
 
@@ -86,6 +87,7 @@ export const NotificationsProvider = ({ children }) => {
         notifications,
         isLoading,
         error,
+        refetch,
         unreadCount,
         markAsRead,
         markAllRead,

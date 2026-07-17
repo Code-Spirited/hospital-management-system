@@ -35,6 +35,7 @@ import Abbr from "../../components/common/Abbr/Abbr";
 import { usePatients } from "../../context/PatientsContext";
 import { useIPD } from "../../context/IPDContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
+import AsyncErrorBanner from "../../components/common/AsyncErrorBanner/AsyncErrorBanner";
 import {
   ADMISSION_STATUS_CONFIG,
   WARD_TYPE_CONFIG,
@@ -572,7 +573,7 @@ const RowActions = ({ admission, navigate, onView }) => {
 
 const IPDHome = () => {
   const navigate = useNavigate();
-  const { admissions } = useIPD();
+  const { admissions, isLoading, error, refetch } = useIPD();
   const { patients } = usePatients();
   const { getPageIndex, setPageIndex } = useTablePagination();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -709,6 +710,36 @@ const IPDHome = () => {
         }
         .ipd-row-action-btn:hover { background: var(--hms-surface); }
       `}</style>
+
+      <AsyncErrorBanner error={error} onRetry={refetch} label="admissions" />
+
+      {isLoading && (
+        <p
+          style={{
+            fontSize: "0.78rem",
+            color: "#94a3b8",
+            fontWeight: 600,
+            margin: "0 0 0.875rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              border: "2px solid #e2e8f0",
+              borderTopColor: "var(--hms-blue)",
+              borderRadius: "50%",
+              animation: "ipd-spin 0.7s linear infinite",
+              display: "inline-block",
+            }}
+          />
+          Refreshing admissions…
+        </p>
+      )}
+      <style>{`@keyframes ipd-spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="ipd-stats-grid">
         <div

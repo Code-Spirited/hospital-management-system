@@ -47,6 +47,7 @@ import {
 } from "../../components/common";
 import { useUsers } from "../../context/UsersContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
+import AsyncErrorBanner from "../../components/common/AsyncErrorBanner/AsyncErrorBanner";
 import { ROLE_CONFIG, USER_STATUS_CONFIG, DEPARTMENTS } from "./userData";
 import { editUserSchema } from "./userSchema";
 
@@ -654,7 +655,7 @@ const EditDrawer = ({ user, open, onOpenChange, onSave, users }) => {
 
 const UserDirectory = () => {
   const navigate = useNavigate();
-  const { users, updateUser } = useUsers();
+  const { users, isLoading, error, refetch, updateUser } = useUsers();
   const { getPageIndex, setPageIndex } = useTablePagination();
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -815,6 +816,36 @@ const UserDirectory = () => {
         }
         .users-row-action-btn:hover { background: var(--hms-surface); }
       `}</style>
+
+      <AsyncErrorBanner error={error} onRetry={refetch} label="users" />
+
+      {isLoading && (
+        <p
+          style={{
+            fontSize: "0.78rem",
+            color: "#94a3b8",
+            fontWeight: 600,
+            margin: "0 0 0.875rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              border: "2px solid #e2e8f0",
+              borderTopColor: "var(--hms-blue)",
+              borderRadius: "50%",
+              animation: "usr-spin 0.7s linear infinite",
+              display: "inline-block",
+            }}
+          />
+          Refreshing users…
+        </p>
+      )}
+      <style>{`@keyframes usr-spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="users-stats-grid">
         {[

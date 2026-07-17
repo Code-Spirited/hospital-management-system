@@ -50,6 +50,7 @@ import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
 import { editPatientSchema } from "./opdSchema";
+import AsyncErrorBanner from "../../components/common/AsyncErrorBanner/AsyncErrorBanner";
 
 const opt = (v) => ({ value: v, label: v });
 const STATUS_OPTIONS = Object.keys(STATUS_CONFIG).map(opt);
@@ -675,8 +676,15 @@ const EditDrawer = ({ patient, open, onOpenChange, onSave }) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const PatientList = () => {
-  const { patients, updatePatient, deletePatient, restorePatient } =
-    usePatients();
+  const {
+    patients,
+    isLoading,
+    error,
+    refetch,
+    updatePatient,
+    deletePatient,
+    restorePatient,
+  } = usePatients();
   const { appointments } = useAppointments();
   const { getPageIndex, setPageIndex } = useTablePagination();
   const [viewing, setViewing] = useState(null);
@@ -862,6 +870,36 @@ const PatientList = () => {
         .opd-row-action-danger { color: #dc2626; }
         .opd-row-action-danger:hover { background: #fef2f2; }
       `}</style>
+
+      <AsyncErrorBanner error={error} onRetry={refetch} label="patients" />
+
+      {isLoading && (
+        <p
+          style={{
+            fontSize: "0.78rem",
+            color: "#94a3b8",
+            fontWeight: 600,
+            margin: "0 0 0.875rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              border: "2px solid #e2e8f0",
+              borderTopColor: "var(--hms-blue)",
+              borderRadius: "50%",
+              animation: "opd-spin 0.7s linear infinite",
+              display: "inline-block",
+            }}
+          />
+          Refreshing patients…
+        </p>
+      )}
+      <style>{`@keyframes opd-spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* ── Stats row ── */}
       <div className="opd-stats-grid">

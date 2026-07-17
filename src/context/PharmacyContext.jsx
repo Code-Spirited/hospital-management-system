@@ -26,23 +26,36 @@ export const PharmacyProvider = ({ children }) => {
     setData: setMedicines,
     isLoading: medicinesLoading,
     error: medicinesError,
+    refetch: refetchMedicines,
   } = useAsyncData(pharmacyService.getMedicines, initialMedicines);
   const {
     data: batches,
     setData: setBatches,
     isLoading: batchesLoading,
     error: batchesError,
+    refetch: refetchBatches,
   } = useAsyncData(pharmacyService.getBatches, initialBatches);
   const {
     data: stockMovements,
     setData: setStockMovements,
     isLoading: movementsLoading,
+    refetch: refetchMovements,
   } = useAsyncData(pharmacyService.getStockMovements, []);
   const {
     data: sales,
     setData: setSales,
     isLoading: salesLoading,
+    refetch: refetchSales,
   } = useAsyncData(pharmacyService.getSales, []);
+
+  // Combined retry — calls every source's own refetch. Simpler for a
+  // consuming page to call one function than four.
+  const refetch = useCallback(() => {
+    refetchMedicines();
+    refetchBatches();
+    refetchMovements();
+    refetchSales();
+  }, [refetchMedicines, refetchBatches, refetchMovements, refetchSales]);
 
   const addMedicine = useCallback(
     (medicine) => {
@@ -202,6 +215,7 @@ export const PharmacyProvider = ({ children }) => {
           movementsLoading ||
           salesLoading,
         error: medicinesError || batchesError || null,
+        refetch,
         addMedicine,
         updateMedicine,
         deleteMedicine,

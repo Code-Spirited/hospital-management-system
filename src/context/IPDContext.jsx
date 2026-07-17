@@ -20,6 +20,7 @@ export const IPDProvider = ({ children }) => {
     setData: setAdmissions,
     isLoading,
     error,
+    refetch,
   } = useAsyncData(ipdService.getAll, initialAdmissions);
 
   const addAdmission = useCallback(
@@ -71,6 +72,7 @@ export const IPDProvider = ({ children }) => {
         admissions,
         isLoading,
         error,
+        refetch,
         addAdmission,
         updateAdmission,
         dischargeAdmission,

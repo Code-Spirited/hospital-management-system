@@ -27,12 +27,19 @@ export const UsersProvider = ({ children }) => {
     setData: setUsers,
     isLoading: usersLoading,
     error: usersError,
+    refetch: refetchUsers,
   } = useAsyncData(usersService.getAll, initialUsers);
   const {
     data: permissions,
     setData: setPermissions,
     isLoading: permissionsLoading,
+    refetch: refetchPermissions,
   } = useAsyncData(usersService.getPermissions, DEFAULT_PERMISSIONS);
+
+  const refetch = useCallback(() => {
+    refetchUsers();
+    refetchPermissions();
+  }, [refetchUsers, refetchPermissions]);
 
   const [permissionOverrides, setPermissionOverrides] = useState({});
   const [userSettingsMap, setUserSettingsMap] = useState({});
@@ -92,6 +99,7 @@ export const UsersProvider = ({ children }) => {
         users,
         isLoading: usersLoading || permissionsLoading,
         error: usersError || null,
+        refetch,
         addUser,
         updateUser,
         deleteUser,

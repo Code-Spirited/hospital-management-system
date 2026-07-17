@@ -25,6 +25,7 @@ export const AppointmentsProvider = ({ children }) => {
     setData: setAppointments,
     isLoading,
     error,
+    refetch,
   } = useAsyncData(appointmentsService.getAll, initialAppointments);
 
   const addAppointment = useCallback(
@@ -60,6 +61,7 @@ export const AppointmentsProvider = ({ children }) => {
         appointments,
         isLoading,
         error,
+        refetch,
         addAppointment,
         updateAppointment,
         cancelAppointment,

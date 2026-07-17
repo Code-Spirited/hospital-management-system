@@ -27,6 +27,7 @@ export const PatientsProvider = ({ children }) => {
     setData: setPatients,
     isLoading,
     error,
+    refetch,
   } = useAsyncData(patientsService.getAll, initialPatients);
 
   const addPatient = useCallback(
@@ -68,6 +69,7 @@ export const PatientsProvider = ({ children }) => {
         patients,
         isLoading,
         error,
+        refetch,
         addPatient,
         updatePatient,
         deletePatient,

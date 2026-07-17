@@ -8,12 +8,15 @@ import {
   Loader2,
 } from "lucide-react";
 import AppRoutes from "./routes/AppRoutes";
+import ErrorBoundary from "./components/common/ErrorBoundary/ErrorBoundary";
 
 function App() {
   return (
     <>
       <Tooltip.Provider delayDuration={150}>
-        <AppRoutes />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
       </Tooltip.Provider>
 
       <style>{`

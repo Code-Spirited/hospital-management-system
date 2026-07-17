@@ -10,12 +10,15 @@
 // it will actually become.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { mockDelay } from "./mockDelay";
+import { mockDelay, shouldSimulateError } from "./mockDelay";
 import { initialNotifications } from "../pages/dashboard/notificationsData";
 
 export const notificationsService = {
   getInitial: async () => {
     await mockDelay();
+    if (shouldSimulateError("notifications")) {
+      throw new Error("Failed to load notifications. Please try again.");
+    }
     return initialNotifications;
     // Once a backend exists, likely an initial REST fetch that then
     // hands off to a WebSocket for live updates:

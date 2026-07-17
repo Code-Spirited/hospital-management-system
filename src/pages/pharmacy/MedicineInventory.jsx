@@ -26,6 +26,7 @@ import { DataTable, multiSelectFilter } from "../../components/common";
 import Abbr from "../../components/common/Abbr/Abbr";
 import { usePharmacy } from "../../context/PharmacyContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
+import AsyncErrorBanner from "../../components/common/AsyncErrorBanner/AsyncErrorBanner";
 import {
   SCHEDULE_CONFIG,
   STOCK_STATUS_CONFIG,
@@ -129,7 +130,7 @@ const inventoryGlobalFilter = (row, _columnId, filterValue) => {
 
 const MedicineInventory = () => {
   const navigate = useNavigate();
-  const { medicines, batches } = usePharmacy();
+  const { medicines, batches, isLoading, error, refetch } = usePharmacy();
   const { getPageIndex, setPageIndex } = useTablePagination();
 
   const medicinesForTable = medicines.map((m) => {
@@ -356,6 +357,36 @@ const MedicineInventory = () => {
           gap: 0.875rem; margin-bottom: 1.25rem;
         }
       `}</style>
+
+      <AsyncErrorBanner error={error} onRetry={refetch} label="medicines" />
+
+      {isLoading && (
+        <p
+          style={{
+            fontSize: "0.78rem",
+            color: "#94a3b8",
+            fontWeight: 600,
+            margin: "0 0 0.875rem",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span
+            style={{
+              width: 12,
+              height: 12,
+              border: "2px solid #e2e8f0",
+              borderTopColor: "var(--hms-blue)",
+              borderRadius: "50%",
+              animation: "pharm-spin 0.7s linear infinite",
+              display: "inline-block",
+            }}
+          />
+          Refreshing medicines…
+        </p>
+      )}
+      <style>{`@keyframes pharm-spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="pharmacy-stats-grid">
         {[

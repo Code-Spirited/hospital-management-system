@@ -1,18 +1,19 @@
-import { mockDelay } from "./mockDelay";
+import { mockDelay, shouldSimulateError } from "./mockDelay";
 import { initialUsers, DEFAULT_PERMISSIONS } from "../pages/users/userData";
 
 export const usersService = {
   getAll: async () => {
     await mockDelay();
+    if (shouldSimulateError("users")) {
+      throw new Error("Failed to load users. Please try again.");
+    }
     return initialUsers;
-    // import apiClient from "./apiClient";
-    // const { data } = await apiClient.get("/users");
-    // return data;
   },
   getPermissions: async () => {
     await mockDelay();
+    if (shouldSimulateError("permissions")) {
+      throw new Error("Failed to load permissions. Please try again.");
+    }
     return DEFAULT_PERMISSIONS;
-    // const { data } = await apiClient.get("/users/permissions");
-    // return data;
   },
 };
