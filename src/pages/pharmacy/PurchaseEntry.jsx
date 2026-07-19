@@ -9,6 +9,14 @@
 // restocks it, non-matching creates a new batch. This can NEVER create a
 // new Medicine — only Add Medicine does that — which is what makes the
 // two screens genuinely distinct now.
+//
+// Week 8, Thursday — responsive fix: each line's Batch Number/Quantity/
+// Unit Cost/MRP sub-grid was fixed at repeat(2, 1fr) with no mobile
+// fallback. Now uses .purchaseline-grid-2, the same named-class +
+// @media (max-width: 540px) pattern already used in Billing.jsx /
+// Prescription.jsx / IPDBilling.jsx. Medicine, Shelf Location, and Expiry
+// Date already spanned the full row via gridColumn: "1 / -1" and are
+// unaffected.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -132,14 +140,7 @@ const PurchaseLine = ({
         </button>
       )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "0.875rem",
-          marginBottom: "0.875rem",
-        }}
-      >
+      <div className="purchaseline-grid-2" style={{ marginBottom: "0.875rem" }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <Field
             label="Medicine"
@@ -385,6 +386,11 @@ const PurchaseEntry = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .purchaseline-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; }
+        @media (max-width: 540px) { .purchaseline-grid-2 { grid-template-columns: 1fr; } }
+      `}</style>
+
       <div style={{ marginBottom: "1.5rem" }}>
         <div
           style={{

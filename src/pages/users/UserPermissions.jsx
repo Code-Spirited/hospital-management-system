@@ -22,6 +22,16 @@
 // fresh mount's initial useState value is correct from its very first
 // render, since it's computed from props already available at mount
 // time, not synchronized in afterward.
+//
+// Week 8, Thursday — responsive fix: the permission editor grid below
+// (1fr repeat(3, minmax(120px, 1fr))) had no breakpoint AND no
+// overflow-x fallback — unlike its sibling page RolesPermissions.jsx,
+// which already wraps its own matrix in overflowX: auto. Since body has
+// overflow-x: hidden set globally, that gap meant the Override/Effective
+// columns could be genuinely clipped and unreachable on a narrow phone,
+// not just cramped. Now wrapped the same way RolesPermissions.jsx
+// already does it, with a matching minWidth so the scroll region has a
+// stable floor.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -191,143 +201,149 @@ const UserPermissionEditor = ({
         </p>
       )}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr repeat(3, minmax(120px, 1fr))",
-          gap: 8,
-          marginBottom: "1rem",
-        }}
-      >
-        <div />
-        {["Role Default", "Override", "Effective"].map((h) => (
-          <div
-            key={h}
-            style={{
-              fontSize: "0.68rem",
-              fontWeight: 700,
-              color: "#94a3b8",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              textAlign: "center",
-            }}
-          >
-            {h}
-          </div>
-        ))}
-
-        {MODULES.map((m) => {
-          const roleDefault = permissions[user.role]?.[m] ?? "No Access";
-          const overrideLabel = localOverrides[m] ?? "Inherit";
-          const effective = localOverrides[m] ?? roleDefault;
-          const roleDefaultCfg = PERMISSION_LEVEL_CONFIG[roleDefault];
-          const effectiveCfg = PERMISSION_LEVEL_CONFIG[effective];
-          const overrideVisual = overrideCellVisual(overrideLabel);
-
-          return (
-            <div key={m} style={{ display: "contents" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0.6rem 0",
-                  borderTop: "1px solid #f1f5f9",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    color: "var(--hms-navy)",
-                  }}
-                >
-                  <Abbr underline={false}>{m}</Abbr>
-                </span>
-              </div>
-              <div
-                style={{
-                  borderTop: "1px solid #f1f5f9",
-                  paddingTop: "0.6rem",
-                  textAlign: "center",
-                }}
-              >
-                <span
-                  style={{
-                    padding: "3px 10px",
-                    borderRadius: 20,
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    background: roleDefaultCfg.bg,
-                    color: roleDefaultCfg.color,
-                  }}
-                >
-                  {roleDefault}
-                </span>
-              </div>
-              <div
-                style={{ borderTop: "1px solid #f1f5f9", paddingTop: "0.6rem" }}
-              >
-                {isAdmin ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 4,
-                      padding: "0.35rem",
-                      borderRadius: 8,
-                      background: "#f8fafc",
-                      color: "#cbd5e1",
-                      fontSize: "0.68rem",
-                      fontWeight: 700,
-                    }}
-                  >
-                    <Lock size={10} /> Locked
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => cycleOverride(m)}
-                    style={{
-                      width: "100%",
-                      padding: "0.4rem 0.4rem",
-                      borderRadius: 8,
-                      border: `1.5px dashed ${overrideLabel === "Inherit" ? "#cbd5e1" : "transparent"}`,
-                      background: overrideVisual.bg,
-                      color: overrideVisual.color,
-                      fontSize: "0.68rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "var(--font-body)",
-                    }}
-                  >
-                    {overrideLabel}
-                  </button>
-                )}
-              </div>
-              <div
-                style={{
-                  borderTop: "1px solid #f1f5f9",
-                  paddingTop: "0.6rem",
-                  textAlign: "center",
-                }}
-              >
-                <span
-                  style={{
-                    padding: "3px 10px",
-                    borderRadius: 20,
-                    fontSize: "0.7rem",
-                    fontWeight: 800,
-                    background: effectiveCfg.bg,
-                    color: effectiveCfg.color,
-                  }}
-                >
-                  {effective}
-                </span>
-              </div>
+      <div style={{ overflowX: "auto" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr repeat(3, minmax(120px, 1fr))",
+            minWidth: 520,
+            gap: 8,
+            marginBottom: "1rem",
+          }}
+        >
+          <div />
+          {["Role Default", "Override", "Effective"].map((h) => (
+            <div
+              key={h}
+              style={{
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                color: "#94a3b8",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                textAlign: "center",
+              }}
+            >
+              {h}
             </div>
-          );
-        })}
+          ))}
+
+          {MODULES.map((m) => {
+            const roleDefault = permissions[user.role]?.[m] ?? "No Access";
+            const overrideLabel = localOverrides[m] ?? "Inherit";
+            const effective = localOverrides[m] ?? roleDefault;
+            const roleDefaultCfg = PERMISSION_LEVEL_CONFIG[roleDefault];
+            const effectiveCfg = PERMISSION_LEVEL_CONFIG[effective];
+            const overrideVisual = overrideCellVisual(overrideLabel);
+
+            return (
+              <div key={m} style={{ display: "contents" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0.6rem 0",
+                    borderTop: "1px solid #f1f5f9",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      color: "var(--hms-navy)",
+                    }}
+                  >
+                    <Abbr underline={false}>{m}</Abbr>
+                  </span>
+                </div>
+                <div
+                  style={{
+                    borderTop: "1px solid #f1f5f9",
+                    paddingTop: "0.6rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 20,
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      background: roleDefaultCfg.bg,
+                      color: roleDefaultCfg.color,
+                    }}
+                  >
+                    {roleDefault}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    borderTop: "1px solid #f1f5f9",
+                    paddingTop: "0.6rem",
+                  }}
+                >
+                  {isAdmin ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4,
+                        padding: "0.35rem",
+                        borderRadius: 8,
+                        background: "#f8fafc",
+                        color: "#cbd5e1",
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      <Lock size={10} /> Locked
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => cycleOverride(m)}
+                      style={{
+                        width: "100%",
+                        padding: "0.4rem 0.4rem",
+                        borderRadius: 8,
+                        border: `1.5px dashed ${overrideLabel === "Inherit" ? "#cbd5e1" : "transparent"}`,
+                        background: overrideVisual.bg,
+                        color: overrideVisual.color,
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "var(--font-body)",
+                      }}
+                    >
+                      {overrideLabel}
+                    </button>
+                  )}
+                </div>
+                <div
+                  style={{
+                    borderTop: "1px solid #f1f5f9",
+                    paddingTop: "0.6rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      padding: "3px 10px",
+                      borderRadius: 20,
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      background: effectiveCfg.bg,
+                      color: effectiveCfg.color,
+                    }}
+                  >
+                    {effective}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {!isAdmin && (

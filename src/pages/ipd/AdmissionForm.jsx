@@ -6,6 +6,13 @@
 // exists to avoid only applies inside vaul Drawers, which this page isn't.
 // Saving creates a new admission record in IPDContext and redirects to the
 // admissions list so the result is immediately visible.
+//
+// Week 8, Thursday — responsive fix: the "Patient & Admission Details" and
+// "Attendant Details" grids below were fixed at repeat(2, 1fr) with no
+// mobile fallback. Now use .admit-grid-2, the same named-class +
+// @media (max-width: 540px) pattern already proven in Billing.jsx,
+// Prescription.jsx, and IPDBilling.jsx, so every field here stacks to one
+// column on a phone instead of squeezing into half-width.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -124,6 +131,11 @@ const AdmissionForm = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .admit-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 540px) { .admit-grid-2 { grid-template-columns: 1fr; } }
+      `}</style>
+
       <div style={{ marginBottom: "1.5rem" }}>
         <div
           style={{
@@ -209,13 +221,7 @@ const AdmissionForm = () => {
             </Field>
             <SelectedPatientCard control={control} patients={patients} />
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "1rem",
-              }}
-            >
+            <div className="admit-grid-2">
               <Field
                 label="Admitting Doctor"
                 required
@@ -334,13 +340,7 @@ const AdmissionForm = () => {
           >
             Attendant Details
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="admit-grid-2">
             <Field
               label="Attendant Name"
               required

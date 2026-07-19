@@ -16,6 +16,11 @@
 // category. It's styled neutrally (gray, not red/alarming) and the
 // confirmation toast for it uses plain wording, not the celebratory tone
 // used for every other outcome.
+//
+// Week 8, Thursday — responsive fix: the two field grids below were fixed
+// at repeat(2, 1fr) with no mobile fallback. Now use .discharge-grid-2,
+// the same named-class + @media (max-width: 540px) pattern already used
+// in Billing.jsx / Prescription.jsx / IPDBilling.jsx.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useParams, useNavigate } from "react-router-dom";
@@ -232,6 +237,11 @@ const DischargeSummary = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .discharge-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 540px) { .discharge-grid-2 { grid-template-columns: 1fr; } }
+      `}</style>
+
       <button
         onClick={() => navigate("/ipd")}
         style={{
@@ -554,13 +564,7 @@ const DischargeSummary = () => {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
             >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "1rem",
-                }}
-              >
+              <div className="discharge-grid-2">
                 <Field
                   label="Discharge Date"
                   required
@@ -618,13 +622,7 @@ const DischargeSummary = () => {
                 />
               </Field>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "1rem",
-                }}
-              >
+              <div className="discharge-grid-2">
                 <Field
                   label="Follow-up Date"
                   hint="Optional"

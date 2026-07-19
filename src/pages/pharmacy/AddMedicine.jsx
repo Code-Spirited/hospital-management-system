@@ -6,6 +6,12 @@
 // starts with zero stock, which is correct: it now exists in the
 // catalog, but nothing has been received yet. Receiving its first
 // shipment is Purchase Entry's job, not this form's.
+//
+// Week 8, Thursday — responsive fix: this form has 10 fields in a single
+// fixed repeat(2, 1fr) grid with no mobile fallback — the densest
+// unguarded grid found in the responsive audit. Now uses .medicine-grid-2,
+// the same named-class + @media (max-width: 540px) pattern already used
+// in Billing.jsx / Prescription.jsx / IPDBilling.jsx.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -92,6 +98,11 @@ const AddMedicine = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .medicine-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 540px) { .medicine-grid-2 { grid-template-columns: 1fr; } }
+      `}</style>
+
       <div style={{ marginBottom: "1.5rem" }}>
         <div
           style={{
@@ -172,13 +183,7 @@ const AddMedicine = () => {
           >
             Medicine Identification
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="medicine-grid-2">
             <Field
               label="Medicine Name"
               required

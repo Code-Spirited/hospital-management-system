@@ -12,6 +12,12 @@
 // Records) are shown as a read-only reference list — no pricing data
 // exists for them yet (Week 5's Pharmacy module), so they're informational
 // only; a billable line is added manually if needed.
+//
+// Week 8, Thursday — responsive fix: same as Billing.jsx — the
+// description field in each "Additional Charges" row sits in a plain flex
+// row next to a fixed 120px amount field, with no minWidth: 0 to let it
+// actually shrink below content size on a narrow screen. Added as a
+// defensive one-line fix, matching Billing.jsx's identical change.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useParams, useNavigate } from "react-router-dom";
@@ -558,7 +564,7 @@ const IPDBilling = () => {
                   key={field.id}
                   style={{ display: "flex", gap: 10, alignItems: "flex-end" }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Field
                       label={index === 0 ? "Description" : undefined}
                       error={errors.items?.[index]?.description?.message}

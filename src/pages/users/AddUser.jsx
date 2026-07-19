@@ -9,6 +9,13 @@
 // see UserDirectory.jsx's "Never logged in" fix). Gender and Joined-On
 // are asked here and ONLY here — Edit User treats both as immutable
 // once set, matching editPatientSchema's identical principle for DOB.
+//
+// Week 8, Thursday — responsive fix: all three field grids below (Personal
+// Information, Role & Department, Employment) were fixed at
+// repeat(2, 1fr) with no mobile fallback. They share one class,
+// .adduser-grid-2, since all three use the identical column/gap pattern —
+// same named-class + @media (max-width: 540px) approach used everywhere
+// else in this pass.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from "react";
@@ -109,6 +116,11 @@ const AddUser = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .adduser-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 540px) { .adduser-grid-2 { grid-template-columns: 1fr; } }
+      `}</style>
+
       <div style={{ marginBottom: "1.5rem" }}>
         <div
           style={{
@@ -179,13 +191,7 @@ const AddUser = () => {
           >
             Personal Information
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="adduser-grid-2">
             <div style={{ gridColumn: "1 / -1" }}>
               <Field
                 label="Full Name"
@@ -255,13 +261,7 @@ const AddUser = () => {
           >
             Role & Department
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="adduser-grid-2">
             <Field label="Role" required error={errors.role?.message}>
               <FormSelect
                 name="role"
@@ -310,13 +310,7 @@ const AddUser = () => {
           >
             Employment
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="adduser-grid-2">
             <Field
               label="Joined On"
               required

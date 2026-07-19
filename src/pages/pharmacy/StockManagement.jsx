@@ -10,6 +10,14 @@
 // is written to an audit log (batch, type, quantities, reason,
 // timestamp) — mandatory, per both source documents, since stock
 // adjustments must be traceable in any real hospital pharmacy.
+//
+// Week 8, Thursday — responsive fix: the Adjustment Type/Quantity grid
+// was fixed at repeat(2, 1fr) with no mobile fallback — now .adjustment-
+// grid-2, the same named-class + @media (max-width: 540px) pattern used
+// elsewhere. The two Correction-direction buttons ("Recount found LESS/
+// MORE stock") now sit in a flex-wrap row with a minimum width each,
+// so on a narrow phone they stack to full-width buttons instead of
+// crowding two long labels side by side.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo } from "react";
@@ -163,6 +171,14 @@ const StockManagement = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .adjustment-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 540px) { .adjustment-grid-2 { grid-template-columns: 1fr; } }
+
+        .correction-toggle-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .correction-toggle-btn { flex: 1 1 180px; }
+      `}</style>
+
       <div style={{ marginBottom: "1.25rem" }}>
         <div
           style={{
@@ -246,13 +262,7 @@ const StockManagement = () => {
               />
             </Field>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "1rem",
-              }}
-            >
+            <div className="adjustment-grid-2">
               <Field
                 label="Adjustment Type"
                 required
@@ -279,14 +289,14 @@ const StockManagement = () => {
             </div>
 
             {adjustmentType === "Correction" && (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="correction-toggle-row">
                 {["decrease", "increase"].map((dir) => (
                   <button
                     key={dir}
                     type="button"
                     onClick={() => setCorrectionDirection(dir)}
+                    className="correction-toggle-btn"
                     style={{
-                      flex: 1,
                       padding: "0.55rem 1rem",
                       borderRadius: 9,
                       border: `1.5px solid ${correctionDirection === dir ? "var(--hms-blue)" : "var(--hms-border)"}`,

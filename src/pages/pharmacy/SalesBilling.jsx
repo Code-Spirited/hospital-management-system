@@ -17,6 +17,14 @@
 // records, which is a real matching problem needing its own careful
 // pass — not attempted today. This page fully supports manual medicine
 // selection for OPD/IPD patients and walk-in customers.
+//
+// Week 8, Thursday — responsive fix: three spots here were fixed-column
+// grids with no mobile fallback — the Customer grid (2-col), the Payment
+// grid (3-col, the tightest one in the app), and the cart line-item grid
+// (Batch select / Qty / Total). All three now collapse to a single
+// column on narrow screens via named classes, same pattern as the rest
+// of the audit. Payment collapses at 640px rather than 540px since it
+// starts from 3 columns and needs more room before 2-up would even work.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo, useRef } from "react";
@@ -284,6 +292,17 @@ const SalesBilling = () => {
         margin: "0 auto",
       }}
     >
+      <style>{`
+        .customer-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        @media (max-width: 540px) { .customer-grid-2 { grid-template-columns: 1fr; } }
+
+        .payment-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        @media (max-width: 640px) { .payment-grid-3 { grid-template-columns: 1fr; } }
+
+        .cart-line-grid { display: grid; grid-template-columns: 1.6fr 0.8fr 0.8fr; gap: 0.75rem; align-items: end; }
+        @media (max-width: 540px) { .cart-line-grid { grid-template-columns: 1fr; } }
+      `}</style>
+
       <div style={{ marginBottom: "1.25rem" }}>
         <div
           style={{
@@ -355,13 +374,7 @@ const SalesBilling = () => {
           >
             Customer
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: "1rem",
-            }}
-          >
+          <div className="customer-grid-2">
             <Field
               label="Sale For"
               required
@@ -671,14 +684,7 @@ const SalesBilling = () => {
                     </button>
                   </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1.6fr 0.8fr 0.8fr",
-                      gap: "0.75rem",
-                      alignItems: "end",
-                    }}
-                  >
+                  <div className="cart-line-grid">
                     <div>
                       <label
                         style={{
@@ -839,13 +845,7 @@ const SalesBilling = () => {
               >
                 Payment
               </h2>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: "1rem",
-                }}
-              >
+              <div className="payment-grid-3">
                 <Field
                   label="Discount (%)"
                   error={errors.discountPercent?.message}

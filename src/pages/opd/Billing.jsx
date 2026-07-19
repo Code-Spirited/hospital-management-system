@@ -4,6 +4,14 @@
 // → Billing. Saved directly onto the appointment record. Full PDF/Excel
 // invoice export is a dedicated Week 7 task — today's scope is the billing
 // form itself and a clean, live-calculated summary.
+//
+// Week 8, Thursday — responsive fix: the description field in each
+// "Additional Items" row sits in a plain flex row next to a fixed 120px
+// amount field. Flex children default to min-width: auto, which can
+// resist shrinking below content size — the same principle Dashboard.jsx's
+// own CSS comments call out for grid children. Added minWidth: 0 as a
+// defensive one-line fix so the description field can actually shrink on
+// a narrow screen instead of forcing the row wider than the viewport.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useParams, useNavigate } from "react-router-dom";
@@ -340,7 +348,7 @@ const Billing = () => {
                   key={field.id}
                   style={{ display: "flex", gap: 10, alignItems: "flex-end" }}
                 >
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <Field
                       label={index === 0 ? "Additional Items" : undefined}
                       error={errors.items?.[index]?.description?.message}
