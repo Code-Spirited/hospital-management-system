@@ -15,6 +15,10 @@
 // This is a real, disclosed strengthening of what passes validation
 // here, not a silent change: a password like "password123" that used to
 // pass changePasswordSchema will now correctly fail it.
+//
+// Week 8, Friday: removed the made-up minimum-length rule on fullName
+// (appears 3 times below, once per schema) — a real name has no defined
+// standard length, unlike phone/email which are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
@@ -26,7 +30,7 @@ import {
 } from "../../utils/validators";
 
 export const addUserSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  fullName: z.string().min(1, "Full name is required"),
   email: requiredEmailSchema,
   phone: requiredPhoneSchema,
   gender: z.string().min(1, "Please select a gender"),
@@ -46,7 +50,7 @@ export const addUserSchema = z.object({
 // Deliberately excludes role/status — those are administrative decisions
 // ABOUT a person, not decisions a person should make about themselves.
 export const profileSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  fullName: z.string().min(1, "Full name is required"),
   email: requiredEmailSchema,
   phone: requiredPhoneSchema,
 });
@@ -63,7 +67,7 @@ export const changePasswordSchema = z
   });
 
 export const editUserSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  fullName: z.string().min(1, "Full name is required"),
   email: requiredEmailSchema,
   phone: requiredPhoneSchema,
   role: z.string().min(1, "Please select a role"),

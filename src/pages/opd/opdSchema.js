@@ -7,6 +7,14 @@
 // (phoneRegex was independently declared here, in ipdSchema.js, and in
 // userSchema.js; the percent and billing-items patterns were repeated
 // byte-for-byte across this file and ipdSchema.js).
+//
+// Week 8, Friday: removed made-up minimum-length rules from free-text
+// fields that have no real-world standard length (name, address, city,
+// emergency contact name, chief complaint, appointment reason,
+// medicine name). These fields are still required — they just no
+// longer demand an arbitrary number of characters on top of that.
+// Fields with a genuine real-world format (phone, email, pincode, date)
+// are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
@@ -26,7 +34,7 @@ export const patientRegistrationSchema = z.object({
   // ── Step 1: Personal ──────────────────────────────────────────────────────
   fullName: z
     .string()
-    .min(2, "Full name must be at least 2 characters")
+    .min(1, "Full name is required")
     .max(100, "Name is too long"),
 
   dateOfBirth: z
@@ -55,22 +63,20 @@ export const patientRegistrationSchema = z.object({
   alternatePhone: optionalPhoneSchema,
   email: optionalEmailSchema,
 
-  addressLine1: z.string().min(5, "Address must be at least 5 characters"),
+  addressLine1: z.string().min(1, "Address is required"),
   addressLine2: z.string().optional().or(z.literal("")),
 
-  city: z.string().min(2, "City is required"),
+  city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
 
   pincode: z.string().regex(pincodeRegex, "Enter a valid 6-digit pincode"),
 
   // ── Step 3: Emergency + Medical ───────────────────────────────────────────
-  emergencyName: z.string().min(2, "Emergency contact name is required"),
+  emergencyName: z.string().min(1, "Emergency contact name is required"),
   emergencyRelation: z.string().min(1, "Relationship is required"),
   emergencyPhone: requiredPhoneSchema,
 
-  chiefComplaint: z
-    .string()
-    .min(5, "Please describe the chief complaint (at least 5 characters)"),
+  chiefComplaint: z.string().min(1, "Please describe the chief complaint"),
 
   symptoms: z.string().optional().or(z.literal("")),
   allergies: z.string().optional().or(z.literal("")),
@@ -93,10 +99,10 @@ export const STEP_FIELDS = {
 
 // ── Edit Patient schema — used by the quick-edit drawer in PatientList ───────
 export const editPatientSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(1, "Name is required"),
   phone: requiredPhoneSchema,
   email: optionalEmailSchema,
-  address: z.string().min(5, "Address must be at least 5 characters"),
+  address: z.string().min(1, "Address is required"),
   status: z.string().min(1, "Please select a status"),
 });
 
@@ -110,7 +116,7 @@ export const appointmentSchema = z.object({
     .refine(validDDMMYYYY, "DD-MM-YYYY"),
   time: z.string().min(1, "Time is required"),
   visitType: z.string().min(1, "Please select a visit type"),
-  reason: z.string().min(3, "Please describe the reason for the visit"),
+  reason: z.string().min(1, "Please describe the reason for the visit"),
 });
 
 // ── Consultation schema — vitals + clinical notes ─────────────────────────────
@@ -133,7 +139,7 @@ export const prescriptionSchema = z.object({
   medicines: z
     .array(
       z.object({
-        medicine: z.string().min(2, "Medicine name required"),
+        medicine: z.string().min(1, "Medicine name is required"),
         dosage: z.string().min(1, "Dosage required"),
         frequency: z.string().min(1, "Frequency required"),
         duration: z.string().min(1, "Duration required"),

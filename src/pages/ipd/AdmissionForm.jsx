@@ -32,13 +32,12 @@ import {
 import Abbr from "../../components/common/Abbr/Abbr";
 import { usePatients } from "../../context/PatientsContext";
 import { useIPD } from "../../context/IPDContext";
+import { useUsers } from "../../context/UsersContext";
 import { generateId } from "../../utils/generateId";
-import { DOCTORS } from "../opd/opdData";
 import { WARD_TYPE_CONFIG } from "./ipdData";
 import { admissionSchema } from "./ipdSchema";
 
 const opt = (v) => ({ value: v, label: v });
-const DOCTOR_OPTIONS = DOCTORS.map(opt);
 const WARD_TYPE_OPTIONS = Object.keys(WARD_TYPE_CONFIG).map(opt);
 
 // Shows the selected patient's identifying details the instant one is
@@ -74,6 +73,8 @@ const AdmissionForm = () => {
   const navigate = useNavigate();
   const { patients } = usePatients();
   const { addAdmission } = useIPD();
+  const { doctors } = useUsers();
+  const DOCTOR_OPTIONS = doctors.map(opt);
   const [submitting, setSubmitting] = useState(false);
 
   const patientOptions = patients.map((p) => ({
@@ -101,13 +102,12 @@ const AdmissionForm = () => {
     },
   });
 
-  const submit = async (data) => {
+  const submit = (data) => {
     setSubmitting(true);
     const patient = patients.find((p) => p.id === data.patientId);
     const isoDate = dayjs(data.admissionDate, "DD-MM-YYYY").format(
       "YYYY-MM-DD",
     );
-    await new Promise((r) => setTimeout(r, 600));
     const newId = generateId("ADM", 3003, 900);
     addAdmission({
       id: newId,

@@ -6,6 +6,15 @@
 // shared percentSchema from utils/validators.js. GST's ceiling (28%,
 // not 100%) stays local and pharmacy-specific — it has only ever had
 // one call site, so extracting it wouldn't remove any real duplication.
+//
+// Week 8, Friday: removed made-up minimum-length rules from free-text
+// fields with no real-world standard length (medicine name, generic
+// name, manufacturer, batch number, invoice number, walk-in customer
+// name). stockAdjustmentSchema.reason's 10-character minimum is
+// deliberately LEFT AS IS — unlike the others, it's tied to a real
+// stated purpose (a meaningful audit trail for stock adjustments), not
+// an arbitrary guess, so it wasn't touched without confirming that's
+// actually wanted.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { z } from "zod";
@@ -14,14 +23,14 @@ import { percentSchema } from "../../utils/validators";
 
 // ── Add Medicine (Product tier only) ──────────────────────────────────────────
 export const medicineSchema = z.object({
-  brandName: z.string().min(2, "Medicine name must be at least 2 characters"),
-  genericName: z.string().min(2, "Generic name must be at least 2 characters"),
+  brandName: z.string().min(1, "Medicine name is required"),
+  genericName: z.string().min(1, "Generic name is required"),
   strength: z
     .string()
     .min(1, "Strength is required (e.g. 500mg, or — if not applicable)"),
   category: z.string().min(1, "Please select a category"),
   dosageForm: z.string().min(1, "Please select a dosage form"),
-  manufacturer: z.string().min(2, "Manufacturer is required"),
+  manufacturer: z.string().min(1, "Manufacturer is required"),
   schedule: z.string().min(1, "Please select a drug schedule"),
   storageCondition: z.string().min(1, "Please select a storage condition"),
   reorderLevel: z.coerce.number().min(0, "Cannot be negative"),
@@ -35,7 +44,7 @@ export const medicineSchema = z.object({
 const purchaseLineSchema = z
   .object({
     medicineId: z.string().min(1, "Please select a medicine"),
-    batchNumber: z.string().min(2, "Batch number is required"),
+    batchNumber: z.string().min(1, "Batch number is required"),
     quantity: z.coerce.number().min(1, "Must receive at least 1 unit"),
     unitCost: z.coerce.number().min(0, "Enter a valid unit cost"),
     mrp: z.coerce.number().min(0, "Enter a valid MRP"),
@@ -92,7 +101,7 @@ export const salesBillingSchema = z
       }
     }
     if (data.customerType === "Walk-in") {
-      if (!data.walkInName || data.walkInName.trim().length < 2) {
+      if (!data.walkInName || !data.walkInName.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Name is required for a walk-in sale",
@@ -105,7 +114,7 @@ export const salesBillingSchema = z
 // ── Purchase Entry — full invoice ─────────────────────────────────────────────
 export const purchaseEntrySchema = z.object({
   supplier: z.string().min(1, "Please select a supplier"),
-  invoiceNumber: z.string().min(2, "Invoice number is required"),
+  invoiceNumber: z.string().min(1, "Invoice number is required"),
   purchaseDate: z
     .string()
     .min(1, "Purchase date is required")

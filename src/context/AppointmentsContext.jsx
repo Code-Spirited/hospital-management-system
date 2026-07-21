@@ -12,7 +12,7 @@
 // context yet. Flagged deliberately, not an oversight.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createContext, useContext, useCallback } from "react";
+import { createContext, useContext, useCallback, useMemo } from "react";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { appointmentsService } from "../services/appointmentsService";
 import { initialAppointments } from "../pages/opd/appointmentsData";
@@ -55,18 +55,31 @@ export const AppointmentsProvider = ({ children }) => {
     [setAppointments],
   );
 
+  // Week 8, Friday — memoized; see NotificationsContext.jsx's comment
+  // for why.
+  const value = useMemo(
+    () => ({
+      appointments,
+      isLoading,
+      error,
+      refetch,
+      addAppointment,
+      updateAppointment,
+      cancelAppointment,
+    }),
+    [
+      appointments,
+      isLoading,
+      error,
+      refetch,
+      addAppointment,
+      updateAppointment,
+      cancelAppointment,
+    ],
+  );
+
   return (
-    <AppointmentsContext.Provider
-      value={{
-        appointments,
-        isLoading,
-        error,
-        refetch,
-        addAppointment,
-        updateAppointment,
-        cancelAppointment,
-      }}
-    >
+    <AppointmentsContext.Provider value={value}>
       {children}
     </AppointmentsContext.Provider>
   );

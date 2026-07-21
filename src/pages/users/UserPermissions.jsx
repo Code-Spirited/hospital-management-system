@@ -55,15 +55,7 @@ import {
   PERMISSION_LEVELS,
   PERMISSION_LEVEL_CONFIG,
 } from "./userData";
-
-const getInitials = (name) =>
-  name
-    .replace(/^Dr\.\s*/, "")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+import { getInitials } from "../../utils/formatters";
 
 // "Inherit" is a UI-only concept — it's never actually stored as a value.
 // Choosing it locally deletes that module's key from the staged override

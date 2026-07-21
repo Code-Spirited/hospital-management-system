@@ -208,7 +208,7 @@ const SalesBilling = () => {
   }, 0);
   const grandTotal = taxableAmount + taxAmount;
 
-  const submit = async (data) => {
+  const submit = (data) => {
     if (cart.length === 0) {
       toast.error("Cart is empty", {
         description: "Add at least one medicine before completing the sale.",
@@ -223,7 +223,6 @@ const SalesBilling = () => {
       return;
     }
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
 
     const patient = data.patientId
       ? patients.find((p) => p.id === data.patientId) ||

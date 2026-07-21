@@ -45,15 +45,16 @@ import {
   FormTextarea as Textarea,
   DrawerSelect,
 } from "../../components/common";
-import { STATUS_CONFIG } from "./opdData";
+import { PATIENT_STATUS_CONFIG } from "./opdData";
 import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
 import { editPatientSchema } from "./opdSchema";
 import AsyncErrorBanner from "../../components/common/AsyncErrorBanner/AsyncErrorBanner";
+import { getInitials } from "../../utils/formatters";
 
 const opt = (v) => ({ value: v, label: v });
-const STATUS_OPTIONS = Object.keys(STATUS_CONFIG).map(opt);
+const STATUS_OPTIONS = Object.keys(PATIENT_STATUS_CONFIG).map(opt);
 
 // Computed, not stored — finds the most recent appointment for a patient.
 // This is the fix for "Last Visit" silently going stale: it's derived live
@@ -67,17 +68,12 @@ const getLastVisit = (patientId, appointments) => {
   }, null);
 };
 
-const getInitials = (name) =>
-  name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
 // ── Small badge components ────────────────────────────────────────────────────
 const StatusPill = ({ status }) => {
-  const cfg = STATUS_CONFIG[status] || { color: "#94a3b8", bg: "#f8fafc" };
+  const cfg = PATIENT_STATUS_CONFIG[status] || {
+    color: "#94a3b8",
+    bg: "#f8fafc",
+  };
   return (
     <span
       style={{
@@ -1065,7 +1061,7 @@ const PatientList = () => {
           {
             columnId: "status",
             label: "Status",
-            options: Object.keys(STATUS_CONFIG),
+            options: Object.keys(PATIENT_STATUS_CONFIG),
           },
         ]}
       />

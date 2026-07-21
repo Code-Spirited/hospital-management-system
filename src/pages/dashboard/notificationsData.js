@@ -166,31 +166,3 @@ export const NOTIFICATION_CONFIG = {
   pharmacy: { label: "Pharmacy", color: "#059669", bg: "#ecfdf5", emoji: "💊" },
   system: { label: "System", color: "#64748b", bg: "#f8fafc", emoji: "⚙️" },
 };
-
-// Simulated live notifications — each one pushes in after a delay
-// to demonstrate the real-time notification system.
-// In production this would come from a WebSocket server.
-export const liveNotificationQueue = [
-  {
-    id: 100,
-    type: "lab",
-    title: "Urgent Lab Result",
-    message:
-      "Potassium level critical for Anjali Desai (P-1037). Notify Dr. Anil Kumar immediately.",
-    timestamp: new Date(),
-    read: false,
-    priority: "critical",
-    action: { label: "View Result", path: "/reports" },
-  },
-  {
-    id: 101,
-    type: "appointment",
-    title: "Walk-in Patient",
-    message:
-      "New walk-in registered at OPD reception. Assigned token number T-047.",
-    timestamp: new Date(),
-    read: false,
-    priority: "normal",
-    action: null,
-  },
-];

@@ -39,15 +39,7 @@ import {
 import { useUsers } from "../../context/UsersContext";
 import { ROLE_CONFIG, USER_STATUS_CONFIG } from "./userData";
 import { profileSchema, changePasswordSchema } from "./userSchema";
-
-const getInitials = (name) =>
-  name
-    .replace(/^Dr\.\s*/, "")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+import { getInitials } from "../../utils/formatters";
 
 const Profile = () => {
   const { users, updateUser } = useUsers();
@@ -105,9 +97,8 @@ const Profile = () => {
     formState: { errors: passwordErrors },
   } = useForm({ resolver: zodResolver(changePasswordSchema) });
 
-  const submitProfile = async (data) => {
+  const submitProfile = (data) => {
     setSavingProfile(true);
-    await new Promise((r) => setTimeout(r, 500));
     updateUser({ ...currentUser, ...data });
     setSavingProfile(false);
     toast.success("Profile updated", {
@@ -115,13 +106,8 @@ const Profile = () => {
     });
   };
 
-  // No real backend/auth exists to actually verify or change a password
-  // against — this simulates the flow's UX (validation, loading state,
-  // success feedback) without pretending to persist a credential nowhere
-  // else in the app can check.
-  const submitPassword = async () => {
+  const submitPassword = () => {
     setSavingPassword(true);
-    await new Promise((r) => setTimeout(r, 600));
     setSavingPassword(false);
     resetPassword({
       currentPassword: "",

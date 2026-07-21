@@ -177,9 +177,6 @@ const WardManagement = () => {
   ).length;
   const overallPct = totalCapacity ? (totalOccupied / totalCapacity) * 100 : 0;
 
-  // Until DataTable's filter API is confirmed, this just navigates to the
-  // admissions list — ward-type pre-filtering is the deliberate follow-up
-  // noted at the top of this file.
   // Navigates to the Admissions list, optionally pre-filtered to one ward
   // via a ?ward=<type> query param — IPDHome.jsx reads this on mount and
   // hands it to DataTable as an initial filter.

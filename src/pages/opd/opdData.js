@@ -10,19 +10,16 @@
 // recognized patient of ours," nothing clinical.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const STATUS_CONFIG = {
+export const PATIENT_STATUS_CONFIG = {
   Active: { color: "#059669", bg: "#ecfdf5" },
   Inactive: { color: "#94a3b8", bg: "#f8fafc" },
 };
 
-export const DOCTORS = [
-  "Dr. Priya Mehta",
-  "Dr. Anil Kumar",
-  "Dr. Neha Singh",
-  "Dr. Ravi Gupta",
-  "Dr. Sunita Rao",
-  "Dr. Mohammed Ali",
-];
+// DOCTORS used to live here as a static array, duplicating the
+// Doctor-role users seeded in userData.js by hand. Week 8, Friday:
+// consolidated — the doctor list now derives live from UsersContext
+// (see its `doctors` field). Removed from here since nothing imports it
+// from this file anymore.
 
 export const initialPatients = [
   {

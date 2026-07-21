@@ -352,9 +352,8 @@ const PurchaseEntry = () => {
   });
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
 
-  const submit = async (data) => {
+  const submit = (data) => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
 
     const isoDate = dayjs(data.purchaseDate, "DD-MM-YYYY").format("YYYY-MM-DD");
     recordPurchase({

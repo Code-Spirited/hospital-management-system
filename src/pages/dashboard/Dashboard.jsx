@@ -3,6 +3,10 @@ import { DataTable, multiSelectFilter } from "../../components/common";
 import Abbr from "../../components/common/Abbr/Abbr";
 import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
+import {
+  APPOINTMENT_STATUS_CONFIG,
+  VISIT_TYPE_CONFIG,
+} from "../opd/appointmentsData";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import AppointmentAnalytics from "./AppointmentAnalytics";
@@ -64,15 +68,18 @@ const kpiIcons = {
 };
 const quickIcons = [FaProcedures, FaStethoscope, FaPills, FaFlask];
 
-// Status badge
+// Status badge — now reads from the same APPOINTMENT_STATUS_CONFIG
+// AppointmentList.jsx uses, instead of a separate local map. That local
+// map only covered 4 of the 6 real appointment statuses (Consulted and
+// Prescribed fell through to a generic gray badge) and used slightly
+// different shades for the other four — meaning the same appointment
+// could show two different colors depending on which page you viewed it
+// from. Week 8, Friday fix.
 const StatusBadge = ({ status }) => {
-  const map = {
-    Scheduled: { bg: "#eff6ff", color: "#2563eb", dot: "#3b82f6" },
-    Completed: { bg: "#ecfdf5", color: "#059669", dot: "#22c55e" },
-    Cancelled: { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" },
-    "No-Show": { bg: "#fffbeb", color: "#d97706", dot: "#f59e0b" },
+  const cfg = APPOINTMENT_STATUS_CONFIG[status] || {
+    color: "#64748b",
+    bg: "#f8fafc",
   };
-  const s = map[status] || { bg: "#f8fafc", color: "#64748b", dot: "#94a3b8" };
   return (
     <span
       style={{
@@ -83,27 +90,29 @@ const StatusBadge = ({ status }) => {
         borderRadius: 20,
         fontSize: "0.72rem",
         fontWeight: 600,
-        background: s.bg,
-        color: s.color,
+        background: cfg.bg,
+        color: cfg.color,
       }}
     >
       <span
-        style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot }}
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: cfg.color,
+        }}
       />
       {status}
     </span>
   );
 };
 
-// Type badge
+// Type badge — same fix as StatusBadge above: reads from the shared
+// VISIT_TYPE_CONFIG instead of a local map that included a visit type
+// ("IPD") that doesn't actually exist on any appointment record and used
+// different shades for the three real ones. Week 8, Friday fix.
 const TypeBadge = ({ type }) => {
-  const map = {
-    OPD: { bg: "#eff6ff", color: "#1d4ed8" },
-    IPD: { bg: "#f5f3ff", color: "#6d28d9" },
-    Emergency: { bg: "#fef2f2", color: "#b91c1c" },
-    "Follow-up": { bg: "#ecfdf5", color: "#065f46" },
-  };
-  const c = map[type] || { bg: "#f8fafc", color: "#475569" };
+  const cfg = VISIT_TYPE_CONFIG[type] || { color: "#475569", bg: "#f8fafc" };
   return (
     <span
       style={{
@@ -111,8 +120,8 @@ const TypeBadge = ({ type }) => {
         borderRadius: 20,
         fontSize: "0.72rem",
         fontWeight: 600,
-        background: c.bg,
-        color: c.color,
+        background: cfg.bg,
+        color: cfg.color,
       }}
     >
       <Abbr underline={false}>{type}</Abbr>

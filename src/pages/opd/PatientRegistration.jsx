@@ -210,16 +210,9 @@ const PatientRegistration = () => {
     setCurrentStep((s) => s - 1);
   }, []);
 
-  const onSubmit = async (data) => {
+  const onSubmit = (data) => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1400));
     setSubmitting(false);
-    // generateId, not Math.random() directly here: this function runs
-    // after an `await`, and a setState updater or async continuation that
-    // calls Math.random() directly is the same react-hooks/purity risk
-    // already fixed in AdmissionForm.jsx and AppointmentList.jsx — React
-    // re-invoking this on an interrupted render could mint a different,
-    // possibly duplicate, ID.
     const newId = generateId("P", 1043, 100);
     toast.success(`Patient registered successfully`, {
       description: `${data.fullName} · ID: ${newId}`,

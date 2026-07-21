@@ -32,6 +32,7 @@ import {
 import Abbr from "../../components/common/Abbr/Abbr";
 import { useIPD } from "../../context/IPDContext";
 import { WARD_TYPE_CONFIG, WARD_CAPACITY } from "./ipdData";
+import { getInitials } from "../../utils/formatters";
 
 const WARD_ICONS = {
   General: BedDouble,
@@ -39,14 +40,6 @@ const WARD_ICONS = {
   Private: Lock,
   ICU: Activity,
 };
-
-const getInitials = (name) =>
-  name
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
 // Extracted so the hover-close timer (via useRef) is scoped to ONE bed
 // cell — each occupied bed needs its own independent open/close state

@@ -586,7 +586,6 @@ const IPDHome = () => {
 
   const clearWardFilter = () => {
     setSearchParams({});
-    navigate(0);
   };
 
   const columnHelper = createColumnHelper();
@@ -965,6 +964,7 @@ const IPDHome = () => {
       </div>
 
       <DataTable
+        key={`admissions-${wardFilter ?? "all"}`}
         columns={columns}
         data={admissions}
         title="Admissions"

@@ -69,13 +69,11 @@ export default function Login() {
 
   const onSubmit = () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      toast.success("Welcome back, Admin!", {
-        description: "Signed in successfully.",
-      });
-      navigate("/dashboard");
-    }, 1800);
+    setLoading(false);
+    toast.success("Welcome back, Admin!", {
+      description: "Signed in successfully.",
+    });
+    navigate("/dashboard");
   };
 
   return (

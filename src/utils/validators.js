@@ -62,7 +62,7 @@ export const nonNegativeAmountSchema = z.coerce
 // ── Billing line items (OPD Billing + IPD Billing's extra-charges rows) ────
 export const billingLineItemsSchema = z.array(
   z.object({
-    description: z.string().min(2, "Description required"),
+    description: z.string().min(1, "Description is required"),
     amount: nonNegativeAmountSchema,
   }),
 );

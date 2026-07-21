@@ -89,10 +89,9 @@ const AddUser = () => {
     },
   });
 
-  const submit = async (data) => {
+  const submit = (data) => {
     setSubmitting(true);
     const isoJoinedOn = dayjs(data.joinedOn, "DD-MM-YYYY").format("YYYY-MM-DD");
-    await new Promise((r) => setTimeout(r, 500));
     const newId = generateId("U", 1100, 900);
     addUser({
       id: newId,

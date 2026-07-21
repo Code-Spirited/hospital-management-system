@@ -41,13 +41,12 @@ export default function ForgotPassword() {
     formState: { errors },
   } = useForm({ resolver: zodResolver(forgotPasswordSchema) });
 
+  // Week 8, Friday — same fix as Login.jsx: removed the fake wait.
   const onSubmit = (data) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSubmittedEmail(data.email);
-      setSubmitted(true);
-    }, 1800);
+    setLoading(false);
+    setSubmittedEmail(data.email);
+    setSubmitted(true);
   };
 
   const tryDifferentEmail = () => {

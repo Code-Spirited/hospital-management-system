@@ -25,9 +25,9 @@ export const admissionSchema = z.object({
     .refine(validDDMMYYYY, "Enter date as DD-MM-YYYY"),
   reasonForAdmission: z
     .string()
-    .min(3, "Please describe the reason for admission"),
+    .min(1, "Please describe the reason for admission"),
   diagnosisAtAdmission: z.string().optional().or(z.literal("")),
-  attendantName: z.string().min(2, "Attendant name is required"),
+  attendantName: z.string().min(1, "Attendant name is required"),
   attendantPhone: requiredPhoneSchema,
   expectedStayDays: z.string().optional().or(z.literal("")),
 });

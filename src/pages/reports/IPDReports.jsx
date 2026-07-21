@@ -54,6 +54,7 @@ import {
   DoughnutWithCenter,
   ChartLegendRow,
 } from "./ReportComponents";
+import { getInitials } from "../../utils/formatters";
 
 ChartJS.register(
   CategoryScale,
@@ -66,15 +67,6 @@ ChartJS.register(
   ChartTooltip,
   ChartLegend,
 );
-
-const getInitials = (name) =>
-  name
-    .replace(/^Dr\.\s*/, "")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
 const IPDReports = () => {
   const { admissions } = useIPD();

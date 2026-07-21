@@ -23,7 +23,7 @@ import {
 import { useAppointments } from "../../../context/AppointmentsContext";
 import {
   VISIT_TYPE_CONFIG,
-  STATUS_CONFIG,
+  APPOINTMENT_STATUS_CONFIG,
 } from "../../../pages/opd/appointmentsData";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -47,7 +47,10 @@ const TypeBadge = ({ type }) => {
 };
 
 const StatusBadge = ({ status }) => {
-  const cfg = STATUS_CONFIG[status] || { color: "#94a3b8", bg: "#f8fafc" };
+  const cfg = APPOINTMENT_STATUS_CONFIG[status] || {
+    color: "#94a3b8",
+    bg: "#f8fafc",
+  };
   return (
     <span
       style={{

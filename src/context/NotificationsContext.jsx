@@ -4,26 +4,20 @@
 //
 // Week 8 update: the initial notification list now routes through
 // notificationsService via useAsyncData. isLoading/error are new,
-// additive fields. The live-notification simulation below (setTimeout,
-// liveIndex) is completely unchanged — it's a genuinely different
-// transport concept (an ongoing feed, not a one-time fetch), already
-// correctly flagged for future WebSocket replacement.
+// additive fields.
+//
+// Week 8, Friday — removed the background timer that used to push a
+// fake, pre-written notification (with its own pop-up) onto the list
+// every 40 seconds, with nothing real behind it. That's what was
+// causing pop-ups to appear for no reason. addNotification itself is
+// untouched and still works normally — a real feature (a new
+// admission, a low-stock alert, and so on) can still call it any time
+// to add a genuine notification. Only the fake, timer-based one is gone.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-} from "react";
-import { toast } from "sonner";
+import { createContext, useContext, useCallback, useMemo } from "react";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { notificationsService } from "../services/notificationsService";
-import {
-  liveNotificationQueue,
-  NOTIFICATION_CONFIG,
-} from "../pages/dashboard/notificationsData";
 
 const NotificationsContext = createContext(null);
 
@@ -35,7 +29,6 @@ export const NotificationsProvider = ({ children }) => {
     error,
     refetch,
   } = useAsyncData(notificationsService.getInitial, []);
-  const [liveIndex, setLiveIndex] = useState(0);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -62,38 +55,31 @@ export const NotificationsProvider = ({ children }) => {
     [setNotifications],
   );
 
-  useEffect(() => {
-    if (liveIndex >= liveNotificationQueue.length) return;
-
-    const timer = setTimeout(() => {
-      const notif = liveNotificationQueue[liveIndex];
-      addNotification(notif);
-      setLiveIndex((i) => i + 1);
-
-      const cfg = NOTIFICATION_CONFIG[notif.type] || NOTIFICATION_CONFIG.system;
-      toast(notif.title, {
-        description: notif.message,
-        icon: cfg.emoji,
-        style: { borderLeft: `4px solid ${cfg.color}` },
-      });
-    }, 40_000);
-
-    return () => clearTimeout(timer);
-  }, [liveIndex, addNotification]);
+  const value = useMemo(
+    () => ({
+      notifications,
+      isLoading,
+      error,
+      refetch,
+      unreadCount,
+      markAsRead,
+      markAllRead,
+      addNotification,
+    }),
+    [
+      notifications,
+      isLoading,
+      error,
+      refetch,
+      unreadCount,
+      markAsRead,
+      markAllRead,
+      addNotification,
+    ],
+  );
 
   return (
-    <NotificationsContext.Provider
-      value={{
-        notifications,
-        isLoading,
-        error,
-        refetch,
-        unreadCount,
-        markAsRead,
-        markAllRead,
-        addNotification,
-      }}
-    >
+    <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );

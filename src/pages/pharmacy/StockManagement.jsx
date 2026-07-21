@@ -141,9 +141,8 @@ const StockManagement = () => {
     setConfirming(true);
   };
 
-  const confirmAdjustment = handleSubmit(async (data) => {
+  const confirmAdjustment = handleSubmit((data) => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
     const qty = Number(data.quantity);
     const signedChange = effectiveDirection === "increase" ? qty : -qty;
     adjustStock({

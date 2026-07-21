@@ -33,7 +33,10 @@ import {
   FileBarChart,
 } from "lucide-react";
 import { useAppointments } from "../../context/AppointmentsContext";
-import { STATUS_CONFIG, VISIT_TYPE_CONFIG } from "../opd/appointmentsData";
+import {
+  APPOINTMENT_STATUS_CONFIG,
+  VISIT_TYPE_CONFIG,
+} from "../opd/appointmentsData";
 import DateRangeFilter from "./DateRangeFilter";
 import Abbr from "../../components/common/Abbr/Abbr";
 import {
@@ -51,6 +54,7 @@ import {
   DoughnutWithCenter,
   ChartLegendRow,
 } from "./ReportComponents";
+import { getInitials } from "../../utils/formatters";
 
 ChartJS.register(
   CategoryScale,
@@ -63,15 +67,6 @@ ChartJS.register(
   ChartTooltip,
   ChartLegend,
 );
-
-const getInitials = (name) =>
-  name
-    .replace(/^Dr\.\s*/, "")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
 const OPDReports = () => {
   const { appointments } = useAppointments();
@@ -115,11 +110,11 @@ const OPDReports = () => {
 
   const statusData = useMemo(
     () =>
-      Object.keys(STATUS_CONFIG)
+      Object.keys(APPOINTMENT_STATUS_CONFIG)
         .map((s) => ({
           name: s,
           value: appointmentsInRange.filter((a) => a.status === s).length,
-          color: STATUS_CONFIG[s].color,
+          color: APPOINTMENT_STATUS_CONFIG[s].color,
         }))
         .filter((d) => d.value > 0),
     [appointmentsInRange],

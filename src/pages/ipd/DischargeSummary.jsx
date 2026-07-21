@@ -47,7 +47,7 @@ import {
 } from "../../components/common";
 import { useIPD } from "../../context/IPDContext";
 import { usePatients } from "../../context/PatientsContext";
-import { DOCTORS } from "../opd/opdData";
+import { useUsers } from "../../context/UsersContext";
 import {
   WARD_TYPE_CONFIG,
   ADMISSION_STATUS_CONFIG,
@@ -56,7 +56,6 @@ import {
 import { dischargeSummarySchema } from "./ipdSchema";
 
 const opt = (v) => ({ value: v, label: v });
-const DOCTOR_OPTIONS = DOCTORS.map(opt);
 const CONDITION_OPTIONS = Object.keys(CONDITION_AT_DISCHARGE_CONFIG).map(opt);
 
 const DetailRow = ({ Icon, label, value }) => (
@@ -124,6 +123,9 @@ const DischargeSummary = () => {
   const navigate = useNavigate();
   const { admissions, dischargeAdmission } = useIPD();
   const { patients } = usePatients();
+
+  const { doctors } = useUsers();
+  const DOCTOR_OPTIONS = doctors.map(opt);
 
   const admission = admissions.find((a) => a.id === admissionId);
   const patient = admission?.patientId

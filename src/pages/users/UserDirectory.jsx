@@ -50,15 +50,7 @@ import { useTablePagination } from "../../context/TablePaginationContext";
 import AsyncErrorBanner from "../../components/common/AsyncErrorBanner/AsyncErrorBanner";
 import { ROLE_CONFIG, USER_STATUS_CONFIG, DEPARTMENTS } from "./userData";
 import { editUserSchema } from "./userSchema";
-
-const getInitials = (name) =>
-  name
-    .replace(/^Dr\.\s*/, "")
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+import { getInitials } from "../../utils/formatters";
 
 const RolePill = ({ role }) => {
   const cfg = ROLE_CONFIG[role] || { color: "#94a3b8", bg: "#f8fafc" };

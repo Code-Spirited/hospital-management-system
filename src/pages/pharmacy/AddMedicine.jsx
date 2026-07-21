@@ -73,9 +73,8 @@ const AddMedicine = () => {
     },
   });
 
-  const submit = async (data) => {
+  const submit = (data) => {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 500));
     const newId = generateId("M", 100, 900);
     addMedicine({
       id: newId,

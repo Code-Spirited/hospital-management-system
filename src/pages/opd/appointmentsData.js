@@ -36,7 +36,7 @@
 //                nothing further is actually needed.
 //   Cancelled  — was Scheduled, called off before the visit happened.
 //   No-Show    — was Scheduled, the patient never arrived.
-export const STATUS_CONFIG = {
+export const APPOINTMENT_STATUS_CONFIG = {
   Scheduled: { color: "#2563eb", bg: "#eff6ff" },
   Consulted: { color: "#7c3aed", bg: "#f5f3ff" },
   Prescribed: { color: "#d97706", bg: "#fffbeb" },

@@ -14,7 +14,7 @@
 // for why that's deliberately deferred, not an oversight.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createContext, useContext, useCallback } from "react";
+import { createContext, useContext, useCallback, useMemo } from "react";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { patientsService } from "../services/patientsService";
 import { initialPatients } from "../pages/opd/opdData";
@@ -63,19 +63,33 @@ export const PatientsProvider = ({ children }) => {
     [setPatients],
   );
 
+  // Week 8, Friday — memoized; see NotificationsContext.jsx's comment
+  // for why.
+  const value = useMemo(
+    () => ({
+      patients,
+      isLoading,
+      error,
+      refetch,
+      addPatient,
+      updatePatient,
+      deletePatient,
+      restorePatient,
+    }),
+    [
+      patients,
+      isLoading,
+      error,
+      refetch,
+      addPatient,
+      updatePatient,
+      deletePatient,
+      restorePatient,
+    ],
+  );
+
   return (
-    <PatientsContext.Provider
-      value={{
-        patients,
-        isLoading,
-        error,
-        refetch,
-        addPatient,
-        updatePatient,
-        deletePatient,
-        restorePatient,
-      }}
-    >
+    <PatientsContext.Provider value={value}>
       {children}
     </PatientsContext.Provider>
   );

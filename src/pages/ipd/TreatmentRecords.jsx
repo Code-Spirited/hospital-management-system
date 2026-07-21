@@ -35,13 +35,12 @@ import {
 import Abbr from "../../components/common/Abbr/Abbr";
 import { useIPD } from "../../context/IPDContext";
 import { usePatients } from "../../context/PatientsContext";
+import { useUsers } from "../../context/UsersContext";
 import { generateId } from "../../utils/generateId";
-import { DOCTORS } from "../opd/opdData";
 import { WARD_TYPE_CONFIG, ADMISSION_STATUS_CONFIG } from "./ipdData";
 import { treatmentRecordSchema } from "./ipdSchema";
 
 const opt = (v) => ({ value: v, label: v });
-const DOCTOR_OPTIONS = DOCTORS.map(opt);
 
 // Builds a readable, JSX-based vitals summary from whichever fields were
 // actually recorded — skips any left blank, so a partial entry never
@@ -85,6 +84,9 @@ const TreatmentRecords = () => {
   const navigate = useNavigate();
   const { admissions, addTreatmentRecord } = useIPD();
   const { patients } = usePatients();
+
+  const { doctors } = useUsers();
+  const DOCTOR_OPTIONS = doctors.map(opt);
 
   const admission = admissions.find((a) => a.id === admissionId);
   const patient = admission?.patientId

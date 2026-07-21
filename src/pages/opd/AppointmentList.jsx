@@ -42,12 +42,14 @@ import { usePatients } from "../../context/PatientsContext";
 import { useAppointments } from "../../context/AppointmentsContext";
 import { useTablePagination } from "../../context/TablePaginationContext";
 import { generateId } from "../../utils/generateId";
-import { STATUS_CONFIG, VISIT_TYPE_CONFIG } from "./appointmentsData";
-import { DOCTORS } from "./opdData";
+import {
+  APPOINTMENT_STATUS_CONFIG,
+  VISIT_TYPE_CONFIG,
+} from "./appointmentsData";
 import { appointmentSchema } from "./opdSchema";
+import { useUsers } from "../../context/UsersContext";
 
 const opt = (v) => ({ value: v, label: v });
-const DOCTOR_OPTIONS = DOCTORS.map(opt);
 const VISIT_TYPE_OPTIONS = Object.keys(VISIT_TYPE_CONFIG).map(opt);
 
 // Fixed 30-minute slots, 8:00 AM–7:30 PM. A native select of predefined
@@ -63,7 +65,10 @@ const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
 
 // ── Badges ─────────────────────────────────────────────────────────────────
 const StatusPill = ({ status }) => {
-  const cfg = STATUS_CONFIG[status] || { color: "#94a3b8", bg: "#f8fafc" };
+  const cfg = APPOINTMENT_STATUS_CONFIG[status] || {
+    color: "#94a3b8",
+    bg: "#f8fafc",
+  };
   return (
     <span
       style={{
@@ -544,6 +549,11 @@ const SelectedPatientCard = ({ control, patients }) => {
 // ── Book / Reschedule drawer ──────────────────────────────────────────────────
 const BookingDrawer = ({ open, onOpenChange, editingAppt, onSubmitAppt }) => {
   const { patients } = usePatients();
+  // DOCTOR_OPTIONS now comes from UsersContext's live doctors list —
+  // kept the same name (now local instead of module-level) so nothing
+  // else in this component needs to change.
+  const { doctors } = useUsers();
+  const DOCTOR_OPTIONS = doctors.map(opt);
   // Labels carry age/gender/phone too — patients can share a name, and this
   // is the detail that disambiguates them inside the dropdown itself.
   const patientOptions = patients.map((p) => ({
@@ -1129,7 +1139,7 @@ const AppointmentList = () => {
           {
             columnId: "status",
             label: "Status",
-            options: Object.keys(STATUS_CONFIG),
+            options: Object.keys(APPOINTMENT_STATUS_CONFIG),
           },
           {
             columnId: "visitType",

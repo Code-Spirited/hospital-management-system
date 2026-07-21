@@ -6,11 +6,26 @@
 // via useAsyncData. isLoading/error are new, additive combined fields.
 // permissionOverrides and userSettingsMap stay plain useState — both are
 // sparse, session-derived state with no natural seed list to fetch (they
-// start empty {} by design), so routing them through the same "getAll"
-// service shape wouldn't make sense. All mutation functions are unchanged.
+// start empty {} by design). All mutation functions are unchanged.
+//
+// Week 8, Friday — two changes:
+// 1. `doctors`: every Active user with role === "Doctor", as plain name
+//    strings. Replaces the old static DOCTORS array in opdData.js, which
+//    duplicated these same names by hand. AppointmentList, AdmissionForm,
+//    DischargeSummary, and TreatmentRecords now read from here — adding
+//    or removing a doctor in Users updates every one of those dropdowns
+//    automatically.
+// 2. The context value is memoized — see NotificationsContext.jsx's
+//    comment for why.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createContext, useContext, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { usersService } from "../services/usersService";
 import {
@@ -93,26 +108,58 @@ export const UsersProvider = ({ children }) => {
     setUserSettingsMap((prev) => ({ ...prev, [userId]: settings }));
   }, []);
 
+  // Only Active doctors are offered for booking — an Inactive/Suspended
+  // doctor shouldn't be selectable for a new appointment or admission,
+  // matching UserDirectory.jsx's own "Doctors on Staff" stat, which
+  // counts the same way.
+  const doctors = useMemo(
+    () =>
+      users
+        .filter((u) => u.role === "Doctor" && u.status === "Active")
+        .map((u) => u.fullName),
+    [users],
+  );
+
+  const isLoading = usersLoading || permissionsLoading;
+  const error = usersError || null;
+
+  const value = useMemo(
+    () => ({
+      users,
+      isLoading,
+      error,
+      refetch,
+      addUser,
+      updateUser,
+      deleteUser,
+      permissions,
+      updatePermissions,
+      permissionOverrides,
+      setUserOverrides,
+      getUserSettings,
+      updateUserSettings,
+      doctors,
+    }),
+    [
+      users,
+      isLoading,
+      error,
+      refetch,
+      addUser,
+      updateUser,
+      deleteUser,
+      permissions,
+      updatePermissions,
+      permissionOverrides,
+      setUserOverrides,
+      getUserSettings,
+      updateUserSettings,
+      doctors,
+    ],
+  );
+
   return (
-    <UsersContext.Provider
-      value={{
-        users,
-        isLoading: usersLoading || permissionsLoading,
-        error: usersError || null,
-        refetch,
-        addUser,
-        updateUser,
-        deleteUser,
-        permissions,
-        updatePermissions,
-        permissionOverrides,
-        setUserOverrides,
-        getUserSettings,
-        updateUserSettings,
-      }}
-    >
-      {children}
-    </UsersContext.Provider>
+    <UsersContext.Provider value={value}>{children}</UsersContext.Provider>
   );
 };
 

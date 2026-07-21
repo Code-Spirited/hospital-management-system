@@ -7,7 +7,7 @@
 // (add/update/discharge/addTreatmentRecord) are unchanged.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createContext, useContext, useCallback } from "react";
+import { createContext, useContext, useCallback, useMemo } from "react";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { ipdService } from "../services/ipdService";
 import { initialAdmissions } from "../pages/ipd/ipdData";
@@ -66,22 +66,32 @@ export const IPDProvider = ({ children }) => {
     [setAdmissions],
   );
 
-  return (
-    <IPDContext.Provider
-      value={{
-        admissions,
-        isLoading,
-        error,
-        refetch,
-        addAdmission,
-        updateAdmission,
-        dischargeAdmission,
-        addTreatmentRecord,
-      }}
-    >
-      {children}
-    </IPDContext.Provider>
+  // Week 8, Friday — memoized; see NotificationsContext.jsx's comment
+  // for why.
+  const value = useMemo(
+    () => ({
+      admissions,
+      isLoading,
+      error,
+      refetch,
+      addAdmission,
+      updateAdmission,
+      dischargeAdmission,
+      addTreatmentRecord,
+    }),
+    [
+      admissions,
+      isLoading,
+      error,
+      refetch,
+      addAdmission,
+      updateAdmission,
+      dischargeAdmission,
+      addTreatmentRecord,
+    ],
   );
+
+  return <IPDContext.Provider value={value}>{children}</IPDContext.Provider>;
 };
 
 export const useIPD = () => {
