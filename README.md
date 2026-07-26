@@ -145,7 +145,7 @@ src/
 Clone the repository:
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Code-Spirited/hospital-management-system
 ```
 
 Navigate into the project directory:
@@ -195,7 +195,7 @@ This is **not required** for the current version of the application, as it alrea
 
 ## Author
 
-**Your Name**
+**Pravesh Kumar Patel**
 
 React Intern  
 **Auctech Marketing Communication Pvt. Ltd.**
