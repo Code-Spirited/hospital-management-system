@@ -35,7 +35,7 @@ const Modal = ({ isOpen, onClose, title = "", size = "md", children }) => {
     >
       {/* Dark semi-transparent backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
         onClick={onClose}
         style={{ animation: "fadeIn 0.2s ease both" }}
       />
@@ -49,7 +49,7 @@ const Modal = ({ isOpen, onClose, title = "", size = "md", children }) => {
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
             <h3
               style={{
                 fontSize: "1.05rem",

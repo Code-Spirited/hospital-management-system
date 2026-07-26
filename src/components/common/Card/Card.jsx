@@ -7,7 +7,7 @@ const Card = ({
 }) => {
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 ${padding ? "p-6" : ""} ${className}`}
+      className={`bg-white rounded-xl shadow-xs border border-gray-100 ${padding ? "p-6" : ""} ${className}`}
     >
       {title && (
         <div className="mb-4">
